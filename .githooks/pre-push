@@ -1,0 +1,77 @@
+#!/bin/sh
+# 1) Bloquea el push DIRECTO a ramas protegidas (main, develop): el flujo es rama -> PR -> merge.
+# 2) Corre los TESTS de lo que cambia en el push:
+#    - frontend/ tocado             -> npm test
+#    - <modulo>/src/**.java tocado  -> mvn test -pl <modulos>
+#
+# Activar en tu clon (una sola vez):  git config core.hooksPath .githooks
+# Es una salvaguarda local; la proteccion real es la de ramas en GitHub.
+# Excepcion puntual:                  git push --no-verify
+# Saltar solo los tests:              AS2_HOOKS_SKIP=1 git push ...
+
+protected_branches="main develop"
+zero=0000000000000000000000000000000000000000
+repo_root=$(git rev-parse --show-toplevel)
+
+fail() {
+    echo "-----------------------------------------------------------"
+    echo "pre-push: $1"
+    echo "Arregla y vuelve a pushear (o git push --no-verify si es deliberado)."
+    echo "-----------------------------------------------------------"
+    exit 1
+}
+
+changed=""
+while read -r local_ref local_sha remote_ref remote_sha; do
+    for b in $protected_branches; do
+        if [ "$remote_ref" = "refs/heads/$b" ]; then
+            echo "-----------------------------------------------------------"
+            echo "ERROR: push directo a '$b' bloqueado."
+            echo "Usa una rama y abre un Pull Request hacia '$b'."
+            echo "-----------------------------------------------------------"
+            exit 1
+        fi
+    done
+    [ "$local_sha" = "$zero" ] && continue
+    if [ "$remote_sha" = "$zero" ]; then
+        base=$(git merge-base "$local_sha" develop 2>/dev/null || git merge-base "$local_sha" main 2>/dev/null)
+    else
+        base=$remote_sha
+    fi
+    [ -n "$base" ] && changed="$changed
+$(git diff --name-only "$base" "$local_sha")"
+done
+
+[ -n "$AS2_HOOKS_SKIP" ] && exit 0
+[ -z "$changed" ] && exit 0
+
+if echo "$changed" | grep -qE '^frontend/(src/|package(-lock)?\.json|vite\.config|tsconfig)'; then
+    echo "pre-push: npm test (frontend)"
+    out=$(mktemp)
+    if ! ( cd "$repo_root/frontend" && npm test --silent ) > "$out" 2>&1; then
+        tail -40 "$out"; rm -f "$out"
+        fail "tests del frontend en rojo."
+    fi
+    grep -E "Test Files|Tests " "$out"; rm -f "$out"
+fi
+
+modules=""
+for f in $(echo "$changed" | grep -E '^[^/]+/(src/.*\.java|pom\.xml)$'); do
+    m=${f%%/*}
+    if [ -f "$repo_root/$m/pom.xml" ]; then
+        case " $modules " in *" $m "*) ;; *) modules="$modules $m" ;; esac
+    fi
+done
+if [ -n "$modules" ]; then
+    pl=$(echo $modules | tr ' ' ',')
+    echo "pre-push: mvn clean test -pl $pl"
+    out=$(mktemp)
+    if ! ( cd "$repo_root" && mvn -q clean test -pl "$pl" ) > "$out" 2>&1; then
+        grep -E "^\[ERROR\]|Tests run:.*(Fail|Err)" "$out" | head -20 || tail -20 "$out"
+        rm -f "$out"
+        fail "tests en rojo en: $pl"
+    fi
+    rm -f "$out"
+fi
+
+exit 0

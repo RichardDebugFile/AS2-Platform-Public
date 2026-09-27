@@ -1,0 +1,87 @@
+#!/bin/sh
+# Comprobaciones RAPIDAS sobre lo que se va a commitear (segundos, no minutos):
+#   - archivos sensibles en stage     -> bloquea (claves, keystores, .env)
+#   - frontend/src/**.ts(x) en stage  -> eslint de esos archivos + tsc -b
+#   - <modulo>/src/**.java o pom.xml  -> mvn test-compile de ese modulo
+# Los tests completos corren en pre-push.
+#
+# Activar en tu clon (una sola vez):   git config core.hooksPath .githooks
+# Saltar en un caso puntual:           git commit --no-verify
+# Saltar solo los checks lentos:       AS2_HOOKS_SKIP=1 git commit ...
+
+repo_root=$(git rev-parse --show-toplevel)
+staged=$(git diff --cached --name-only --diff-filter=ACMR)
+[ -z "$staged" ] && exit 0
+
+fail() {
+    echo "-----------------------------------------------------------"
+    echo "pre-commit: $1"
+    echo "Arregla y vuelve a commitear (o git commit --no-verify si es deliberado)."
+    echo "-----------------------------------------------------------"
+    exit 1
+}
+
+# ---------- secretos (siempre, aunque AS2_HOOKS_SKIP este puesto) ----------
+sensibles=$(echo "$staged" | grep -Ei '\.(p12|pfx|jks|key|pem)$|(^|/)\.env($|\.)|\.local\.json$|\.secret\.' | grep -v '\.env\.example$')
+[ -n "$sensibles" ] && fail "archivos sensibles en el commit:
+$sensibles"
+
+# Archivos de mas de 5 MB (dumps, binarios) no van al repositorio.
+for f in $staged; do
+    [ -f "$repo_root/$f" ] || continue
+    size=$(wc -c < "$repo_root/$f")
+    [ "$size" -gt 5242880 ] && fail "archivo demasiado grande (>5 MB): $f"
+done
+
+# gitleaks sobre lo que esta en stage: secretos + datos sensibles (.gitleaks.toml). Si existe
+# .gitleaks.local.toml (privado, ignorado por git) se usa ese, que ademas incluye los nombres
+# reales de la empresa y sus socios. Sin gitleaks instalado solo se avisa: el CI lo corre igual.
+gitleaks_bin=$(command -v gitleaks 2>/dev/null)
+if [ -n "$gitleaks_bin" ]; then
+    cfg=".gitleaks.toml"
+    [ -f "$repo_root/.gitleaks.local.toml" ] && cfg=".gitleaks.local.toml"
+    echo "pre-commit: gitleaks ($cfg)"
+    ( cd "$repo_root" && "$gitleaks_bin" git --pre-commit --staged --redact --no-banner -c "$cfg" . ) \
+        || fail "gitleaks encontro secretos o datos sensibles (ver arriba). Anonimiza o mueve el dato."
+else
+    echo "pre-commit: AVISO gitleaks no esta instalado; no se revisan secretos en local (winget install Gitleaks.Gitleaks)."
+fi
+
+[ -n "$AS2_HOOKS_SKIP" ] && exit 0
+
+# ---------- frontend ----------
+front_files=$(echo "$staged" | grep -E '^frontend/src/.*\.(ts|tsx)$' | sed 's#^frontend/##')
+if [ -n "$front_files" ]; then
+    cd "$repo_root/frontend" || exit 1
+    echo "pre-commit: eslint ($(echo "$front_files" | wc -l | tr -d ' ') archivo(s))"
+    # shellcheck disable=SC2086
+    npx eslint --cache --cache-location node_modules/.cache/eslint $front_files \
+        || fail "eslint encontro errores en el frontend."
+    echo "pre-commit: tsc -b"
+    npx tsc -b || fail "tsc encontro errores de tipos en el frontend."
+    cd "$repo_root" || exit 1
+fi
+
+# ---------- backend ----------
+modules=""
+for f in $(echo "$staged" | grep -E '^[^/]+/(src/.*\.java|pom\.xml)$'); do
+    m=${f%%/*}
+    if [ -f "$repo_root/$m/pom.xml" ]; then
+        case " $modules " in *" $m "*) ;; *) modules="$modules $m" ;; esac
+    fi
+done
+if [ -n "$modules" ]; then
+    pl=$(echo $modules | tr ' ' ',')
+    echo "pre-commit: mvn clean test-compile -pl $pl"
+    # clean a proposito: el IDE recompila a target/ y Maven podria decir "Nothing to compile"
+    # dejando pasar un archivo roto.
+    out=$(mktemp)
+    if ! ( cd "$repo_root" && mvn -q clean test-compile -pl "$pl" ) > "$out" 2>&1; then
+        grep -E "^\[ERROR\]" "$out" | head -20 || tail -20 "$out"
+        rm -f "$out"
+        fail "no compila (main o tests) en: $pl"
+    fi
+    rm -f "$out"
+fi
+
+exit 0

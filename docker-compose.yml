@@ -1,0 +1,38 @@
+# Base de datos para DESARROLLO LOCAL (PostgreSQL 16 + pgAdmin).
+# Las credenciales de este archivo son solo para la maquina del desarrollador; en el servidor se
+# usan variables de entorno propias (ver HU-07).
+#
+#   docker compose up -d db pgadmin
+#
+# Al crear el volumen por primera vez, db/init/ crea un usuario y una base por microservicio:
+#   auth, partners, documents, alerts  (usuario = contrasena = nombre de la base).
+services:
+  db:
+    image: postgres:16
+    container_name: as2tesis-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports: ["${DB_PORT:-5432}:5432"]
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ./db/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+
+  pgadmin:
+    image: dpage/pgadmin4
+    container_name: as2tesis-pgadmin
+    environment:
+      PGADMIN_DEFAULT_EMAIL: admin@example.com
+      PGADMIN_DEFAULT_PASSWORD: admin
+    ports: ["5050:80"]
+    depends_on:
+      db:
+        condition: service_healthy
+
+volumes:
+  dbdata:

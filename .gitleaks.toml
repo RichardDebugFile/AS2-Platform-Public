@@ -1,0 +1,42 @@
+# Configuracion de gitleaks del repositorio (la usan el hook pre-commit y el job "secrets" del CI).
+#
+# Ademas de las reglas por defecto (claves, tokens, contrasenas), se buscan DATOS SENSIBLES que no
+# son secretos pero no deben publicarse: direcciones IP internas y correos reales.
+#
+# Los nombres reales de la empresa, sus socios y su infraestructura NO pueden escribirse aqui: este
+# archivo es publico y la propia regla los filtraria. Van en .gitleaks.local.toml (ignorado por git);
+# ver .gitleaks.local.toml.example y CONTRIBUTING.md.
+
+title = "Plataforma AS2/EDI"
+
+[extend]
+useDefault = true
+
+[[rules]]
+id = "ipv4-privada"
+description = "IP de una red interna. En ejemplos usar el rango de documentacion 192.0.2.0/24 (RFC 5737)."
+regex = '''\b(?:10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(?:1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}|192\.168\.\d{1,3}\.\d{1,3})\b'''
+tags = ["datos-sensibles", "infraestructura"]
+
+[[rules]]
+id = "correo-real"
+description = "Correo electronico real. En ejemplos usar dominios de ejemplo (example.com, RFC 2606)."
+regex = '''\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}\b'''
+tags = ["datos-sensibles", "personas"]
+  [[rules.allowlists]]
+  description = "Dominios de ejemplo y direcciones noreply"
+  regexes = [
+    '''@(?:[A-Za-z0-9-]+\.)*example\.(?:com|org|net)\b''',
+    '''@users\.noreply\.github\.com\b''',
+    '''@anthropic\.com\b''',
+    '''@localhost\b''',
+  ]
+
+[[allowlists]]
+description = "Dependencias y artefactos generados"
+paths = [
+  '''(^|[\\/])node_modules[\\/]''',
+  '''(^|[\\/])package-lock\.json$''',
+  '''(^|[\\/])target[\\/]''',
+  '''(^|[\\/])dist[\\/]''',
+]
