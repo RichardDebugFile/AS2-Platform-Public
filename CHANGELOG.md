@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.1.0 — 2026-09-27
 
 ### Sprint 0 — Fundaciones (HU-01)
 - Repositorio único con los seis servicios (gateway, autenticación, socios, documentos, alertas y
