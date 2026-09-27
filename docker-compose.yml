@@ -6,10 +6,12 @@
 #
 # Al crear el volumen por primera vez, db/init/ crea un usuario y una base por microservicio:
 #   auth, partners, documents, alerts  (usuario = contrasena = nombre de la base).
+name: as2-platform
+
 services:
   db:
     image: postgres:16
-    container_name: as2tesis-db
+    container_name: as2platform-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -25,7 +27,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: as2tesis-pgadmin
+    container_name: as2platform-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin
