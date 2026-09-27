@@ -1,0 +1,45 @@
+name: Security
+
+# Escaneo de seguridad que funciona en repositorios privados sin GitHub Advanced Security:
+# - gitleaks: secretos filtrados en el codigo y en el historial
+# - Trivy filesystem: dependencias vulnerables (CVE), configuraciones inseguras y secretos
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+
+permissions:
+  contents: read
+  pull-requests: read
+
+jobs:
+  secrets:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+      - name: gitleaks
+        uses: gitleaks/gitleaks-action@v3
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          GITLEAKS_ENABLE_UPLOAD_ARTIFACT: "false"
+
+  trivy-fs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - name: Trivy filesystem scan
+        uses: aquasecurity/trivy-action@v0.36.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: CRITICAL,HIGH
+          # Solo informe por ahora; poner "1" para que bloquee el merge.
+          exit-code: "0"
+          ignore-unfixed: true
+          format: table
+        env:
+          TRIVY_SKIP_DIRS: "**/node_modules,**/dist,**/target"

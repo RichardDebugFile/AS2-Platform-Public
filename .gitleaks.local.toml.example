@@ -1,0 +1,24 @@
+# Plantilla de reglas PRIVADAS de gitleaks.
+#
+#   1. Copiar a .gitleaks.local.toml (esta ignorado por git: nunca se publica).
+#   2. Reemplazar los marcadores por los terminos reales que no deben aparecer en el repositorio:
+#      nombre de la empresa, de los socios comerciales, del proveedor VAN, dominios propios, IP
+#      publica del servidor, identificadores EDI (ISA/GS) reales, etc.
+#   3. El hook pre-commit lo usa automaticamente si existe.
+#
+# Hereda todas las reglas de .gitleaks.toml.
+
+[extend]
+path = ".gitleaks.toml"
+
+[[rules]]
+id = "terminos-privados"
+description = "Nombre real de la empresa, socios o proveedores: usar 'la Empresa', 'Socio A', etc."
+regex = '''(?i)\b(?:nombre-empresa|nombre-socio-1|nombre-socio-2|nombre-proveedor-van)\b'''
+tags = ["datos-sensibles", "privado"]
+
+[[rules]]
+id = "infraestructura-privada"
+description = "Dominio, IP publica o identificadores EDI reales"
+regex = '''(?i)(?:dominio-real\.com|203\.0\.113\.10|ID-ISA-REAL)'''
+tags = ["datos-sensibles", "privado"]
