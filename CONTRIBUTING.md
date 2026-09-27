@@ -21,7 +21,7 @@ Reglas:
   aceptación. El título del PR lleva la HU (`HU-01: Fundación del monorepo y CI`) y la descripción
   la cierra (`Closes #N`) y marca la Definición de Terminado.
 * Cada sprint cierra con una `release/X.Y.Z` → `main`, un *tag* y una *release* de GitHub que lista
-  las HU terminadas. Versión = `0.<sprint>.0` durante la tesis (Sprint 0 → `0.1.0`).
+  las HU terminadas. Mientras no haya versión 1.0, la versión es `0.<sprint + 1>.0` (Sprint 0 → `0.1.0`).
 
 ## Commits — Conventional Commits
 

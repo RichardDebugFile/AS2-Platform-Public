@@ -4,7 +4,7 @@ Plataforma de mensajería B2B para intercambiar documentos EDI **ANSI X12** (ór
 acuses 997, avisos de despacho 856, facturas 810…) con socios comerciales mediante el protocolo
 **AS2** (RFC 4130): mensajes firmados y cifrados con S/MIME y acuse de recibo firmado (MDN).
 
-Arquitectura de microservicios Spring Boot con una consola web React. Proyecto de titulación.
+Arquitectura de microservicios Spring Boot con una consola web React.
 
 ## Módulos
 
