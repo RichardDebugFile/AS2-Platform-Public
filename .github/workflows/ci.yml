@@ -1,0 +1,184 @@
+name: CI
+
+# Build + test de lo que cambio, no de todo el repositorio:
+#   - `changes` detecta que carpetas toca el PR (o el push a main/develop).
+#   - `backend` solo corre si cambio algun modulo Maven, y solo esos (`mvn -pl`).
+#     Si cambia algo compartido (pom raiz, db/, este workflow) corre todo.
+#   - `frontend` solo si cambio frontend/.
+#   - Los push de ramas de trabajo no lanzan CI: lo hace su PR.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  # Ejecucion manual: construye y prueba TODO (util tras cambios de infraestructura del CI).
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  changes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+    outputs:
+      backend: ${{ steps.modules.outputs.backend }}
+      modules: ${{ steps.modules.outputs.list }}
+      frontend: ${{ steps.modules.outputs.frontend }}
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: dorny/paths-filter@v4
+        id: filter
+        with:
+          base: ${{ github.ref }}
+          filters: |
+            shared:
+              - 'pom.xml'
+              - 'db/**'
+              - '.github/workflows/ci.yml'
+            gateway:           ['gateway/**']
+            auth-service:      ['auth-service/**']
+            partners-service:  ['partners-service/**']
+            documents-service: ['documents-service/**']
+            alerts-service:    ['alerts-service/**']
+            as2-adapter:       ['as2-adapter/**']
+            backend:
+              - 'pom.xml'
+              - 'db/**'
+              - '.github/workflows/ci.yml'
+              - 'gateway/**'
+              - 'auth-service/**'
+              - 'partners-service/**'
+              - 'documents-service/**'
+              - 'alerts-service/**'
+              - 'as2-adapter/**'
+            frontend:
+              - 'frontend/**'
+              - '.github/workflows/ci.yml'
+
+      - name: Modulos Maven a construir
+        id: modules
+        env:
+          # Todo se construye en la ejecucion manual y en el primer push de una rama (sin commit
+          # anterior con el que comparar, paths-filter no ve cambios y se saltaria el CI).
+          FORCE: ${{ github.event_name == 'workflow_dispatch' || github.event.before == '0000000000000000000000000000000000000000' }}
+          BACKEND: ${{ steps.filter.outputs.backend }}
+          FRONTEND: ${{ steps.filter.outputs.frontend }}
+          SHARED: ${{ steps.filter.outputs.shared }}
+          GATEWAY: ${{ steps.filter.outputs.gateway }}
+          AUTH: ${{ steps.filter.outputs.auth-service }}
+          PARTNERS: ${{ steps.filter.outputs.partners-service }}
+          DOCUMENTS: ${{ steps.filter.outputs.documents-service }}
+          ALERTS: ${{ steps.filter.outputs.alerts-service }}
+          ADAPTER: ${{ steps.filter.outputs.as2-adapter }}
+        run: |
+          if [ "$FORCE" = "true" ]; then
+            { echo "backend=true"; echo "frontend=true"; echo "list=ALL"; } >> "$GITHUB_OUTPUT"
+            echo "modulos: TODOS (manual o primer push de la rama)"; exit 0
+          fi
+          echo "backend=$BACKEND" >> "$GITHUB_OUTPUT"
+          echo "frontend=$FRONTEND" >> "$GITHUB_OUTPUT"
+          if [ "$SHARED" = "true" ]; then
+            echo "list=ALL" >> "$GITHUB_OUTPUT"; echo "modulos: TODOS (cambio compartido)"; exit 0
+          fi
+          list=""
+          [ "$GATEWAY"   = "true" ] && list="$list,gateway"
+          [ "$AUTH"      = "true" ] && list="$list,auth-service"
+          [ "$PARTNERS"  = "true" ] && list="$list,partners-service"
+          [ "$DOCUMENTS" = "true" ] && list="$list,documents-service"
+          [ "$ALERTS"    = "true" ] && list="$list,alerts-service"
+          [ "$ADAPTER"   = "true" ] && list="$list,as2-adapter"
+          list="${list#,}"
+          echo "list=$list" >> "$GITHUB_OUTPUT"; echo "modulos: ${list:-ninguno}"
+
+  backend:
+    needs: changes
+    if: needs.changes.outputs.backend == 'true'
+    runs-on: ubuntu-latest
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Inicializar bases de datos (4 usuarios + 4 BD)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for f in db/init/*.sql; do
+            echo ">> $f"
+            psql -h localhost -U postgres -d postgres -f "$f"
+          done
+
+      - name: Build + test (mvn verify)
+        # El perfil activo se fija explicito: los application-local.yml no se versionan.
+        env:
+          SPRING_PROFILES_ACTIVE: default
+          MODULES: ${{ needs.changes.outputs.modules }}
+        run: |
+          if [ "$MODULES" = "ALL" ]; then
+            mvn -B -ntp verify -Dspring-boot.repackage.skip=true
+          else
+            mvn -B -ntp verify -Dspring-boot.repackage.skip=true -pl "$MODULES" -am
+          fi
+
+      - name: Cobertura JaCoCo
+        if: success()
+        run: |
+          echo "## Cobertura JaCoCo" >> "$GITHUB_STEP_SUMMARY"
+          echo "| Modulo | Instrucciones |" >> "$GITHUB_STEP_SUMMARY"
+          echo "|--------|---------------|" >> "$GITHUB_STEP_SUMMARY"
+          for m in gateway auth-service partners-service documents-service alerts-service as2-adapter; do
+            csv="$m/target/site/jacoco/jacoco.csv"
+            [ -f "$csv" ] || continue
+            mm=$(awk -F, 'NR>1{m+=$4} END{print m+0}' "$csv")
+            cc=$(awk -F, 'NR>1{c+=$5} END{print c+0}' "$csv")
+            pct=$(awk "BEGIN{printf \"%.1f\", $cc*100/($mm+$cc+0.0001)}")
+            echo "| $m | ${pct}% |" >> "$GITHUB_STEP_SUMMARY"
+          done
+
+  frontend:
+    needs: changes
+    if: needs.changes.outputs.frontend == 'true'
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: frontend
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - run: npm ci
+      - run: npm run lint
+      - run: npm run build
+      - run: npm test
