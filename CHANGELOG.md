@@ -4,6 +4,13 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## 0.1.2 — 2026-09-27
+
+### Cambios
+- Actualizaciones automáticas de dependencias (Dependabot) en pausa: las versiones se mantienen
+  alineadas con el sistema de origen y se actualizan allí primero. Las alertas de vulnerabilidades
+  siguen activas.
+
 ## 0.1.1 — 2026-09-27
 
 ### Arreglos
