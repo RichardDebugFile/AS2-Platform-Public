@@ -4,6 +4,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## 0.1.1 — 2026-09-27
+
+### Arreglos
+- Documentación y entorno local con nombres neutros: la descripción del proyecto se centra en el
+  producto y el `docker-compose` usa un nombre de proyecto fijo (`as2-platform`) con contenedores
+  `as2platform-db` y `as2platform-pgadmin`. Para aplicarlo en un entorno ya levantado:
+  `docker compose -p <nombre-anterior> down` y luego `docker compose up -d db`.
+
 ## 0.1.0 — 2026-09-27
 
 ### Sprint 0 — Fundaciones (HU-01)
