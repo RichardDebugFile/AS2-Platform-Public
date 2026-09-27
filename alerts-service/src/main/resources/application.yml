@@ -1,0 +1,27 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: alerts-service
+  datasource:
+    url: ${DB_URL:jdbc:postgresql://localhost:5432/alerts}
+    username: ${DB_USERNAME:alerts}
+    password: ${DB_PASSWORD:alerts}
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    open-in-view: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      probes:
+        enabled: true
