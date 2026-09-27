@@ -1,7 +1,14 @@
 version: 2
-# Minor/patch agrupados y contra develop. Los majors (Spring Boot 4, React 20...) no se proponen:
-# son migraciones que se planifican como historia propia. Sin rebase automatico para no
-# relanzar el CI de todos los PRs abiertos en cada merge.
+# PAUSADO (open-pull-requests-limit: 0): este repositorio sigue las versiones del sistema del que
+# deriva; actualizar dependencias por separado haria que ambos se desalineen. Las actualizaciones se
+# aplican primero en el sistema de origen y luego se traen aqui. Las alertas de vulnerabilidades de
+# GitHub siguen activas (pestana Security) y no abren PRs.
+#
+# Para reactivar: Maven 3, npm 2, GitHub Actions 5 (su valor por defecto).
+#
+# Minor/patch agrupados y contra develop. Los majors no se proponen: son migraciones que se
+# planifican como historia propia. Sin rebase automatico para no relanzar el CI de todos los PRs
+# abiertos en cada merge.
 updates:
   - package-ecosystem: maven
     directory: "/"
@@ -9,7 +16,7 @@ updates:
     rebase-strategy: disabled
     schedule:
       interval: weekly
-    open-pull-requests-limit: 3
+    open-pull-requests-limit: 0
     groups:
       maven-minor-patch:
         update-types: ["minor", "patch"]
@@ -23,7 +30,7 @@ updates:
     rebase-strategy: disabled
     schedule:
       interval: weekly
-    open-pull-requests-limit: 2
+    open-pull-requests-limit: 0
     groups:
       npm-minor-patch:
         update-types: ["minor", "patch"]
@@ -35,6 +42,7 @@ updates:
     directory: "/"
     target-branch: develop
     rebase-strategy: disabled
+    open-pull-requests-limit: 0
     schedule:
       interval: weekly
     groups:
