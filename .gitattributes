@@ -1,0 +1,18 @@
+# Normalizacion de fin de linea: texto en LF en el repositorio.
+* text=auto eol=lf
+
+# Scripts de shell, hooks y Dockerfiles SIEMPRE en LF (si no, fallan en Linux/Docker).
+*.sh          text eol=lf
+.githooks/**  text eol=lf
+Dockerfile*   text eol=lf
+
+# Scripts de Windows en CRLF
+*.bat         text eol=crlf
+*.cmd         text eol=crlf
+*.ps1         text eol=crlf
+
+# Binarios
+*.png binary
+*.jpg binary
+*.ico binary
+*.jar binary

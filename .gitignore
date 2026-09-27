@@ -1,0 +1,49 @@
+# ==========================================================
+#  .gitignore — Plataforma AS2/EDI (tesis)
+# ==========================================================
+
+# --- Build / Maven ---
+target/
+out/
+*.class
+
+# --- Logs ---
+*.log
+logs/
+
+# --- IDEs / editores ---
+.idea/
+*.iml
+.project
+.classpath
+.settings/
+.vscode/
+.cursor/
+.claude/
+
+# --- Sistema operativo ---
+.DS_Store
+Thumbs.db
+
+# --- Node ---
+node_modules/
+frontend/dist/
+
+# --- Configuracion local y material sensible (NUNCA versionar) ---
+**/application-local.yml
+*.p12
+*.pfx
+*.jks
+*.key
+*.pem
+*.crt
+*.cer
+.env
+.env.*
+!.env.example
+*.local.json
+.gitleaks.local.toml
+*.secret.*
+
+# --- Espacio de trabajo local (notas, borradores, material privado) ---
+/_local/
