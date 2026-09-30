@@ -1,6 +1,6 @@
 ## Historia de usuario
 
-<!-- HU-XX — título. Cierra su issue: Closes #N -->
+<!-- SCRUM-NN HU-XX — título. Cierra su issue: Closes #N -->
 Closes #
 
 ## Qué cambia
@@ -21,6 +21,7 @@ Closes #
 - [ ] Textos de UI en español e inglés (si hay interfaz)
 - [ ] Entrada en `CHANGELOG.md`
 - [ ] CI en verde (CI + Security)
+- [ ] Quality Gate de SonarQube Cloud aprobado y resultado publicado en la historia de Jira
 
 ## Cómo probarlo
 

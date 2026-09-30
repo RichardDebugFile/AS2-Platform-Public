@@ -1,0 +1,114 @@
+name: Sonar
+
+# Calidad y cobertura en SonarQube Cloud + reporte del resultado en la historia de Jira.
+#   1. Construye y prueba TODO el backend (JaCoCo) y el frontend (Vitest + LCOV): a diferencia del
+#      workflow CI, que solo prueba lo que cambió, SonarQube necesita el proyecto completo.
+#   2. Analiza con SonarQube Cloud y espera el Quality Gate (el job falla si el gate falla).
+#   3. Publica el resultado como comentario en la historia de Jira referenciada en la rama, el
+#      título del PR o los commits (SCRUM-XX o HU-XX), con un enlace al análisis.
+#
+# Configuración (Settings > Secrets and variables > Actions):
+#   Secrets:   SONAR_TOKEN (obligatorio) · JIRA_USER_EMAIL y JIRA_API_TOKEN (opcionales)
+#   Variables: JIRA_BASE_URL (p. ej. https://richard0004.atlassian.net) · JIRA_PROJECT_KEY (SCRUM)
+#              SONAR_ORGANIZATION y SONAR_PROJECT_KEY (solo si difieren de sonar-project.properties)
+# En SonarQube Cloud debe desactivarse el "Automatic Analysis" del proyecto (se analiza desde CI).
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+    types: [opened, synchronize, reopened]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: sonar-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  sonar:
+    name: SonarQube Cloud
+    runs-on: ubuntu-latest
+    # Los PR desde forks no reciben secretos: no se analizan aquí.
+    if: github.event_name != 'pull_request' || github.event.pull_request.head.repo.full_name == github.repository
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports: ["5432:5432"]
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 5s
+          --health-retries 20
+    env:
+      SONAR_ORGANIZATION: ${{ vars.SONAR_ORGANIZATION || 'richarddebugfile' }}
+      SONAR_PROJECT_KEY: ${{ vars.SONAR_PROJECT_KEY || 'RichardDebugFile_AS2-Platform-Public' }}
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # Historial completo: SonarQube lo usa para distinguir código nuevo y asignar autoría.
+          fetch-depth: 0
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Set up Node 22
+        uses: actions/setup-node@v7
+        with:
+          node-version: "22"
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Inicializar bases de datos (4 usuarios + 4 BD)
+        env:
+          PGPASSWORD: postgres
+        run: |
+          for f in db/init/*.sql; do
+            psql -h localhost -U postgres -d postgres -f "$f"
+          done
+
+      - name: Backend - build + pruebas + JaCoCo
+        env:
+          SPRING_PROFILES_ACTIVE: default
+        run: mvn -B -ntp verify -Dspring-boot.repackage.skip=true
+
+      - name: Frontend - pruebas con cobertura
+        working-directory: frontend
+        run: |
+          npm ci
+          npm run test:coverage
+
+      - name: Análisis SonarQube Cloud
+        id: scan
+        uses: SonarSource/sonarqube-scan-action@v8
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+        with:
+          args: >
+            -Dsonar.organization=${{ env.SONAR_ORGANIZATION }}
+            -Dsonar.projectKey=${{ env.SONAR_PROJECT_KEY }}
+            -Dsonar.java.libraries=/home/runner/.m2/repository/**/*.jar
+            -Dsonar.qualitygate.wait=true
+            -Dsonar.qualitygate.timeout=300
+
+      - name: Reporte en Jira
+        # Se ejecuta también si el Quality Gate falla, para que el rechazo quede registrado en la HU.
+        if: always() && steps.scan.outcome != 'skipped' && steps.scan.outcome != 'cancelled'
+        env:
+          SONAR_TOKEN: ${{ secrets.SONAR_TOKEN }}
+          JIRA_BASE_URL: ${{ vars.JIRA_BASE_URL }}
+          JIRA_PROJECT_KEY: ${{ vars.JIRA_PROJECT_KEY || 'SCRUM' }}
+          JIRA_USER_EMAIL: ${{ secrets.JIRA_USER_EMAIL }}
+          JIRA_API_TOKEN: ${{ secrets.JIRA_API_TOKEN }}
+          SCAN_OUTCOME: ${{ steps.scan.outcome }}
+        run: python3 .github/scripts/sonar_jira_report.py

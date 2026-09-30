@@ -6,10 +6,10 @@
 |---|---|---|---|
 | `main` | — | — | Versiones liberadas. Cada merge lleva un *tag* `vX.Y.Z`. |
 | `develop` | `main` | — | Integración del sprint en curso. |
-| `feature/HU-XX-descripcion` | `develop` | `develop` (PR) | Una historia de usuario. El nombre lleva el ID de la HU para la trazabilidad. |
+| `feature/SCRUM-NN-HU-XX-descripcion` | `develop` | `develop` (PR) | Una historia de usuario. El nombre lleva la clave de Jira y el ID de la HU para la trazabilidad. |
 | `release/X.Y.Z` | `develop` | `main` (PR) y luego `develop` | Cierre de sprint: versión y fecha en el CHANGELOG. |
 | `hotfix/X.Y.Z` | `main` | `main` y `develop` | Corrección urgente de una versión liberada. |
-| `chore/…`, `docs/…`, `fix/…` | `develop` | `develop` (PR) | Tareas menores sin HU. |
+| `chore/…`, `docs/…`, `fix/…` | `develop` | `develop` (PR) | Tareas menores sin HU (con su clave de Jira si la tienen: `chore/SCRUM-NN-…`). |
 
 Reglas:
 
@@ -18,15 +18,16 @@ Reglas:
 * Los PR se integran con **merge commit** (sin *squash*), para conservar en la historia los commits
   de cada HU.
 * Cada historia de usuario es un *issue* titulado `HU-XX: …` con su historia y criterios de
-  aceptación. El título del PR lleva la HU (`HU-01: Fundación del monorepo y CI`) y la descripción
-  la cierra (`Closes #N`) y marca la Definición de Terminado.
+  aceptación. El título del PR lleva la clave de Jira y la HU
+  (`SCRUM-13 HU-01: Fundación del monorepo y CI`) y la descripción la cierra (`Closes #N`) y marca la
+  Definición de Terminado.
 * Cada sprint cierra con una `release/X.Y.Z` → `main`, un *tag* y una *release* de GitHub que lista
   las HU terminadas. Mientras no haya versión 1.0, la versión es `0.<sprint + 1>.0` (Sprint 0 → `0.1.0`).
 
 ## Commits — Conventional Commits
 
 Formato `tipo(ámbito): resumen` en imperativo y en español; el cuerpo termina con la referencia a
-la HU (`Refs: HU-01`) para poder rastrear cada cambio hasta su historia. Tipos: `feat`, `fix`, `chore`, `docs`,
+la HU y a su clave de Jira (`Refs: HU-01, SCRUM-13`) para poder rastrear cada cambio hasta su historia. Tipos: `feat`, `fix`, `chore`, `docs`,
 `test`, `refactor`, `ci`, `build`, `perf`.
 
 ```
@@ -34,6 +35,17 @@ feat(auth): login con JWT RS256 y cookies HttpOnly
 fix(frontend): renovar la sesión antes de reintentar la petición
 ci: ejecutar solo los módulos que cambian
 ```
+
+## Trazabilidad con Jira y SonarQube Cloud
+
+* El tablero Scrum vive en Jira (proyecto `SCRUM`). La clave `SCRUM-NN` en la rama, el título del PR o
+  los commits enlaza el cambio con su historia: el app *GitHub for Jira* muestra en la historia las
+  ramas, commits, PR y ejecuciones de Actions.
+* El workflow `Sonar` analiza cada PR en SonarQube Cloud y publica en esa historia un comentario con
+  el Quality Gate y las métricas (cobertura, bugs, vulnerabilidades, code smells, duplicación),
+  que se actualiza en cada nuevo análisis del mismo PR.
+* Correspondencia HU → clave: HU-01 = SCRUM-13, HU-02 = SCRUM-14 … HU-23 = SCRUM-35 (clave = 12 + n.º de HU).
+  Si solo se escribe `HU-XX`, el workflow busca la clave en Jira.
 
 ## Primer uso del repositorio
 
