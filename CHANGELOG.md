@@ -4,6 +4,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Novedades
+- Calidad y cobertura verificadas en SonarQube Cloud en cada pull request y en `develop`/`main`:
+  el análisis incluye los seis servicios (cobertura JaCoCo) y la consola web (cobertura Vitest) y
+  espera el Quality Gate. El resultado se publica como comentario en la historia de Jira
+  referenciada, con enlace al análisis (SCRUM-48).
+
 ## 0.1.2 — 2026-09-27
 
 ### Cambios

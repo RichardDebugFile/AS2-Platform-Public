@@ -47,3 +47,7 @@ frontend/dist/
 
 # --- Espacio de trabajo local (notas, borradores, material privado) ---
 /_local/
+
+# --- Cobertura (Vitest / SonarQube) ---
+frontend/coverage/
+.scannerwork/
