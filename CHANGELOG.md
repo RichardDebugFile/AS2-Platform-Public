@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.2.0 — 2026-10-04
 
 ### Plataforma
 - Base tecnológica en Java 25 (LTS) y Spring Boot 4.1: versiones con soporte vigente para toda la vida
