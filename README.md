@@ -11,7 +11,7 @@ Arquitectura de microservicios Spring Boot con una consola web React.
 | Carpeta | Responsabilidad | Puerto |
 |---|---|---|
 | `gateway/` | Punto único de entrada: enrutamiento, seguridad en el borde | 8765 |
-| `auth-service/` | Usuarios, roles, JWT, sesiones y MFA | 8083 |
+| `auth-service/` | Usuarios, roles, JWT, sesiones y MFA ([API y configuración](auth-service/README.md)) | 8083 |
 | `partners-service/` | Socios comerciales, configuración AS2, certificados, carpetas, auditoría | 8081 |
 | `documents-service/` | Repositorio de documentos EDI y MDN | 8084 |
 | `alerts-service/` | Reglas de alerta y notificaciones | 8082 |
@@ -21,12 +21,13 @@ Arquitectura de microservicios Spring Boot con una consola web React.
 
 ## Tecnología
 
-Java 17 · Spring Boot 3.3 · Spring Cloud Gateway · PostgreSQL 16 + Flyway · React 19 · TypeScript ·
+Java 25 · Spring Boot 4.1 · Spring Cloud Gateway · PostgreSQL 16 + Flyway · React 19 · TypeScript ·
 Vite · Vitest · GitHub Actions (CI, gitleaks, Trivy, CodeQL).
 
 ## Puesta en marcha (desarrollo)
 
-Requisitos: JDK 17, Maven 3.9, Node 22, Docker.
+Requisitos: JDK 25, Maven 3.9, Node 22, Docker. Maven selecciona el JDK 25 instalado aunque
+`JAVA_HOME` apunte a otra versión (*toolchains*); los scripts `.bat` usan `JAVA_HOME` si está definido.
 
 ```bash
 git config core.hooksPath .githooks   # hooks de calidad (una vez por clon)
