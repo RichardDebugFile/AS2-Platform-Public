@@ -4,11 +4,17 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Plataforma
+- Base tecnológica en Java 25 (LTS) y Spring Boot 4.1: versiones con soporte vigente para toda la vida
+  del proyecto. Para compilar basta tener un JDK 25 instalado, aunque no sea el predeterminado del equipo.
+
 ## 0.1.2 — 2026-09-27
 
 ### Cambios
-- Actualizaciones automáticas de dependencias (Dependabot) en pausa: las versiones se mantienen
-  alineadas con el sistema de origen y se actualizan allí primero. Las alertas de vulnerabilidades
+- Actualizaciones automáticas de dependencias (Dependabot) en pausa: las versiones se actualizan de
+  forma planificada, en una rama propia y con todas las pruebas. Las alertas de vulnerabilidades
   siguen activas.
 
 ## 0.1.1 — 2026-09-27

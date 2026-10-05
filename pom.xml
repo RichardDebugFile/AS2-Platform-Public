@@ -20,10 +20,10 @@
     </modules>
 
     <properties>
-        <java.version>17</java.version>
-        <maven.compiler.release>17</maven.compiler.release>
-        <spring.boot.version>3.3.2</spring.boot.version>
-        <spring.cloud.version>2023.0.3</spring.cloud.version>
+        <java.version>25</java.version>
+        <maven.compiler.release>25</maven.compiler.release>
+        <spring.boot.version>4.1.1</spring.boot.version>
+        <spring.cloud.version>2025.1.3</spring.cloud.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -90,9 +90,52 @@
             </plugins>
         </pluginManagement>
 
-        <!-- JaCoCo en todos los modulos: prepare-agent instrumenta las pruebas y report
-             (fase verify) deja target/site/jacoco/ con el porcentaje de cobertura. -->
         <plugins>
+            <!-- Compila y prueba con un JDK ${java.version} aunque Maven corra con otro (p. ej. el
+                 JDK por defecto del sistema): lo busca en JAVA_HOME, JAVA_HOME_<n>_X64 (CI),
+                 ~/.jdks, SDKMAN, etc. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-toolchains-plugin</artifactId>
+                <version>3.3.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>select-jdk-toolchain</goal>
+                        </goals>
+                        <configuration>
+                            <version>[${java.version},)</version>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Expone la ruta del jar de Mockito como propiedad (${org.mockito:mockito-core:jar}) -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-dependency-plugin</artifactId>
+                <version>3.11.0</version>
+                <executions>
+                    <execution>
+                        <goals>
+                            <goal>properties</goal>
+                        </goals>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- Mockito se carga como agente al arrancar la JVM de pruebas: Java 21+ avisa (y
+                 versiones futuras bloquearan) la carga dinamica de agentes. @{argLine} conserva
+                 el agente de JaCoCo. -Xshare:off evita el aviso de CDS al anadir agentes. -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <version>3.6.0</version>
+                <configuration>
+                    <argLine>@{argLine} "-javaagent:${org.mockito:mockito-core:jar}" -Xshare:off</argLine>
+                </configuration>
+            </plugin>
+
+            <!-- JaCoCo en todos los modulos: prepare-agent instrumenta las pruebas y report
+                 (fase verify) deja target/site/jacoco/ con el porcentaje de cobertura. -->
             <plugin>
                 <groupId>org.jacoco</groupId>
                 <artifactId>jacoco-maven-plugin</artifactId>

@@ -1,8 +1,7 @@
 version: 2
-# PAUSADO (open-pull-requests-limit: 0): este repositorio sigue las versiones del sistema del que
-# deriva; actualizar dependencias por separado haria que ambos se desalineen. Las actualizaciones se
-# aplican primero en el sistema de origen y luego se traen aqui. Las alertas de vulnerabilidades de
-# GitHub siguen activas (pestana Security) y no abren PRs.
+# PAUSADO (open-pull-requests-limit: 0): las versiones se actualizan de forma planificada, en una
+# rama propia y con todas las pruebas, no con un PR automatico por dependencia. Las alertas de
+# vulnerabilidades de GitHub siguen activas (pestana Security) y no abren PRs.
 #
 # Para reactivar: Maven 3, npm 2, GitHub Actions 5 (su valor por defecto).
 #
