@@ -10,6 +10,16 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 - Base tecnológica en Java 25 (LTS) y Spring Boot 4.1: versiones con soporte vigente para toda la vida
   del proyecto. Para compilar basta tener un JDK 25 instalado, aunque no sea el predeterminado del equipo.
 
+### Sprint 1 — Identidad y acceso (HU-02, HU-03, HU-04)
+- Inicio de sesión con usuario y contraseña. La sesión viaja en cookies que el navegador no deja leer
+  a JavaScript y se renueva sola mientras se trabaja.
+- La sesión se cierra tras 15 minutos sin actividad y, en cualquier caso, 60 minutos después del
+  inicio. Al cerrarse, la consola puede explicar el motivo.
+- Segundo factor opcional con una app autenticadora (Google o Microsoft Authenticator): con él
+  activo, la contraseña sola no basta para entrar.
+- Administración de usuarios con tres roles (Administrador, Operador, Auditor). Desactivar a alguien
+  o cambiarle los roles le corta la sesión.
+
 ## 0.1.2 — 2026-09-27
 
 ### Cambios
