@@ -24,6 +24,7 @@ import org.springframework.security.oauth2.jwt.JwtValidators;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationConverter;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.csrf.CsrfFilter;
 import org.springframework.security.web.authentication.HttpStatusEntryPoint;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
@@ -35,22 +36,25 @@ public class SecurityConfig {
 
     static final String ADMIN = "ADMIN";
 
-    /*
-     * CSRF desactivado a proposito: la API es stateless, las cookies van con SameSite=Lax (el
-     * navegador no las adjunta a POST de otros sitios) y CORS solo admite los origenes configurados.
+    /**
+     * La sesion viaja en cookies, que el navegador adjunta solo: por eso hay proteccion CSRF aunque
+     * la API sea stateless. Patron para SPA de Spring Security: la cookie {@code XSRF-TOKEN} (legible
+     * por la consola) debe volver en la cabecera {@code X-XSRF-TOKEN} en cada POST/PUT/PATCH/DELETE.
+     *
+     * <p>Las peticiones con {@code Authorization: Bearer} no la necesitan (el resource server las
+     * exime): esa cabecera no la pone el navegador por su cuenta, asi que otro sitio no puede
+     * forjarla. Por eso la cookie de sesion se convierte en Bearer DESPUES del filtro CSRF
+     * ({@link AccessTokenCookieFilter}).</p>
      */
     @Bean
-    @SuppressWarnings("java:S4502")
-    SecurityFilterChain securityFilterChain(HttpSecurity http,
-                                            JwtAuthenticationConverter jwtAuthConverter,
-                                            CookieBearerTokenResolver tokenResolver) {
-        http.csrf(AbstractHttpConfigurer::disable)
+    SecurityFilterChain securityFilterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthConverter) {
+        http.csrf(csrf -> csrf.spa())
+                .addFilterAfter(new AccessTokenCookieFilter(), CsrfFilter.class)
                 .cors(Customizer.withDefaults())
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .httpBasic(AbstractHttpConfigurer::disable)
                 .formLogin(AbstractHttpConfigurer::disable)
                 .oauth2ResourceServer(oauth -> oauth
-                        .bearerTokenResolver(tokenResolver)
                         .authenticationEntryPoint(new HttpStatusEntryPoint(HttpStatus.UNAUTHORIZED))
                         .jwt(jwt -> jwt.jwtAuthenticationConverter(jwtAuthConverter)))
                 .authorizeHttpRequests(auth -> auth
@@ -76,7 +80,7 @@ public class SecurityConfig {
         CorsConfiguration cfg = new CorsConfiguration();
         cfg.setAllowedOrigins(origins);
         cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
-        cfg.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Trace-Id"));
+        cfg.setAllowedHeaders(List.of("Content-Type", "Authorization", "X-Trace-Id", "X-XSRF-TOKEN"));
         cfg.setExposedHeaders(List.of("X-Trace-Id"));
         cfg.setAllowCredentials(true);
         UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();

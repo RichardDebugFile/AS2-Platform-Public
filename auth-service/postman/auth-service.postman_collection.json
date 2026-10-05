@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "auth-service",
-    "description": "Identidad: login JWT con cookies HttpOnly, sesión, MFA TOTP y administración de usuarios. Postman guarda las cookies del dominio, así que tras el login las demás peticiones ya van autenticadas.",
+    "description": "Identidad: login JWT con cookies HttpOnly, sesión, MFA TOTP y administración de usuarios. Postman guarda las cookies del dominio, así que tras el login las demás peticiones ya van autenticadas. Protección CSRF: la colección guarda la cookie XSRF-TOKEN de cada respuesta y la envía en la cabecera X-XSRF-TOKEN; ejecutar primero \"Token CSRF\".",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -28,12 +28,45 @@
     {
       "key": "totpCode",
       "value": "000000"
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
     }
   ],
   "item": [
     {
       "name": "Sesión",
       "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/actuator/health",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "actuator",
+                "health"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
         {
           "name": "Login (admin)",
           "request": {
@@ -670,6 +703,29 @@
           }
         }
       ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
     }
   ]
 }

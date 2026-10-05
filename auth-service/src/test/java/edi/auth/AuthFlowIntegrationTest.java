@@ -6,8 +6,7 @@ import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.startsWith;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -34,6 +33,8 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 
 /**
  * Escenarios de aceptacion de HU-02, HU-03 y HU-04 contra PostgreSQL real (migraciones Flyway,
@@ -99,6 +100,15 @@ class AuthFlowIntegrationTest {
         return json.readTree(r.getResponse().getContentAsString()).get("id").asString();
     }
 
+    /** Como la consola: las peticiones que modifican llevan el token CSRF. */
+    private static MockHttpServletRequestBuilder post(String url) {
+        return MockMvcRequestBuilders.post(url).with(csrf());
+    }
+
+    private static MockHttpServletRequestBuilder patch(String url) {
+        return MockMvcRequestBuilders.patch(url).with(csrf());
+    }
+
     private static String unique(String prefix) {
         return prefix + UUID.randomUUID().toString().substring(0, 8);
     }
@@ -123,6 +133,25 @@ class AuthFlowIntegrationTest {
                 refresh);
         assertThat(enClaro).isZero();
         assertThat(refreshTokens.count()).isPositive();
+    }
+
+    @Test
+    void csrf_conCookiesSinTokenSeRechaza_conBearerNoHaceFalta() throws Exception {
+        Session s = admin();
+        String body = "{\"username\":\"%s\",\"password\":\"password1\",\"email\":\"x@example.com\"}";
+
+        // Una peticion forjada desde otro sitio llevaria las cookies, pero no la cabecera X-XSRF-TOKEN
+        mvc.perform(MockMvcRequestBuilders.post("/auth/refresh").cookie(s.refresh()))
+                .andExpect(status().isForbidden());
+        mvc.perform(MockMvcRequestBuilders.post("/users").cookie(s.access()).contentType(MediaType.APPLICATION_JSON)
+                        .content(body.formatted(unique("csrf"))))
+                .andExpect(status().isForbidden());
+        // Authorization no la adjunta el navegador por su cuenta: no es forjable
+        mvc.perform(MockMvcRequestBuilders.post("/users").header("Authorization", "Bearer " + s.access().getValue())
+                        .contentType(MediaType.APPLICATION_JSON).content(body.formatted(unique("bearer"))))
+                .andExpect(status().isCreated());
+        // (La entrega de la cookie XSRF-TOKEN en cualquier GET se comprueba contra el JAR: el csrf() de
+        // spring-security-test sustituye el repositorio de tokens y ya no escribe la cookie.)
     }
 
     @Test

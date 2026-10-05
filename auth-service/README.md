@@ -25,6 +25,11 @@ Los tokens viajan **solo** en cookies `HttpOnly; SameSite=Lax` (`access_token`, 
 clientes sin cookies pueden mandar el access token como `Authorization: Bearer` y el refresh en el
 cuerpo (`{"refreshToken": …}`).
 
+**CSRF**: como las cookies las adjunta el navegador solo, cada `POST`/`PUT`/`PATCH`/`DELETE` que use
+cookies debe llevar la cabecera `X-XSRF-TOKEN` con el valor de la cookie legible `XSRF-TOKEN`, que el
+servicio entrega en cualquier respuesta (basta un `GET`, p. ej. `/actuator/health`). Sin ella: 403. Las
+peticiones con `Authorization: Bearer` no la necesitan: esa cabecera no la puede forjar otro sitio.
+
 Los errores responden `{status, code, message}`. Códigos de 401: `UNAUTHORIZED`, `TOKEN_INVALID`,
 `SESSION_EXPIRED`, `IDLE_EXPIRED`, `MFA_CHALLENGE_EXPIRED`, `MFA_INVALID_CODE`, `MFA_ATTEMPTS_EXCEEDED`.
 
