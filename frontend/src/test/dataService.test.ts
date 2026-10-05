@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { dataService, resolveHost } from "../service/dataService";
+import { dataService, resolveHost, xsrfToken } from "../service/dataService";
 
 const fetchMock = vi.fn();
 
@@ -45,6 +45,31 @@ describe("dataService", () => {
 
         expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST", body: '{"username":"ana"}' });
         expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "PATCH", body: '{"active":false}' });
+    });
+
+    it("manda el token CSRF solo en las peticiones que modifican", async () => {
+        document.cookie = "XSRF-TOKEN=abc%3D123; path=/";
+        respond(200, "{}");
+
+        await dataService.get("/users/me");
+        await dataService.post("/auth/login", {});
+
+        const getHeaders = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+        const postHeaders = fetchMock.mock.calls[1][1].headers as Record<string, string>;
+        expect(getHeaders["X-XSRF-TOKEN"]).toBeUndefined();
+        expect(postHeaders["X-XSRF-TOKEN"]).toBe("abc=123");
+        expect(xsrfToken()).toBe("abc=123");
+        document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    });
+
+    it("sin cookie XSRF-TOKEN no inventa la cabecera", async () => {
+        respond(200, "{}");
+
+        await dataService.patch("/users/u1/active", { active: true });
+
+        const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+        expect(headers["X-XSRF-TOKEN"]).toBeUndefined();
+        expect(xsrfToken()).toBeUndefined();
     });
 
     it("traduce el error del servidor a code/message", async () => {

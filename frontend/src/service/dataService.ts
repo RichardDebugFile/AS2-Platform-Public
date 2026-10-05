@@ -51,6 +51,19 @@ function errorFrom(json: unknown, status: number): ApiError {
     };
 }
 
+const SAFE_METHODS = new Set(["GET", "HEAD", "OPTIONS"]);
+
+/**
+ * Token CSRF: auth-service lo deja en la cookie legible XSRF-TOKEN y exige que vuelva en la cabecera
+ * X-XSRF-TOKEN en cada peticion que modifica. Otro sitio no puede leer la cookie, asi que no puede
+ * forjar la cabecera aunque el navegador adjunte las cookies de sesion.
+ */
+export function xsrfToken(): string | undefined {
+    if (typeof document === "undefined") return undefined;
+    const match = document.cookie.split("; ").find((c) => c.startsWith("XSRF-TOKEN="));
+    return match ? decodeURIComponent(match.slice("XSRF-TOKEN=".length)) : undefined;
+}
+
 async function request<T>(endpoint: string, init: RequestInit = {}): Promise<ApiResponse<T>> {
     const base = resolveHost(endpoint);
     if (typeof base !== "string") {
@@ -61,9 +74,15 @@ async function request<T>(endpoint: string, init: RequestInit = {}): Promise<Api
         };
     }
     try {
+        const method = (init.method ?? "GET").toUpperCase();
+        const token = SAFE_METHODS.has(method) ? undefined : xsrfToken();
         const res = await fetch(`${base}${endpoint}`, {
             ...init,
-            headers: { "Content-Type": "application/json", ...init.headers },
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "X-XSRF-TOKEN": token } : {}),
+                ...init.headers,
+            },
             credentials: "include",
         });
         const raw = await res.text();
