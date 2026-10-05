@@ -20,7 +20,7 @@ export default defineConfig([
       globals: globals.browser,
     },
     rules: {
-      // Sin `any` explicito desde el primer dia: en el sistema original se acumularon cientos.
+      // Sin `any` explicito desde el primer dia: corregirlos despues cuesta mucho mas.
       '@typescript-eslint/no-explicit-any': 'error',
     },
   },
