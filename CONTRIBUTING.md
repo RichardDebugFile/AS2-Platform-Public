@@ -6,7 +6,7 @@
 |---|---|---|---|
 | `main` | — | — | Versiones liberadas. Cada merge lleva un *tag* `vX.Y.Z`. |
 | `develop` | `main` | — | Integración del sprint en curso. |
-| `feature/HU-XX-descripcion` | `develop` | `develop` (PR) | Una historia de usuario. El nombre lleva el ID de la HU para la trazabilidad. |
+| `feature/HU-XX-descripcion` | `develop` | `develop` (PR) | Una historia de usuario. El nombre lleva el ID de la HU (y, si se quiere, su clave de Jira `SCRUM-NN`) para la trazabilidad. |
 | `release/X.Y.Z` | `develop` | `main` (PR) y luego `develop` | Cierre de sprint: versión y fecha en el CHANGELOG. |
 | `hotfix/X.Y.Z` | `main` | `main` y `develop` | Corrección urgente de una versión liberada. |
 | `chore/…`, `docs/…`, `fix/…` | `develop` | `develop` (PR) | Tareas menores sin HU. |
@@ -34,6 +34,16 @@ feat(auth): login con JWT RS256 y cookies HttpOnly
 fix(frontend): renovar la sesión antes de reintentar la petición
 ci: ejecutar solo los módulos que cambian
 ```
+
+## Trazabilidad con Jira y SonarQube Cloud
+
+* El tablero Scrum vive en Jira (proyecto `SCRUM`). Correspondencia HU → clave: HU-01 = SCRUM-13 …
+  HU-23 = SCRUM-35 (clave = 12 + n.º de HU).
+* El workflow `Sonar` analiza cada PR en SonarQube Cloud y publica en la historia referenciada
+  (`HU-XX` o `SCRUM-NN` en la rama, el título del PR o los commits) un comentario con el Quality Gate
+  y las métricas, que se actualiza en cada nuevo análisis del mismo PR.
+* Con el app *GitHub for Jira*, las ramas, commits y PR que llevan la clave `SCRUM-NN` aparecen en la
+  historia.
 
 ## Primer uso del repositorio
 

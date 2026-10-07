@@ -21,6 +21,7 @@ Closes #
 - [ ] Textos de UI en español e inglés (si hay interfaz)
 - [ ] Entrada en `CHANGELOG.md`
 - [ ] CI en verde (CI + Security)
+- [ ] Quality Gate de SonarQube Cloud aprobado (resultado publicado en la historia de Jira)
 
 ## Cómo probarlo
 
