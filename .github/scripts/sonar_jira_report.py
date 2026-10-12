@@ -2,7 +2,7 @@
 """Publica el resultado del análisis de SonarQube Cloud en las historias de Jira referenciadas.
 
 Lo invoca el workflow .github/workflows/sonar.yml después del análisis. Busca claves de Jira
-(SCRUM-XX) e identificadores de historia (HU-XX) en la rama, el título del PR y los mensajes de
+(AS2-XX) e identificadores de historia (HU-XX) en la rama, el título del PR y los mensajes de
 commit; obtiene de SonarQube Cloud el estado del Quality Gate y las métricas del análisis, y deja
 en cada historia un comentario (que se actualiza en los análisis siguientes del mismo PR o rama)
 y un enlace al panel de SonarQube Cloud.
@@ -24,7 +24,7 @@ PROJECT = os.environ.get("SONAR_PROJECT_KEY", "")
 JIRA_URL = os.environ.get("JIRA_BASE_URL", "").rstrip("/")
 JIRA_USER = os.environ.get("JIRA_USER_EMAIL", "")
 JIRA_TOKEN = os.environ.get("JIRA_API_TOKEN", "")
-JIRA_PROJECT = os.environ.get("JIRA_PROJECT_KEY", "SCRUM")
+JIRA_PROJECT = os.environ.get("JIRA_PROJECT_KEY", "AS2")
 SCAN_OUTCOME = os.environ.get("SCAN_OUTCOME", "")
 
 BRANCH_METRICS = [

@@ -47,8 +47,8 @@ Salud de cada servicio: `http://localhost:<puerto>/actuator/health`.
 * **SonarQube Cloud** (`.github/workflows/sonar.yml`, `sonar-project.properties`): cada PR y cada push a
   `develop`/`main` construye y prueba todo, sube la cobertura (JaCoCo y Vitest) y espera el Quality Gate.
   Cobertura local del frontend: `cd frontend && npm run test:coverage`.
-* **Jira** (proyecto `SCRUM`): el mismo workflow comenta el resultado en la historia cuya clave
-  (`SCRUM-XX`) o identificador (`HU-XX`) aparece en la rama, el título del PR o los commits.
+* **Jira** (proyecto `AS2`, HU-n = AS2-n): el mismo workflow comenta el resultado en la historia cuya clave
+  (`AS2-XX`) o identificador (`HU-XX`) aparece en la rama, el título del PR o los commits.
   Con el app *GitHub for Jira*, las ramas, commits, PR y ejecuciones aparecen en cada historia.
 
 ## Contribuir
