@@ -12,10 +12,12 @@ name: Sonar
 #   Variables: JIRA_BASE_URL (p. ej. https://richard0004.atlassian.net) · JIRA_PROJECT_KEY (AS2)
 #              SONAR_ORGANIZATION y SONAR_PROJECT_KEY (solo si difieren de sonar-project.properties)
 # En SonarQube Cloud debe desactivarse el "Automatic Analysis" del proyecto (se analiza desde CI).
+# El plan Free solo analiza la rama principal: por eso el push se analiza solo en main (cada
+# release de sprint queda como un análisis del proyecto) y develop se cubre a través de sus PR.
 
 on:
   push:
-    branches: [main, develop]
+    branches: [main]
   pull_request:
     branches: [main, develop]
     types: [opened, synchronize, reopened]
