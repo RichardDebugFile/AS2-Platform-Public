@@ -1,0 +1,33 @@
+{
+  "idle": {
+    "title": "Sesión inactiva",
+    "body": "Su sesión se cerrará por falta de actividad. ¿Desea seguir conectado?",
+    "remaining": "Tiempo restante:",
+    "continue": "Seguir conectado",
+    "end": "Cerrar sesión"
+  },
+  "max": {
+    "title": "La sesión está por expirar",
+    "body": "Por seguridad, la sesión tiene una duración máxima y no se puede extender. Guarde su trabajo: deberá iniciar sesión de nuevo.",
+    "endNow": "Cerrar sesión ahora",
+    "ok": "Entendido"
+  },
+  "ended": {
+    "title": {
+      "idle": "Su sesión se cerró por inactividad",
+      "max": "Su sesión alcanzó su duración máxima",
+      "server": "Su sesión ha terminado",
+      "logout": "Su sesión ha terminado"
+    },
+    "body": "Por seguridad, la sesión se ha cerrado. Lo que no haya guardado se ha perdido.",
+    "redirectIn": "Se le llevará al inicio de sesión en",
+    "goToLogin": "Ir al inicio de sesión"
+  },
+  "reasons": {
+    "idle": "Sesión cerrada por inactividad ({{minutes}} min). Inicie sesión de nuevo.",
+    "idleNoMinutes": "Sesión cerrada por inactividad. Inicie sesión de nuevo.",
+    "max": "La sesión alcanzó su duración máxima ({{minutes}} min). Inicie sesión de nuevo.",
+    "maxNoMinutes": "La sesión alcanzó su duración máxima. Inicie sesión de nuevo.",
+    "server": "La sesión expiró. Inicie sesión de nuevo."
+  }
+}

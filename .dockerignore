@@ -1,0 +1,18 @@
+# Contexto de construccion de las imagenes: solo el codigo fuente.
+**/target/
+**/node_modules/
+frontend/dist/
+frontend/coverage/
+.git/
+.github/
+_local/
+.claude/
+**/*.log
+**/logs/
+deploy/docker/.env
+deploy/docker/certs/
+deploy/docker/backups/
+*.p12
+*.pem
+*.key
+*.crt

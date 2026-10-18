@@ -4,6 +4,27 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## 0.3.0 — 2026-10-17
+
+### Novedades
+- Calidad y cobertura verificadas en SonarQube Cloud en cada pull request y en `develop`/`main`:
+  el análisis incluye los seis servicios (cobertura JaCoCo) y la consola web (cobertura Vitest) y
+  espera el Quality Gate. El resultado se publica como comentario en la historia de Jira
+  referenciada, con enlace al análisis (AS2-32).
+- Un único punto de entrada protege toda la plataforma: sin una sesión válida no se puede consultar
+  ni modificar nada, salvo iniciar sesión y la recepción AS2 de los socios. El rol Auditor solo
+  puede consultar. Cada petición queda registrada (método, ruta, resultado, tiempo e identificador
+  de traza) sin guardar tokens ni contenido de los mensajes (HU-05).
+- Consola web en español e inglés: inicio de sesión (con segundo factor si está activo), menú por
+  categorías que muestra solo lo que permite cada rol y administración de usuarios. Un minuto antes
+  de cerrarse por inactividad la sesión avisa con una cuenta regresiva y la opción "Seguir
+  conectado"; trabajar en una pestaña mantiene viva la sesión en las demás y la sesión se renueva
+  sola sin interrumpir lo que se está haciendo (HU-06).
+- La plataforma se instala y ejecuta en contenedores Docker: un único punto de entrada por HTTPS
+  (HTTP redirige), la consola y el API en el mismo sitio, servicios internos sin puertos
+  expuestos, reinicio automático si un servicio falla y respaldo diario de las bases que se puede
+  restaurar. Se prueba primero en local y se lleva igual al servidor (HU-07).
+
 ## 0.2.0 — 2026-10-04
 
 ### Plataforma

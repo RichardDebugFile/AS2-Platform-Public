@@ -1,9 +1,90 @@
 server:
-  port: 8765
+  port: ${GATEWAY_PORT:8765}
+  # Respeta X-Forwarded-Proto/Host/For del proxy TLS (nginx): la peticion se trata como HTTPS y
+  # con la IP real del cliente.
+  forward-headers-strategy: framework
 
 spring:
   application:
     name: gateway
+  cloud:
+    gateway:
+      server:
+        webflux:
+          # Desde quien se aceptan y se reenvian las cabeceras X-Forwarded-* hacia los servicios. Sin
+          # esto no llegan, y auth-service no sabria que la peticion vino por HTTPS (cookies Secure).
+          # Se confia en cualquier origen porque el gateway no se publica: solo lo alcanza el proxy
+          # (red interna de Docker o loopback del servidor). Si se publicara, restringirlo aqui.
+          trusted-proxies: ${GATEWAY_TRUSTED_PROXIES:.*}
+          # Rutas por prefijo. Las URL de destino se pueden sobrescribir por entorno (Docker).
+          routes:
+            - id: partners
+              uri: ${PARTNERS_SERVICE_URL:http://localhost:8081}
+              predicates:
+                - Path=/api/partners/**,/api/audit-logs/**,/api/catalogs/**
+            - id: alerts
+              uri: ${ALERTS_SERVICE_URL:http://localhost:8082}
+              predicates:
+                - Path=/api/alerts/**,/api/smtp-config/**
+            - id: auth
+              uri: ${AUTH_SERVICE_URL:http://localhost:8083}
+              predicates:
+                - Path=/auth/**,/users/**,/.well-known/**
+            - id: documents
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Path=/api/documents/**
+            - id: as2-adapter
+              uri: ${AS2_ADAPTER_URL:http://localhost:8085}
+              predicates:
+                - Path=/api/as2/**,/api/mdn/**,/as2/receive
+            # MDN asincrono que envian los socios: se entrega a documents-service.
+            - id: mdn-callback
+              uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8084}
+              predicates:
+                - Method=POST
+                - Path=/internal/as2/mdn-callback
+              filters:
+                - SetPath=/internal/as2/mdn
+          globalcors:
+            add-to-simple-url-handler-mapping: true
+            cors-configurations:
+              '[/**]':
+                allowed-origin-patterns: ${APP_CORS_ALLOWED_ORIGINS:http://localhost:5173}
+                allowed-methods: "*"
+                allowed-headers: "*"
+                exposed-headers: X-Trace-Id
+                # Credenciales: la sesion viaja en cookies HttpOnly.
+                allow-credentials: true
+                max-age: 3600
+          default-filters:
+            # Los servicios tambien responden cabeceras CORS: se deja una sola de cada una.
+            - DedupeResponseHeader=Access-Control-Allow-Origin Access-Control-Allow-Credentials, RETAIN_UNIQUE
+            - CookieToHeaderFilter
+
+gateway:
+  security:
+    # JWKS de auth-service para validar el JWT en el borde. Se consulta directo, no por el gateway.
+    jwks-uri: ${AUTH_JWKS_URI:http://localhost:8083/.well-known/jwks.json}
+
+# Eventos de cada llamada a la API hacia alerts-service (reglas de alerta por API). Desactivado
+# hasta que exista alerts-service (HU-21); se activa con ALERTS_INGEST_ENABLED=true.
+alerts:
+  client:
+    enabled: ${ALERTS_INGEST_ENABLED:false}
+    base-url: ${ALERTS_SERVICE_URL:http://localhost:8082}
+    ingest-path: /internal/ingest/api-call
+    # Token compartido con alerts-service. Obligatorio sobrescribirlo fuera de desarrollo.
+    token: ${ALERTS_INGEST_TOKEN:}
+    service-name: gateway
+    connect-timeout-ms: 500
+    read-timeout-ms: 1000
+    exclude-paths:
+      - /actuator/**
+      - /internal/**
+      - /api/alerts/**
+      - /auth/**
+      - /.well-known/**
 
 management:
   endpoints:
@@ -14,3 +95,11 @@ management:
     health:
       probes:
         enabled: true
+      show-details: never
+
+logging:
+  structured:
+    # Una linea JSON por evento (incluido el log de acceso): facil de filtrar y de enviar a un
+    # agregador. LOG_FORMAT= (vacio) vuelve al formato de texto para depurar en local.
+    format:
+      console: ${LOG_FORMAT:logstash}

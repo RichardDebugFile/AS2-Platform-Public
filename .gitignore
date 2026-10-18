@@ -47,3 +47,15 @@ frontend/dist/
 
 # --- Espacio de trabajo local (notas, borradores, material privado) ---
 /_local/
+
+# --- Cobertura y análisis (Vitest / SonarQube) ---
+frontend/coverage/
+.scannerwork/
+
+# --- Python ---
+__pycache__/
+*.pyc
+
+# --- Docker (deploy/docker): secretos, certificados y respaldos generados ---
+deploy/docker/certs/
+deploy/docker/backups/

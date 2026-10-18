@@ -1,0 +1,73 @@
+name: Docker
+
+# Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo y verifica los
+# criterios de aceptacion con deploy/docker/smoke-test.sh (HTTPS, puertos, reinicio automatico,
+# cookies Secure y respaldo restaurable). Corre cuando cambia el despliegue.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - 'deploy/docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'deploy/docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stack:
+    name: Stack Docker + criterios HU-07
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: deploy/docker
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Secretos y certificado de prueba
+        id: init
+        run: ./init-env.sh
+
+      - name: Construir imagenes
+        id: build
+        run: docker compose build 2>&1 | tee /tmp/build.log
+
+      - name: Levantar
+        id: up
+        run: docker compose up -d --wait --wait-timeout 300
+
+      - name: Criterios de aceptacion
+        run: ./smoke-test.sh
+
+      # Los logs de Actions solo se ven con sesion iniciada: ante un fallo, el paso que fallo y las
+      # ultimas lineas utiles quedan tambien como anotaciones del job (visibles en el resumen).
+      - name: Diagnostico ante un fallo
+        if: failure()
+        run: |
+          echo "::error title=Pasos::init=${{ steps.init.outcome }} build=${{ steps.build.outcome }} up=${{ steps.up.outcome }}"
+          if [ "${{ steps.build.outcome }}" = "failure" ]; then
+            grep -iE 'error|failed' /tmp/build.log | tail -n 15 | while IFS= read -r l; do echo "::error title=build::$l"; done
+          fi
+          # Las anotaciones tienen un tope de 10 por tipo y paso: estado en una linea y logs solo de
+          # los servicios que no estan sanos.
+          echo "::notice title=ps::$(docker compose ps -a --format '{{.Service}}={{.Status}}' | paste -sd ';' -)"
+          for s in $(docker compose ps -a --format '{{.Service}} {{.Status}}' | grep -v '(healthy)' | grep -v '^backup ' | cut -d' ' -f1); do
+            docker compose logs --no-color --tail 8 "$s" 2>/dev/null | while IFS= read -r l; do echo "::warning title=$s::$l"; done
+          done
+          docker compose logs --tail 150 || true
+
+      - name: Detener
+        if: always()
+        run: docker compose down -v
