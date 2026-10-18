@@ -23,7 +23,8 @@ hsts="$("${CURL[@]}" -o /dev/null -D - "$BASE/" | tr -d '\r' | grep -i '^strict-
 [ -n "$hsts" ] && ok "Cabecera HSTS presente" || fail "Falta la cabecera HSTS"
 
 # 3. Solo se publican los puertos del proxy
-publicados="$(docker compose ps --format '{{.Service}} {{.Publishers}}' | awk '$2 != "[]" {print $1}' | sort -u | tr '\n' ' ')"
+# Publishers incluye tambien los puertos solo expuestos (EXPOSE) con PublishedPort 0: no cuentan.
+publicados="$(docker compose ps --format json | jq -rs 'flatten | .[] | select([.Publishers[]? | select(.PublishedPort > 0)] | length > 0) | .Service' | sort -u | tr '\n' ' ')"
 [ "$publicados" = "proxy " ] && ok "Solo el proxy publica puertos" || fail "Servicios con puertos publicados: $publicados"
 for p in 5432 8083 8765; do
     if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then fail "El puerto $p es alcanzable desde fuera"; else ok "Puerto $p cerrado desde fuera"; fi
@@ -65,7 +66,16 @@ if [ -n "$sano" ]; then ok "El gateway se reinicio solo y volvio a UP en $(( $(d
 hoy="$(date -u +%F)"
 for _ in $(seq 1 15); do [ -f "backups/$hoy/auth.dump" ] && break; sleep 2; done
 if [ -f "backups/$hoy/auth.dump" ]; then ok "Respaldo del dia presente (backups/$hoy)"; else fail "No hay respaldo del dia"; fi
-if salida="$(docker compose exec -T backup /bin/sh /usr/local/bin/restore-check.sh auth 2>&1)"; then ok "$salida"; else fail "Restauracion de prueba: $salida"; fi
+# Respaldo nuevo antes de restaurar: el del arranque puede ser anterior a las migraciones de los
+# servicios (la base aun sin tablas).
+if ! salida="$(docker compose exec -T backup /bin/sh /usr/local/bin/backup.sh --once 2>&1)"; then
+    fail "Respaldo bajo demanda: $(echo "$salida" | paste -sd '|' -)"
+fi
+if salida="$(docker compose exec -T backup /bin/sh /usr/local/bin/restore-check.sh auth 2>&1)"; then
+    ok "$(echo "$salida" | tail -n 1)"
+else
+    fail "Restauracion de prueba: $(echo "$salida" | paste -sd '|' -)"
+fi
 
 echo
 if [ "$fallos" -eq 0 ]; then echo "Todos los criterios de HU-07 se cumplen."; else echo "$fallos comprobaciones fallaron."; fi

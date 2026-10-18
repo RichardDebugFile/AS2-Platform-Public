@@ -7,6 +7,8 @@ db="${1:-auth}"
 latest="$(ls -1d /backups/*/ 2>/dev/null | sort | tail -n 1)"
 [ -n "$latest" ] && [ -f "$latest$db.dump" ] || { echo "No hay respaldo de $db" >&2; exit 1; }
 target="restore_check_$db"
+# Sin los NOTICE de "--if-exists" en la salida.
+export PGOPTIONS="-c client_min_messages=warning"
 dropdb -h "$PGHOST" -U "$PGUSER" --if-exists "$target"
 createdb -h "$PGHOST" -U "$PGUSER" "$target"
 pg_restore -h "$PGHOST" -U "$PGUSER" --no-owner -d "$target" "$latest$db.dump"

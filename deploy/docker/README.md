@@ -39,9 +39,10 @@ Consola: `https://localhost` (usuario `admin`; la contraseña la muestra `init-e
   salud; si un servicio termina por un fallo, Docker lo vuelve a levantar.
 * **Logs**: rotación por contenedor (10 MB × 14 archivos).
 * **Respaldo**: el contenedor `backup` deja `backups/<fecha>/<base>.dump` al arrancar y cada 24 h,
-  y borra los de más de 7 días. Prueba de restauración en una base temporal:
+  y borra los de más de 7 días. Respaldo manual y prueba de restauración en una base temporal:
 
   ```bash
+  docker compose exec backup /bin/sh /usr/local/bin/backup.sh --once
   docker compose exec backup /bin/sh /usr/local/bin/restore-check.sh auth
   ```
 
