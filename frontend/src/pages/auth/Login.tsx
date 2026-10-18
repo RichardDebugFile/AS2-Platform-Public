@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useLocation, useNavigate } from "react-router-dom";
 import logo from "../../assets/logo.svg";
 import LanguageSelector from "../../components/LanguageSelector";
+import type { SessionEnded } from "../../session/sessionSync";
 import { useAuthStore } from "../../store/authStore";
 
 const { Title, Text } = Typography;
@@ -11,7 +12,25 @@ const { Title, Text } = Typography;
 type LoginForm = { username: string; password: string };
 type MfaForm = { code: string };
 
-const MFA_ERRORS = ["MFA_INVALID_CODE", "MFA_ATTEMPTS_EXCEEDED", "MFA_CHALLENGE_EXPIRED"];
+const MFA_ERRORS = new Set(["MFA_INVALID_CODE", "MFA_ATTEMPTS_EXCEEDED", "MFA_CHALLENGE_EXPIRED"]);
+
+type Translate = (key: string, options?: Record<string, unknown>) => string;
+
+/** Texto del error de inicio de sesion, por codigo (el mensaje del servidor no se muestra tal cual). */
+function errorMessage(code: string | null, t: Translate): string | null {
+    if (!code) return null;
+    if (code === "UNAUTHORIZED") return t("invalidCredentials");
+    if (MFA_ERRORS.has(code)) return t(`mfa.${code}`);
+    return t(`errors.${code}`, { ns: "common", defaultValue: t("errors.UNKNOWN", { ns: "common" }) });
+}
+
+/** Por que se cerro la sesion anterior: sin esto el usuario aparece en el login sin explicacion. */
+function endMessage(lastEnd: SessionEnded | null, t: Translate): string | null {
+    if (!lastEnd || lastEnd.reason === "logout") return null;
+    const sinMinutos = (lastEnd.reason === "idle" || lastEnd.reason === "max") && lastEnd.minutes == null;
+    const key = sinMinutos ? `reasons.${lastEnd.reason}NoMinutes` : `reasons.${lastEnd.reason}`;
+    return t(key, { ns: "session", minutes: lastEnd.minutes });
+}
 
 /** Inicio de sesion en uno o dos pasos (contrasena y, si el usuario lo tiene activo, codigo MFA). */
 export default function Login() {
@@ -22,7 +41,7 @@ export default function Login() {
 
     const goOn = () => {
         const from = (location.state as { from?: { pathname?: string } } | null)?.from?.pathname;
-        navigate(from && from !== "/" ? from : "/dashboard", { replace: true });
+        void navigate(from && from !== "/" ? from : "/dashboard", { replace: true });
     };
 
     const onLogin = async (v: LoginForm) => {
@@ -32,24 +51,8 @@ export default function Login() {
         if ((await verifyMfa(v.code.trim())).ok) goOn();
     };
 
-    const errorText = !errorCode
-        ? null
-        : errorCode === "UNAUTHORIZED"
-          ? t("invalidCredentials")
-          : MFA_ERRORS.includes(errorCode)
-            ? t(`mfa.${errorCode}`)
-            : t(`errors.${errorCode}`, { ns: "common", defaultValue: t("errors.UNKNOWN", { ns: "common" }) });
-
-    // Por que se cerro la sesion anterior: sin esto el usuario aparece en el login sin explicacion.
-    const endReason = lastEnd && lastEnd.reason !== "logout" ? lastEnd : null;
-    const endText = endReason
-        ? t(
-              (endReason.reason === "idle" || endReason.reason === "max") && endReason.minutes == null
-                  ? `reasons.${endReason.reason}NoMinutes`
-                  : `reasons.${endReason.reason}`,
-              { ns: "session", minutes: endReason.minutes },
-          )
-        : null;
+    const errorText = errorMessage(errorCode, t);
+    const endText = endMessage(lastEnd, t);
 
     return (
         <div className="login">

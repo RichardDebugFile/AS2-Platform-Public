@@ -2,7 +2,7 @@ import { GlobalOutlined } from "@ant-design/icons";
 import { Segmented, Select } from "antd";
 import { useTranslation } from "react-i18next";
 
-type Props = { variant?: "segmented" | "select" };
+type Props = Readonly<{ variant?: "segmented" | "select" }>;
 
 /** Cambia el idioma de toda la consola; i18next lo recuerda en el navegador. */
 export default function LanguageSelector({ variant = "select" }: Props) {

@@ -5,7 +5,7 @@ import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 
 /** Idioma y tema de Ant Design acordes al idioma activo de la consola. */
-export default function AppProviders({ children }: { children: ReactNode }) {
+export default function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
     const { i18n } = useTranslation();
     const locale = i18n.language?.startsWith("en") ? enUS : esES;
     return (

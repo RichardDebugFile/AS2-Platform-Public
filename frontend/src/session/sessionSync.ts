@@ -58,7 +58,7 @@ function remove(key: string): void {
  */
 export function readLastActivity(fallback: number = 0): number {
     const raw = read(KEY.lastActivity);
-    const n = raw ? Number(raw) : NaN;
+    const n = raw ? Number(raw) : Number.NaN;
     return Number.isFinite(n) && n > 0 ? n : fallback;
 }
 

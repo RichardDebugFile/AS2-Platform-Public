@@ -24,7 +24,9 @@
     "form": {
       "username": "Username",
       "email": "Email",
-      "password": "Password",
+      "password": {
+        "label": "Password"
+      },
       "roles": "Roles",
       "required": "Required field",
       "invalidEmail": "Invalid email",

@@ -20,8 +20,6 @@ body {
     justify-content: flex-end;
     align-items: center;
     gap: 16px;
-    background: #fff !important;
-    padding: 0 24px !important;
     border-bottom: 1px solid #e2e8f0;
 }
 .app-user {

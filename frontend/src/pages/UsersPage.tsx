@@ -147,7 +147,7 @@ export default function UsersPage() {
                     </Form.Item>
                     <Form.Item
                         name="password"
-                        label={t("users.form.password")}
+                        label={t("users.form.password.label")}
                         rules={[
                             { required: true, message: t("users.form.required") },
                             { min: 8, message: t("users.form.minPassword") },

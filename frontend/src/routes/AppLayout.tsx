@@ -49,11 +49,11 @@ export default function AppLayout() {
                     mode="inline"
                     items={items}
                     selectedKeys={[location.pathname]}
-                    onClick={({ key }) => navigate(String(key))}
+                    onClick={({ key }) => void navigate(String(key))}
                 />
             </Sider>
             <Layout>
-                <Header className="app-header">
+                <Header className="app-header" style={{ background: "#fff", padding: "0 24px" }}>
                     <LanguageSelector />
                     <Dropdown menu={{ items: userMenu }} trigger={["click"]} placement="bottomRight">
                         <button type="button" className="app-user" aria-label={user?.username}>

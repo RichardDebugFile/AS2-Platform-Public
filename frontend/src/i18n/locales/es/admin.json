@@ -24,7 +24,9 @@
     "form": {
       "username": "Usuario",
       "email": "Correo",
-      "password": "Contraseña",
+      "password": {
+        "label": "Contraseña"
+      },
       "roles": "Roles",
       "required": "Campo obligatorio",
       "invalidEmail": "Correo no válido",

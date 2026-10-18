@@ -14,8 +14,11 @@ const KEEPALIVE_RETRY_MS = 60_000;
 
 const TICK_MS = 1_000;
 
-/** Identifica a esta pestana en el cerrojo del keepalive (un modulo = una carga de pagina). */
-const TAB_ID = Math.random().toString(36).slice(2);
+/**
+ * Identifica a esta pestana en el cerrojo del keepalive (un modulo = una carga de pagina). No es un
+ * secreto: solo distingue pestanas. getRandomValues funciona tambien fuera de HTTPS (randomUUID no).
+ */
+const TAB_ID = Array.from(crypto.getRandomValues(new Uint32Array(2)), (n) => n.toString(36)).join("");
 
 /**
  * Vigila los dos limites de la sesion (inactividad y duracion maxima) y expone el estado del aviso.

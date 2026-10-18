@@ -86,11 +86,9 @@ export function setSessionHandler(handler: SessionHandler | null): void {
 let refreshing: Promise<void> | null = null;
 
 function renewSession(handler: SessionHandler): Promise<void> {
-    if (!refreshing) {
-        refreshing = handler.refresh().finally(() => {
-            refreshing = null;
-        });
-    }
+    refreshing ??= handler.refresh().finally(() => {
+        refreshing = null;
+    });
     return refreshing;
 }
 
@@ -110,14 +108,12 @@ let xsrfPriming: Promise<string | undefined> | null = null;
 function fetchXsrfToken(): Promise<string | undefined> {
     const base = resolveHost("/.well-known/jwks.json");
     if (typeof base !== "string") return Promise.resolve(undefined);
-    if (!xsrfPriming) {
-        xsrfPriming = fetch(`${base}/.well-known/jwks.json`, { credentials: "include" })
-            .then(() => xsrfToken())
-            .catch(() => undefined)
-            .finally(() => {
-                xsrfPriming = null;
-            });
-    }
+    xsrfPriming ??= fetch(`${base}/.well-known/jwks.json`, { credentials: "include" })
+        .then(() => xsrfToken())
+        .catch(() => undefined)
+        .finally(() => {
+            xsrfPriming = null;
+        });
     return xsrfPriming;
 }
 
