@@ -1,0 +1,37 @@
+{
+  "users": {
+    "title": "Users",
+    "search": "Search by username or email",
+    "new": "New user",
+    "columns": {
+      "username": "Username",
+      "email": "Email",
+      "roles": "Roles",
+      "status": "Status",
+      "mfa": "MFA",
+      "actions": "Actions"
+    },
+    "active": "Active",
+    "inactive": "Inactive",
+    "mfaOn": "On",
+    "mfaOff": "No",
+    "editRoles": "Roles",
+    "activate": "Activate",
+    "deactivate": "Deactivate",
+    "confirmDeactivate": "Deactivate {{username}}? Their session will be closed.",
+    "saved": "Changes saved",
+    "created": "User created",
+    "form": {
+      "username": "Username",
+      "email": "Email",
+      "password": "Password",
+      "roles": "Roles",
+      "required": "Required field",
+      "invalidEmail": "Invalid email",
+      "minPassword": "At least 8 characters",
+      "create": "Create",
+      "save": "Save",
+      "cancel": "Cancel"
+    }
+  }
+}

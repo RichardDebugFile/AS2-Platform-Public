@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "Plataforma AS2/EDI",
+    "subtitle": "Intercambio electrónico de documentos B2B por AS2",
+    "footer": "Plataforma AS2/EDI © {{year}}"
+  },
+  "nav": {
+    "operation": "Operación",
+    "home": "Inicio",
+    "partnersGroup": "Socios",
+    "partners": "Socios comerciales",
+    "documentsGroup": "Documentos",
+    "documents": "Documentos EDI",
+    "alertsGroup": "Alertas",
+    "alerts": "Alertas y notificaciones",
+    "administration": "Administración",
+    "users": "Usuarios"
+  },
+  "userMenu": {
+    "logout": "Cerrar sesión"
+  },
+  "roles": {
+    "ADMIN": "Administrador",
+    "OPERATOR": "Operador",
+    "AUDITOR": "Auditor"
+  },
+  "language": {
+    "label": "Idioma",
+    "es": "Español",
+    "en": "English"
+  },
+  "home": {
+    "welcome": "Hola, {{name}}",
+    "intro": "Desde el menú accede a las secciones que permite su rol.",
+    "role": "Rol: {{roles}}"
+  },
+  "placeholder": {
+    "title": "Sección en construcción",
+    "body": "Esta sección se habilita en un próximo incremento del proyecto."
+  },
+  "errors": {
+    "UNAUTHORIZED": "Su sesión no es válida. Inicie sesión de nuevo.",
+    "NETWORK": "No se pudo conectar con el servidor.",
+    "CONFIG_MISSING": "La consola no tiene configurada la dirección del servidor (config.js).",
+    "FORBIDDEN": "No tiene permiso para esta acción.",
+    "UNKNOWN": "Ocurrió un error inesperado."
+  }
+}

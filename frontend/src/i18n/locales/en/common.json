@@ -1,0 +1,48 @@
+{
+  "app": {
+    "name": "AS2/EDI Platform",
+    "subtitle": "B2B electronic document exchange over AS2",
+    "footer": "AS2/EDI Platform © {{year}}"
+  },
+  "nav": {
+    "operation": "Operations",
+    "home": "Home",
+    "partnersGroup": "Partners",
+    "partners": "Trading partners",
+    "documentsGroup": "Documents",
+    "documents": "EDI documents",
+    "alertsGroup": "Alerts",
+    "alerts": "Alerts and notifications",
+    "administration": "Administration",
+    "users": "Users"
+  },
+  "userMenu": {
+    "logout": "Sign out"
+  },
+  "roles": {
+    "ADMIN": "Administrator",
+    "OPERATOR": "Operator",
+    "AUDITOR": "Auditor"
+  },
+  "language": {
+    "label": "Language",
+    "es": "Español",
+    "en": "English"
+  },
+  "home": {
+    "welcome": "Hello, {{name}}",
+    "intro": "Use the menu to open the sections your role allows.",
+    "role": "Role: {{roles}}"
+  },
+  "placeholder": {
+    "title": "Section under construction",
+    "body": "This section will be enabled in an upcoming increment of the project."
+  },
+  "errors": {
+    "UNAUTHORIZED": "Your session is not valid. Please sign in again.",
+    "NETWORK": "Could not connect to the server.",
+    "CONFIG_MISSING": "The console has no server address configured (config.js).",
+    "FORBIDDEN": "You are not allowed to perform this action.",
+    "UNKNOWN": "An unexpected error occurred."
+  }
+}

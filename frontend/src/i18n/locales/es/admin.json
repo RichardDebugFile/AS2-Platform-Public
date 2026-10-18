@@ -1,0 +1,37 @@
+{
+  "users": {
+    "title": "Usuarios",
+    "search": "Buscar por usuario o correo",
+    "new": "Nuevo usuario",
+    "columns": {
+      "username": "Usuario",
+      "email": "Correo",
+      "roles": "Roles",
+      "status": "Estado",
+      "mfa": "MFA",
+      "actions": "Acciones"
+    },
+    "active": "Activo",
+    "inactive": "Inactivo",
+    "mfaOn": "Activo",
+    "mfaOff": "No",
+    "editRoles": "Roles",
+    "activate": "Activar",
+    "deactivate": "Desactivar",
+    "confirmDeactivate": "¿Desactivar a {{username}}? Su sesión se cerrará.",
+    "saved": "Cambios guardados",
+    "created": "Usuario creado",
+    "form": {
+      "username": "Usuario",
+      "email": "Correo",
+      "password": "Contraseña",
+      "roles": "Roles",
+      "required": "Campo obligatorio",
+      "invalidEmail": "Correo no válido",
+      "minPassword": "Mínimo 8 caracteres",
+      "create": "Crear",
+      "save": "Guardar",
+      "cancel": "Cancelar"
+    }
+  }
+}
