@@ -29,7 +29,7 @@ SCAN_OUTCOME = os.environ.get("SCAN_OUTCOME", "")
 
 BRANCH_METRICS = [
     ("coverage", "Cobertura", "%"),
-    ("tests", "Pruebas", ""),
+    ("tests", "Pruebas (servicios Java)", ""),
     ("bugs", "Bugs", ""),
     ("vulnerabilities", "Vulnerabilidades", ""),
     ("security_hotspots", "Security hotspots", ""),
@@ -39,6 +39,7 @@ BRANCH_METRICS = [
 ]
 PR_METRICS = [
     ("new_coverage", "Cobertura (código nuevo)", "%"),
+    ("new_violations", "Incidencias nuevas", ""),
     ("new_bugs", "Bugs nuevos", ""),
     ("new_vulnerabilities", "Vulnerabilidades nuevas", ""),
     ("new_security_hotspots", "Security hotspots nuevos", ""),
@@ -123,12 +124,40 @@ def find_issue_keys(texts):
     return sorted(keys, key=lambda k: int(k.split("-")[1]))
 
 
+def measure_value(measure):
+    """Valor de una medida en cualquiera de las formas que devuelve la API.
+
+    En las ramas llega en ``value``; en las métricas de código nuevo (las de los PR) llega en
+    ``period`` (versiones actuales) o en la lista ``periods`` (versiones anteriores).
+    """
+    if measure.get("value") is not None:
+        return measure["value"]
+    period = measure.get("period") or {}
+    if period.get("value") is not None:
+        return period["value"]
+    for item in measure.get("periods") or []:
+        if item.get("value") is not None:
+            return item["value"]
+    return None
+
+
+def format_value(raw, unit):
+    """Números con coma decimal y un decimal, como en el resto de la documentación."""
+    try:
+        num = float(raw)
+    except (TypeError, ValueError):
+        return f"{raw}{unit}"
+    text = f"{num:.1f}" if unit == "%" or not num.is_integer() else str(int(num))
+    return text.replace(".", ",") + (" %" if unit == "%" else unit)
+
+
 def sonar_results(kind, ref):
     scope = {"pullRequest": ref} if kind == "pr" else {"branch": ref}
-    gate = "NONE"
+    gate, conditions = "NONE", []
     try:
-        gate = sonar_get("/api/qualitygates/project_status",
-                         {"projectKey": PROJECT, **scope})["projectStatus"]["status"]
+        status = sonar_get("/api/qualitygates/project_status",
+                           {"projectKey": PROJECT, **scope})["projectStatus"]
+        gate, conditions = status["status"], status.get("conditions") or []
     except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as exc:
         warn(f"No se pudo leer el Quality Gate: {exc}")
     wanted = PR_METRICS if kind == "pr" else BRANCH_METRICS
@@ -136,12 +165,24 @@ def sonar_results(kind, ref):
     for key, _, _ in wanted:  # de una en una: una métrica inexistente no invalida las demás
         try:
             comp = sonar_get("/api/measures/component",
-                             {"component": PROJECT, "metricKeys": key, **scope})["component"]
-            for m in comp.get("measures", []):
-                values[m["metric"]] = m.get("value") or (m.get("period") or {}).get("value")
-        except (urllib.error.HTTPError, urllib.error.URLError, KeyError):
+                             {"component": PROJECT, "metricKeys": key,
+                              "additionalFields": "period", **scope})["component"]
+        except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as exc:
+            warn(f"Métrica {key}: {exc}")
             continue
-    rows = [(label, (values[k] + unit) if values.get(k) is not None else "—")
+        for m in comp.get("measures", []):
+            value = measure_value(m)
+            if value is not None:
+                values[m["metric"]] = value
+    # Las condiciones del Quality Gate traen el valor real de las métricas que evalúan.
+    for cond in conditions:
+        if cond.get("metricKey") and cond.get("actualValue") is not None:
+            values.setdefault(cond["metricKey"], cond["actualValue"])
+    missing = [k for k, _, _ in wanted if values.get(k) is None]
+    if missing:
+        notice(f"Sin valor en SonarQube Cloud para: {', '.join(missing)} "
+               "(p. ej., el cambio no tiene líneas nuevas medibles).")
+    rows = [(label, format_value(values[k], unit) if values.get(k) is not None else "n/d")
             for k, label, unit in wanted]
     page = "new_code" if kind == "pr" else "overall"
     param = "pullRequest" if kind == "pr" else "branch"
