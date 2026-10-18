@@ -55,3 +55,7 @@ frontend/coverage/
 # --- Python ---
 __pycache__/
 *.pyc
+
+# --- Docker (deploy/docker): secretos, certificados y respaldos generados ---
+deploy/docker/certs/
+deploy/docker/backups/
