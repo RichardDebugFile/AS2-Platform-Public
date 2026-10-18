@@ -1,0 +1,142 @@
+# Entorno de ejecucion contenerizado de la plataforma (HU-07).
+#
+#   ./init-env.sh                 # una vez: secretos (.env) y certificado TLS (certs/)
+#   docker compose up -d --build  # construye y arranca
+#   ./smoke-test.sh               # verifica HTTPS, puertos, reinicio, cookies y respaldo
+#
+# Solo el proxy TLS (nginx) publica puertos. Los servicios y PostgreSQL quedan en la red interna.
+# Los demas servicios (socios, documentos, alertas, AS2) se incorporan con sus historias.
+name: as2-platform
+
+x-restart: &restart
+  restart: unless-stopped
+
+# Rotacion de logs: sin ella crecen sin limite y acaban llenando el disco.
+x-logging: &logging
+  logging:
+    driver: json-file
+    options:
+      max-size: "10m"
+      max-file: "14"
+
+x-java-health: &java-health
+  interval: 10s
+  timeout: 5s
+  retries: 12
+  start_period: 40s
+
+services:
+  db:
+    image: postgres:16-alpine
+    <<: [*restart, *logging]
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?Ejecute init-env.sh}
+      AUTH_DB_PASSWORD: ${AUTH_DB_PASSWORD:?Ejecute init-env.sh}
+      PARTNERS_DB_PASSWORD: ${PARTNERS_DB_PASSWORD:?Ejecute init-env.sh}
+      DOCUMENTS_DB_PASSWORD: ${DOCUMENTS_DB_PASSWORD:?Ejecute init-env.sh}
+      ALERTS_DB_PASSWORD: ${ALERTS_DB_PASSWORD:?Ejecute init-env.sh}
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+      - ../../db/init/01-create-databases.sql:/docker-entrypoint-initdb.d/01-create-databases.sql:ro
+      - ./db/10-service-passwords.sh:/docker-entrypoint-initdb.d/10-service-passwords.sh:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 30
+    networks: [backend]
+
+  auth-service:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    image: as2-platform-services:local
+    command: ["java", "-jar", "/app/auth-service.jar"]
+    <<: [*restart, *logging]
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/auth
+      DB_USERNAME: auth
+      DB_PASSWORD: ${AUTH_DB_PASSWORD}
+      AUTH_ISSUER: http://auth-service:8083
+      AUTH_JWT_PRIVATE_KEY_PEM: ${AUTH_JWT_PRIVATE_KEY_PEM:?Ejecute init-env.sh}
+      AUTH_JWT_PUBLIC_KEY_PEM: ${AUTH_JWT_PUBLIC_KEY_PEM:?Ejecute init-env.sh}
+      AUTH_MFA_SECRET_KEY: ${AUTH_MFA_SECRET_KEY:?Ejecute init-env.sh}
+      AUTH_CORS_ALLOWED_ORIGINS: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+      ADMIN_USER: ${ADMIN_USER:-admin}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Ejecute init-env.sh}
+      ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8083/actuator/health | grep -q UP"]
+      <<: *java-health
+    networks: [backend]
+
+  gateway:
+    image: as2-platform-services:local
+    command: ["java", "-jar", "/app/gateway.jar"]
+    <<: [*restart, *logging]
+    environment:
+      AUTH_SERVICE_URL: http://auth-service:8083
+      AUTH_JWKS_URI: http://auth-service:8083/.well-known/jwks.json
+      PARTNERS_SERVICE_URL: http://partners-service:8081
+      ALERTS_SERVICE_URL: http://alerts-service:8082
+      DOCUMENTS_SERVICE_URL: http://documents-service:8084
+      AS2_ADAPTER_URL: http://as2-adapter:8085
+      APP_CORS_ALLOWED_ORIGINS: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+    depends_on:
+      auth-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8765/actuator/health | grep -q UP"]
+      <<: *java-health
+    networks: [backend]
+
+  # Proxy TLS y consola: unico servicio con puertos publicados.
+  proxy:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile.frontend
+    image: as2-platform-console:local
+    <<: [*restart, *logging]
+    environment:
+      SERVER_NAME: ${SERVER_NAME:-localhost}
+      PUBLIC_HTTPS_PORT: ${HTTPS_PORT:-443}
+    ports:
+      - "${HTTP_PORT:-80}:80"
+      - "${HTTPS_PORT:-443}:443"
+    volumes:
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      gateway: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- --no-check-certificate https://localhost/ | grep -q 'id=\"root\"'"]
+      interval: 10s
+      timeout: 5s
+      retries: 6
+    networks: [backend]
+
+  # Respaldo diario de las bases (pg_dump), con retencion de 7 dias.
+  backup:
+    image: postgres:16-alpine
+    <<: [*restart, *logging]
+    entrypoint: ["/bin/sh", "/usr/local/bin/backup.sh"]
+    environment:
+      PGHOST: db
+      PGUSER: postgres
+      PGPASSWORD: ${POSTGRES_PASSWORD}
+      BACKUP_INTERVAL_SECONDS: ${BACKUP_INTERVAL_SECONDS:-86400}
+      BACKUP_RETENTION_DAYS: ${BACKUP_RETENTION_DAYS:-7}
+    volumes:
+      - ./backups:/backups
+      - ./backup/backup.sh:/usr/local/bin/backup.sh:ro
+      - ./backup/restore-check.sh:/usr/local/bin/restore-check.sh:ro
+    depends_on:
+      db: { condition: service_healthy }
+    networks: [backend]
+
+volumes:
+  dbdata:
+
+networks:
+  backend:
