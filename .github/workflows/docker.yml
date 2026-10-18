@@ -1,0 +1,54 @@
+name: Docker
+
+# Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo y verifica los
+# criterios de aceptacion con deploy/docker/smoke-test.sh (HTTPS, puertos, reinicio automatico,
+# cookies Secure y respaldo restaurable). Corre cuando cambia el despliegue.
+
+permissions:
+  contents: read
+
+on:
+  push:
+    paths:
+      - 'deploy/docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+  pull_request:
+    branches: [main, develop]
+    paths:
+      - 'deploy/docker/**'
+      - '.dockerignore'
+      - '.github/workflows/docker.yml'
+  workflow_dispatch:
+
+concurrency:
+  group: docker-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  stack:
+    name: Stack Docker + criterios HU-07
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: deploy/docker
+    steps:
+      - uses: actions/checkout@v7
+
+      - name: Secretos y certificado de prueba
+        run: ./init-env.sh
+
+      - name: Construir y levantar
+        run: docker compose up -d --build --wait --wait-timeout 300
+
+      - name: Criterios de aceptacion
+        run: ./smoke-test.sh
+
+      - name: Logs ante un fallo
+        if: failure()
+        run: docker compose ps -a; docker compose logs --tail 150
+
+      - name: Detener
+        if: always()
+        run: docker compose down -v
