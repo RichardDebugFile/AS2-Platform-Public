@@ -61,6 +61,7 @@ respuesta. Nunca se registran tokens, cookies, la consulta (`?…`) ni el cuerpo
 | `APP_CORS_ALLOWED_ORIGINS` | `http://localhost:5173` | Orígenes de la consola (patrones, separados por coma) |
 | `PARTNERS_SERVICE_URL`, `ALERTS_SERVICE_URL`, `AUTH_SERVICE_URL`, `DOCUMENTS_SERVICE_URL`, `AS2_ADAPTER_URL` | `http://localhost:808x` | Destino de cada ruta (en Docker, el nombre del contenedor) |
 | `ALERTS_INGEST_ENABLED`, `ALERTS_INGEST_TOKEN` | `false`, vacío | Envío de cada llamada a alerts-service (se activa con HU-21) |
+| `GATEWAY_TRUSTED_PROXIES` | `.*` | Desde qué direcciones se aceptan y reenvían las cabeceras `X-Forwarded-*` (expresión regular). El gateway no se publica: solo lo alcanza el proxy |
 | `LOG_FORMAT` | `logstash` | Formato del log; vacío = texto plano para depurar |
 
 El perfil opcional `tls` (`SPRING_PROFILES_ACTIVE=tls`, `GATEWAY_KEYSTORE_PATH`,

@@ -1,7 +1,7 @@
 server:
   port: ${GATEWAY_PORT:8765}
-  # Respeta X-Forwarded-Proto/Host/For del proxy TLS (nginx) y los reenvia a los servicios: con
-  # ellos auth-service decide el atributo Secure de las cookies.
+  # Respeta X-Forwarded-Proto/Host/For del proxy TLS (nginx): la peticion se trata como HTTPS y
+  # con la IP real del cliente.
   forward-headers-strategy: framework
 
 spring:
@@ -11,6 +11,11 @@ spring:
     gateway:
       server:
         webflux:
+          # Desde quien se aceptan y se reenvian las cabeceras X-Forwarded-* hacia los servicios. Sin
+          # esto no llegan, y auth-service no sabria que la peticion vino por HTTPS (cookies Secure).
+          # Se confia en cualquier origen porque el gateway no se publica: solo lo alcanza el proxy
+          # (red interna de Docker o loopback del servidor). Si se publicara, restringirlo aqui.
+          trusted-proxies: ${GATEWAY_TRUSTED_PROXIES:.*}
           # Rutas por prefijo. Las URL de destino se pueden sobrescribir por entorno (Docker).
           routes:
             - id: partners
