@@ -151,6 +151,34 @@ def format_value(raw, unit):
     return text.replace(".", ",") + (" %" if unit == "%" else unit)
 
 
+def error_detail(exc):
+    """Mensaje de error de la API de SonarQube Cloud (cuerpo JSON ``errors``), si lo hay."""
+    if isinstance(exc, urllib.error.HTTPError):
+        try:
+            body = exc.read().decode("utf-8", "replace")
+            msgs = [e.get("msg", "") for e in json.loads(body).get("errors", [])]
+            return f"HTTP {exc.code}: {'; '.join(m for m in msgs if m) or body[:200]}"
+        except (ValueError, AttributeError, OSError):
+            return f"HTTP {exc.code}"
+    return str(exc)
+
+
+def pr_status(ref):
+    """Bugs, vulnerabilidades y code smells del PR según la lista de PR del proyecto."""
+    try:
+        prs = sonar_get("/api/project_pull_requests/list", {"project": PROJECT})["pullRequests"]
+    except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as exc:
+        warn(f"Lista de PR: {error_detail(exc)}")
+        return {}
+    for pr in prs:
+        if str(pr.get("key")) == str(ref):
+            st = pr.get("status") or {}
+            pares = {"new_bugs": "bugs", "new_vulnerabilities": "vulnerabilities",
+                     "new_code_smells": "codeSmells"}
+            return {k: str(st[v]) for k, v in pares.items() if st.get(v) is not None}
+    return {}
+
+
 def sonar_results(kind, ref):
     scope = {"pullRequest": ref} if kind == "pr" else {"branch": ref}
     gate, conditions = "NONE", []
@@ -165,10 +193,9 @@ def sonar_results(kind, ref):
     for key, _, _ in wanted:  # de una en una: una métrica inexistente no invalida las demás
         try:
             comp = sonar_get("/api/measures/component",
-                             {"component": PROJECT, "metricKeys": key,
-                              "additionalFields": "period", **scope})["component"]
+                             {"component": PROJECT, "metricKeys": key, **scope})["component"]
         except (urllib.error.HTTPError, urllib.error.URLError, KeyError) as exc:
-            warn(f"Métrica {key}: {exc}")
+            warn(f"Métrica {key}: {error_detail(exc)}")
             continue
         for m in comp.get("measures", []):
             value = measure_value(m)
@@ -178,6 +205,9 @@ def sonar_results(kind, ref):
     for cond in conditions:
         if cond.get("metricKey") and cond.get("actualValue") is not None:
             values.setdefault(cond["metricKey"], cond["actualValue"])
+    if kind == "pr":
+        for k, v in pr_status(ref).items():
+            values.setdefault(k, v)
     missing = [k for k, _, _ in wanted if values.get(k) is None]
     if missing:
         notice(f"Sin valor en SonarQube Cloud para: {', '.join(missing)} "

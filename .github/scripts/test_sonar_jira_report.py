@@ -39,6 +39,8 @@ class SonarResultsTest(unittest.TestCase):
         if path == "/api/qualitygates/project_status":
             return {"projectStatus": {"status": "OK", "conditions": [
                 {"metricKey": "new_duplicated_lines_density", "actualValue": "1.5"}]}}
+        if path == "/api/project_pull_requests/list":
+            return {"pullRequests": [{"key": "23", "status": {"bugs": 1, "codeSmells": 4}}]}
         key = params["metricKeys"]
         measures = {
             "new_coverage": [{"metric": "new_coverage", "period": {"value": "87.5"}}],
@@ -58,8 +60,16 @@ class SonarResultsTest(unittest.TestCase):
         self.assertEqual(valores["Incidencias nuevas"], "2")
         self.assertEqual(valores["Security hotspots nuevos"], "0")
         self.assertEqual(valores["Duplicación (código nuevo)"], "1,5 %")
-        self.assertEqual(valores["Bugs nuevos"], "n/d")
+        self.assertEqual(valores["Bugs nuevos"], "1")
+        self.assertEqual(valores["Code smells nuevos"], "4")
+        self.assertEqual(valores["Vulnerabilidades nuevas"], "n/d")
         self.assertIn("pullRequest=23", url)
+
+    def test_detalle_del_error_de_la_api(self):
+        import io
+        exc = rep.urllib.error.HTTPError("u", 400, "Bad Request", {},
+                                         io.BytesIO(b'{"errors":[{"msg":"Metric not found"}]}'))
+        self.assertEqual(rep.error_detail(exc), "HTTP 400: Metric not found")
 
     def test_metrica_que_falla_no_invalida_las_demas(self):
         def sonar(path, params):
