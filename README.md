@@ -13,7 +13,7 @@ Arquitectura de microservicios Spring Boot con una consola web React.
 
 | Carpeta | Responsabilidad | Puerto |
 |---|---|---|
-| `gateway/` | Punto único de entrada: enrutamiento, seguridad en el borde | 8765 |
+| `gateway/` | Punto único de entrada: enrutamiento, seguridad en el borde ([rutas y configuración](gateway/README.md)) | 8765 |
 | `auth-service/` | Usuarios, roles, JWT, sesiones y MFA ([API y configuración](auth-service/README.md)) | 8083 |
 | `partners-service/` | Socios comerciales, configuración AS2, certificados, carpetas, auditoría | 8081 |
 | `documents-service/` | Repositorio de documentos EDI y MDN | 8084 |
