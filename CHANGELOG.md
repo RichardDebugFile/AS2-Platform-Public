@@ -4,6 +4,13 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Correcciones
+- El comentario de SonarQube Cloud en la historia de Jira muestra ahora las métricas del código
+  nuevo de cada pull request (cobertura, incidencias, hotspots y duplicación), que antes salían
+  vacías, y el número de pruebas de los servicios en el análisis de `main` (AS2-32).
+
 ## 0.3.0 — 2026-10-17
 
 ### Novedades

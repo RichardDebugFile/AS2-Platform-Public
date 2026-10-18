@@ -110,6 +110,9 @@ jobs:
             -Dsonar.qualitygate.wait=true
             -Dsonar.qualitygate.timeout=300
 
+      - name: Pruebas del reporte en Jira
+        run: python3 -m unittest discover -s .github/scripts -p 'test_*.py' -v
+
       - name: Reporte en Jira
         # Se ejecuta también si el Quality Gate falla, para que el rechazo quede registrado en la HU.
         if: always() && steps.scan.outcome != 'skipped' && steps.scan.outcome != 'cancelled'
