@@ -18,6 +18,8 @@ export default defineConfig({
     },
   },
   build: {
+    // Ant Design pesa ~1 MB sin comprimir (~330 kB con gzip): es una consola interna, no se divide.
+    chunkSizeWarningLimit: 1500,
     rollupOptions: {
       output: {
         entryFileNames: 'assets/[name].[hash].js',

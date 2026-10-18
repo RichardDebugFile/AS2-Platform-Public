@@ -15,6 +15,11 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   ni modificar nada, salvo iniciar sesión y la recepción AS2 de los socios. El rol Auditor solo
   puede consultar. Cada petición queda registrada (método, ruta, resultado, tiempo e identificador
   de traza) sin guardar tokens ni contenido de los mensajes (HU-05).
+- Consola web en español e inglés: inicio de sesión (con segundo factor si está activo), menú por
+  categorías que muestra solo lo que permite cada rol y administración de usuarios. Un minuto antes
+  de cerrarse por inactividad la sesión avisa con una cuenta regresiva y la opción "Seguir
+  conectado"; trabajar en una pestaña mantiene viva la sesión en las demás y la sesión se renueva
+  sola sin interrumpir lo que se está haciendo (HU-06).
 
 ## 0.2.0 — 2026-10-04
 

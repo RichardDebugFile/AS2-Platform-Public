@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { dataService, resolveHost, xsrfToken } from "../service/dataService";
+import { dataService, resolveHost, setSessionHandler, xsrfToken } from "../service/dataService";
 
 const fetchMock = vi.fn();
 
@@ -22,6 +22,7 @@ describe("dataService", () => {
     it("envia /users y /auth a auth-service y el resto a la API", () => {
         expect(resolveHost("/users?page=0")).toBe("https://api.example.com");
         expect(resolveHost("/auth/login")).toBe("https://api.example.com");
+        expect(resolveHost("/.well-known/jwks.json")).toBe("https://api.example.com");
         expect(resolveHost("/partners")).toBe("https://api.example.com/api");
     });
 
@@ -38,6 +39,7 @@ describe("dataService", () => {
     });
 
     it("serializa el cuerpo en POST y PATCH", async () => {
+        document.cookie = "XSRF-TOKEN=t; path=/";
         respond(201, "{}");
 
         await dataService.post("/users", { username: "ana" });
@@ -45,6 +47,7 @@ describe("dataService", () => {
 
         expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "POST", body: '{"username":"ana"}' });
         expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "PATCH", body: '{"active":false}' });
+        document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     });
 
     it("manda el token CSRF solo en las peticiones que modifican", async () => {
@@ -62,12 +65,27 @@ describe("dataService", () => {
         document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
     });
 
-    it("sin cookie XSRF-TOKEN no inventa la cabecera", async () => {
+    it("sin cookie XSRF-TOKEN la pide a auth-service antes del primer POST", async () => {
+        fetchMock.mockImplementationOnce(async () => {
+            document.cookie = "XSRF-TOKEN=nuevo; path=/";
+            return new Response("{}", { status: 200 });
+        });
+        fetchMock.mockResolvedValueOnce(new Response("{}", { status: 200 }));
+
+        await dataService.post("/auth/login", { username: "ana" });
+
+        expect(fetchMock.mock.calls[0][0]).toBe("https://api.example.com/.well-known/jwks.json");
+        const headers = fetchMock.mock.calls[1][1].headers as Record<string, string>;
+        expect(headers["X-XSRF-TOKEN"]).toBe("nuevo");
+        document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+    });
+
+    it("si no consigue la cookie XSRF-TOKEN no inventa la cabecera", async () => {
         respond(200, "{}");
 
         await dataService.patch("/users/u1/active", { active: true });
 
-        const headers = fetchMock.mock.calls[0][1].headers as Record<string, string>;
+        const headers = fetchMock.mock.calls[1][1].headers as Record<string, string>;
         expect(headers["X-XSRF-TOKEN"]).toBeUndefined();
         expect(xsrfToken()).toBeUndefined();
     });
@@ -112,5 +130,69 @@ describe("dataService", () => {
         expect(!r.ok && r.error.code).toBe("CONFIG_MISSING");
         expect(fetchMock).not.toHaveBeenCalled();
         vi.unstubAllEnvs();
+    });
+
+    describe("renovacion transparente de la sesion", () => {
+        const json = (status: number, body: unknown) => new Response(JSON.stringify(body), { status });
+
+        afterEach(() => setSessionHandler(null));
+
+        it("ante un 401 renueva una vez y reintenta sin que la pantalla lo note", async () => {
+            const refresh = vi.fn().mockResolvedValue(undefined);
+            setSessionHandler({ refresh, isAuthenticated: () => true });
+            fetchMock.mockResolvedValueOnce(json(401, { code: "UNAUTHORIZED" })).mockResolvedValueOnce(json(200, [{ id: 1 }]));
+
+            const r = await dataService.get("/partners");
+
+            expect(r).toEqual({ ok: true, data: [{ id: 1 }] });
+            expect(refresh).toHaveBeenCalledTimes(1);
+            expect(fetchMock).toHaveBeenCalledTimes(2);
+        });
+
+        it("varias peticiones con 401 a la vez comparten un solo refresh", async () => {
+            let release: () => void = () => {};
+            const refresh = vi.fn(() => new Promise<void>((r) => (release = r)));
+            setSessionHandler({ refresh, isAuthenticated: () => true });
+            fetchMock.mockImplementation(async () => json(401, {}));
+            fetchMock.mockResolvedValueOnce(json(401, {})).mockResolvedValueOnce(json(401, {}));
+
+            const both = Promise.all([dataService.get("/a"), dataService.get("/b")]);
+            await vi.waitFor(() => expect(refresh).toHaveBeenCalled());
+            fetchMock.mockImplementation(async () => json(200, {}));
+            release();
+            await both;
+
+            expect(refresh).toHaveBeenCalledTimes(1);
+        });
+
+        it("si no se pudo renovar, responde sesion expirada sin reintentar", async () => {
+            setSessionHandler({ refresh: vi.fn().mockResolvedValue(undefined), isAuthenticated: () => false });
+            fetchMock.mockResolvedValueOnce(json(401, {}));
+
+            const r = await dataService.get("/partners");
+
+            expect(!r.ok && r.error).toMatchObject({ code: "UNAUTHORIZED", status: 401 });
+            expect(fetchMock).toHaveBeenCalledTimes(1);
+        });
+
+        it("no intenta renovar en /auth/* (login o el propio refresh)", async () => {
+            const refresh = vi.fn().mockResolvedValue(undefined);
+            setSessionHandler({ refresh, isAuthenticated: () => true });
+            fetchMock.mockResolvedValueOnce(json(401, { code: "UNAUTHORIZED" }));
+
+            await dataService.post("/auth/login", {});
+
+            expect(refresh).not.toHaveBeenCalled();
+        });
+
+        it("PUT y DELETE", async () => {
+            document.cookie = "XSRF-TOKEN=t; path=/";
+            fetchMock.mockResolvedValueOnce(json(200, {})).mockResolvedValueOnce(new Response(null, { status: 204 }));
+            await dataService.put("/x", { a: 1 });
+            await dataService.delete("/x");
+            expect(fetchMock.mock.calls[0][1]).toMatchObject({ method: "PUT", body: '{"a":1}' });
+            expect(fetchMock.mock.calls[1][1]).toMatchObject({ method: "DELETE" });
+            document.cookie = "XSRF-TOKEN=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/";
+        });
     });
 });

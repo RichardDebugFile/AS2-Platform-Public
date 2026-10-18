@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 48 48" role="img" aria-label="AS2/EDI">
+  <rect x="2" y="2" width="44" height="44" rx="10" fill="#0f766e"/>
+  <path d="M12 17h16l-4-4M36 31H20l4 4" fill="none" stroke="#ffffff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <circle cx="34" cy="17" r="3" fill="#99f6e4"/>
+  <circle cx="14" cy="31" r="3" fill="#99f6e4"/>
+</svg>

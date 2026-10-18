@@ -1,0 +1,33 @@
+{
+  "idle": {
+    "title": "Inactive session",
+    "body": "Your session will close due to inactivity. Do you want to stay signed in?",
+    "remaining": "Time left:",
+    "continue": "Stay signed in",
+    "end": "Sign out"
+  },
+  "max": {
+    "title": "Your session is about to expire",
+    "body": "For security, sessions have a maximum duration and cannot be extended. Save your work: you will need to sign in again.",
+    "endNow": "Sign out now",
+    "ok": "Got it"
+  },
+  "ended": {
+    "title": {
+      "idle": "Your session was closed due to inactivity",
+      "max": "Your session reached its maximum duration",
+      "server": "Your session has ended",
+      "logout": "Your session has ended"
+    },
+    "body": "For security, your session has been closed. Any unsaved changes were lost.",
+    "redirectIn": "You will be taken to the sign-in page in",
+    "goToLogin": "Go to sign in"
+  },
+  "reasons": {
+    "idle": "Session closed due to inactivity ({{minutes}} min). Please sign in again.",
+    "idleNoMinutes": "Session closed due to inactivity. Please sign in again.",
+    "max": "The session reached its maximum duration ({{minutes}} min). Please sign in again.",
+    "maxNoMinutes": "The session reached its maximum duration. Please sign in again.",
+    "server": "Your session expired. Please sign in again."
+  }
+}
