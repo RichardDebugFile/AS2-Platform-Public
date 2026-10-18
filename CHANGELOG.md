@@ -11,6 +11,10 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   el análisis incluye los seis servicios (cobertura JaCoCo) y la consola web (cobertura Vitest) y
   espera el Quality Gate. El resultado se publica como comentario en la historia de Jira
   referenciada, con enlace al análisis (AS2-32).
+- Un único punto de entrada protege toda la plataforma: sin una sesión válida no se puede consultar
+  ni modificar nada, salvo iniciar sesión y la recepción AS2 de los socios. El rol Auditor solo
+  puede consultar. Cada petición queda registrada (método, ruta, resultado, tiempo e identificador
+  de traza) sin guardar tokens ni contenido de los mensajes (HU-05).
 
 ## 0.2.0 — 2026-10-04
 

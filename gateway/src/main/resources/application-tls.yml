@@ -1,0 +1,9 @@
+# Perfil opcional: TLS terminado en el propio gateway (sin proxy delante).
+# En el despliegue normal el TLS lo termina nginx y este perfil no se activa.
+#   SPRING_PROFILES_ACTIVE=tls GATEWAY_KEYSTORE_PATH=file:/ruta/gateway.p12 GATEWAY_KEYSTORE_PASSWORD=...
+server:
+  ssl:
+    enabled: true
+    key-store: ${GATEWAY_KEYSTORE_PATH}
+    key-store-type: PKCS12
+    key-store-password: ${GATEWAY_KEYSTORE_PASSWORD}
