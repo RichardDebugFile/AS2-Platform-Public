@@ -20,6 +20,10 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   de cerrarse por inactividad la sesión avisa con una cuenta regresiva y la opción "Seguir
   conectado"; trabajar en una pestaña mantiene viva la sesión en las demás y la sesión se renueva
   sola sin interrumpir lo que se está haciendo (HU-06).
+- La plataforma se instala y ejecuta en contenedores Docker: un único punto de entrada por HTTPS
+  (HTTP redirige), la consola y el API en el mismo sitio, servicios internos sin puertos
+  expuestos, reinicio automático si un servicio falla y respaldo diario de las bases que se puede
+  restaurar. Se prueba primero en local y se lleva igual al servidor (HU-07).
 
 ## 0.2.0 — 2026-10-04
 
