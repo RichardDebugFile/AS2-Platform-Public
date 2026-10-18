@@ -103,6 +103,13 @@ class GatewaySecurityTest {
         void aceptar() {}
     }
 
+    static final String XSRF = "xsrf-123";
+
+    /** Peticion como la hace la consola: cookie de sesion y token CSRF (cookie + cabecera). */
+    private static WebTestClient.RequestHeadersSpec<?> navegador(WebTestClient.RequestHeadersSpec<?> spec, String token) {
+        return spec.cookie("access_token", token).cookie("XSRF-TOKEN", XSRF).header("X-XSRF-TOKEN", XSRF);
+    }
+
     private static void dejoPasar(WebTestClient.ResponseSpec res) {
         HttpStatus status =
                 HttpStatus.valueOf(res.returnResult(Void.class).getStatus().value());
@@ -162,9 +169,9 @@ class GatewaySecurityTest {
      */
     @Test
     void refreshYLogoutConCookieCaducada_pasan() {
-        dejoPasar(client.post().uri("/auth/refresh").cookie("access_token", CADUCADO).exchange());
-        dejoPasar(client.post().uri("/auth/logout").cookie("access_token", CADUCADO).exchange());
-        dejoPasar(client.post().uri("/auth/mfa/verify").cookie("access_token", CADUCADO).exchange());
+        dejoPasar(navegador(client.post().uri("/auth/refresh"), CADUCADO).exchange());
+        dejoPasar(navegador(client.post().uri("/auth/logout"), CADUCADO).exchange());
+        dejoPasar(navegador(client.post().uri("/auth/mfa/verify"), CADUCADO).exchange());
     }
 
     /** Escenario: registro no publico. */
@@ -206,32 +213,67 @@ class GatewaySecurityTest {
 
     @Test
     void auditor_modifica_403() {
-        client.post().uri("/api/partners").cookie("access_token", AUDITOR).exchange().expectStatus().isForbidden();
-        client.put().uri("/api/partners/x").cookie("access_token", AUDITOR).exchange().expectStatus().isForbidden();
-        client.patch().uri("/api/partners/x/status").cookie("access_token", AUDITOR).exchange().expectStatus().isForbidden();
+        navegador(client.post().uri("/api/partners"), AUDITOR).exchange().expectStatus().isForbidden();
+        navegador(client.put().uri("/api/partners/x"), AUDITOR).exchange().expectStatus().isForbidden();
+        navegador(client.patch().uri("/api/partners/x/status"), AUDITOR).exchange().expectStatus().isForbidden();
         client.delete().uri("/api/partners/x").header("Authorization", "Bearer " + AUDITOR).exchange().expectStatus().isForbidden();
-        client.post().uri("/api/as2/send").cookie("access_token", AUDITOR).exchange().expectStatus().isForbidden();
+        navegador(client.post().uri("/api/as2/send"), AUDITOR).exchange().expectStatus().isForbidden();
     }
 
     /** Su propia sesion y su propio MFA no son "modificar la plataforma". */
     @Test
     void auditor_sesionYMfaPropios_pasan() {
-        dejoPasar(client.post().uri("/users/me/mfa/setup").cookie("access_token", AUDITOR).exchange());
+        dejoPasar(navegador(client.post().uri("/users/me/mfa/setup"), AUDITOR).exchange());
     }
 
     @Test
     void operadorYAdmin_modifican() {
-        dejoPasar(client.post().uri("/api/partners").cookie("access_token", OPERADOR).exchange());
-        dejoPasar(client.delete().uri("/api/partners/x").cookie("access_token", OPERADOR).exchange());
-        dejoPasar(client.put().uri("/api/partners/x").cookie("access_token", ADMIN).exchange());
+        dejoPasar(navegador(client.post().uri("/api/partners"), OPERADOR).exchange());
+        dejoPasar(navegador(client.delete().uri("/api/partners/x"), OPERADOR).exchange());
+        dejoPasar(navegador(client.put().uri("/api/partners/x"), ADMIN).exchange());
     }
 
     @Test
     void smtpConfig_soloAdmin() {
         client.get().uri("/api/smtp-config").cookie("access_token", OPERADOR).exchange().expectStatus().isForbidden();
-        client.delete().uri("/api/smtp-config/abc").cookie("access_token", OPERADOR).exchange().expectStatus().isForbidden();
+        navegador(client.delete().uri("/api/smtp-config/abc"), OPERADOR).exchange().expectStatus().isForbidden();
         dejoPasar(client.get().uri("/api/smtp-config").cookie("access_token", ADMIN).exchange());
         client.get().uri("/api/smtp-config").exchange().expectStatus().isUnauthorized();
+    }
+
+    // ---- CSRF de la sesion en cookies -------------------------------------------------------
+
+    /** Una pagina de otro sitio haria el POST con la cookie de sesion, pero sin poder leer el token. */
+    @Test
+    void modificarConCookieSinTokenCsrf_403() {
+        client.post().uri("/api/partners").cookie("access_token", ADMIN).exchange().expectStatus().isForbidden();
+        client.post().uri("/auth/logout").cookie("access_token", ADMIN).exchange().expectStatus().isForbidden();
+    }
+
+    @Test
+    void tokenCsrfQueNoCoincideConLaCookie_403() {
+        client.post()
+                .uri("/api/partners")
+                .cookie("access_token", ADMIN)
+                .cookie("XSRF-TOKEN", XSRF)
+                .header("X-XSRF-TOKEN", "otro")
+                .exchange()
+                .expectStatus()
+                .isForbidden();
+    }
+
+    /** Scripts y clientes API: la cabecera Authorization no la puede forjar otro sitio. */
+    @Test
+    void conCabeceraBearerNoHaceFaltaTokenCsrf() {
+        dejoPasar(client.post().uri("/api/partners").header("Authorization", "Bearer " + OPERADOR).exchange());
+    }
+
+    /** Las consultas y los socios AS2 (sin cookies) no llevan token. */
+    @Test
+    void consultasYAs2SinTokenCsrf_pasan() {
+        dejoPasar(client.get().uri("/api/partners").cookie("access_token", ADMIN).exchange());
+        dejoPasar(client.post().uri("/as2/receive").exchange());
+        dejoPasar(client.post().uri("/auth/login").exchange());
     }
 
     /**

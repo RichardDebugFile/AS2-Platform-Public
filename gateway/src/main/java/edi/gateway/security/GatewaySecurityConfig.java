@@ -14,8 +14,12 @@ import org.springframework.security.oauth2.server.resource.authentication.JwtGra
 import org.springframework.security.oauth2.server.resource.authentication.ReactiveJwtAuthenticationConverterAdapter;
 import org.springframework.security.web.server.SecurityWebFilterChain;
 import org.springframework.security.web.server.context.NoOpServerSecurityContextRepository;
+import org.springframework.security.web.server.csrf.CookieServerCsrfTokenRepository;
+import org.springframework.security.web.server.csrf.ServerCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher;
+import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatcher.MatchResult;
 import org.springframework.security.web.server.util.matcher.ServerWebExchangeMatchers;
+import java.util.Set;
 
 /**
  * Seguridad en el borde. El gateway es el unico punto expuesto: todo lo que no sea una ruta publica
@@ -52,6 +56,39 @@ public class GatewaySecurityConfig {
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String[] ROLES_QUE_EDITAN = {"ADMIN", "OPERATOR"};
 
+    /** Metodos que no modifican nada: no necesitan token CSRF. */
+    static final Set<HttpMethod> SAFE_METHODS = Set.of(HttpMethod.GET, HttpMethod.HEAD, HttpMethod.OPTIONS, HttpMethod.TRACE);
+
+    /**
+     * CSRF solo donde hay riesgo: peticiones que modifican y que se autentican con la cookie de
+     * sesion, que el navegador adjunta por su cuenta aunque la pagina sea de otro sitio. Las que
+     * traen {@code Authorization} (scripts, clientes API) no lo necesitan: esa cabecera no la puede
+     * forjar otro sitio. Sin cookie no hay sesion que suplantar (y la peticion recibe su 401).
+     */
+    static final ServerWebExchangeMatcher COOKIE_SESSION_MUTATION = exchange -> {
+        var req = exchange.getRequest();
+        boolean requiere = !SAFE_METHODS.contains(req.getMethod())
+                && !req.getHeaders().containsHeader("Authorization")
+                && req.getCookies().containsKey(CookieOrHeaderBearerTokenConverter.ACCESS_TOKEN_COOKIE);
+        return requiere ? MatchResult.match() : MatchResult.notMatch();
+    };
+
+    /**
+     * Doble envio con el token de auth-service: la cookie legible {@code XSRF-TOKEN} debe volver en
+     * la cabecera {@code X-XSRF-TOKEN}. Otro sitio no puede leer la cookie, asi que no puede forjar
+     * la cabecera. El gateway solo compara: no emite ni cambia la cookie (la emite auth-service).
+     *
+     * <p>Hace falta aqui, en el borde, porque el gateway convierte la cookie de sesion en
+     * {@code Authorization: Bearer} para los servicios: estos ya no ven una peticion "con cookie" y
+     * no podrian aplicar la proteccion por su cuenta.</p>
+     */
+    static void csrfConCookieDeSesion(ServerHttpSecurity.CsrfSpec csrf) {
+        csrf.csrfTokenRepository(CookieServerCsrfTokenRepository.withHttpOnlyFalse())
+                // Token tal cual (sin enmascarar): es el que la consola lee de la cookie y reenvia.
+                .csrfTokenRequestHandler(new ServerCsrfTokenRequestAttributeHandler())
+                .requireCsrfProtectionMatcher(COOKIE_SESSION_MUTATION);
+    }
+
     static ServerWebExchangeMatcher publicMatcher() {
         return ServerWebExchangeMatchers.matchers(
                 ServerWebExchangeMatchers.pathMatchers(HttpMethod.OPTIONS, "/**"), // preflight CORS
@@ -62,7 +99,8 @@ public class GatewaySecurityConfig {
     @Order(1)
     SecurityWebFilterChain publicChain(ServerHttpSecurity http) {
         return http.securityMatcher(publicMatcher())
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+                // Refresh y logout llegan con la cookie de sesion: tambien exigen el token CSRF.
+                .csrf(GatewaySecurityConfig::csrfConCookieDeSesion)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
@@ -73,10 +111,7 @@ public class GatewaySecurityConfig {
     @Bean
     @Order(2)
     SecurityWebFilterChain protectedChain(ServerHttpSecurity http, ReactiveJwtDecoder jwtDecoder) {
-        return http
-                // La proteccion CSRF de la sesion en cookies la aplica auth-service (doble cookie
-                // XSRF-TOKEN); el gateway no guarda sesion y reenvia la cabecera tal cual.
-                .csrf(ServerHttpSecurity.CsrfSpec::disable)
+        return http.csrf(GatewaySecurityConfig::csrfConCookieDeSesion)
                 .httpBasic(ServerHttpSecurity.HttpBasicSpec::disable)
                 .formLogin(ServerHttpSecurity.FormLoginSpec::disable)
                 .logout(ServerHttpSecurity.LogoutSpec::disable)
