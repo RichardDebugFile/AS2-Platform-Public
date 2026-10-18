@@ -60,9 +60,11 @@ jobs:
           if [ "${{ steps.build.outcome }}" = "failure" ]; then
             grep -iE 'error|failed' /tmp/build.log | tail -n 15 | while IFS= read -r l; do echo "::error title=build::$l"; done
           fi
-          docker compose ps -a --format '{{.Service}} {{.State}} {{.Status}}' | while IFS= read -r l; do echo "::warning title=ps::$l"; done
-          for s in db auth-service gateway proxy backup; do
-            docker compose logs --no-color --tail 6 "$s" 2>/dev/null | while IFS= read -r l; do echo "::warning title=$s::$l"; done
+          # Las anotaciones tienen un tope de 10 por tipo y paso: estado en una linea y logs solo de
+          # los servicios que no estan sanos.
+          echo "::notice title=ps::$(docker compose ps -a --format '{{.Service}}={{.Status}}' | paste -sd ';' -)"
+          for s in $(docker compose ps -a --format '{{.Service}} {{.Status}}' | grep -v '(healthy)' | grep -v '^backup ' | cut -d' ' -f1); do
+            docker compose logs --no-color --tail 8 "$s" 2>/dev/null | while IFS= read -r l; do echo "::warning title=$s::$l"; done
           done
           docker compose logs --tail 150 || true
 

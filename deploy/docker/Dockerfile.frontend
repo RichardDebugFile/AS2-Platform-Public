@@ -11,6 +11,8 @@ RUN npm run build
 
 # ---------- Etapa 2: nginx ----------
 FROM nginx:1.29-alpine
+# curl para el healthcheck por HTTPS (el wget de busybox depende de ssl_client).
+RUN apk add --no-cache curl
 COPY --from=build /app/dist /usr/share/nginx/html
 # Consola y API en el mismo origen: config.js apunta al propio proxy.
 COPY deploy/docker/nginx/config.js /usr/share/nginx/html/config.js
