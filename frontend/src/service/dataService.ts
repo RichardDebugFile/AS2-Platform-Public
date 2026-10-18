@@ -37,10 +37,12 @@ function hosts(): Hosts {
     };
 }
 
-/** /auth/* y /users/* los atiende auth-service; el resto, la API de negocio. */
+/** /auth/*, /users/* y /.well-known/* los atiende auth-service; el resto, la API de negocio. */
 export function resolveHost(endpoint: string): string | undefined {
     const { api, auth } = hosts();
-    return endpoint.startsWith("/auth") || endpoint.startsWith("/users") ? auth : api;
+    return endpoint.startsWith("/auth") || endpoint.startsWith("/users") || endpoint.startsWith("/.well-known")
+        ? auth
+        : api;
 }
 
 function errorFrom(json: unknown, status: number): ApiError {
@@ -98,6 +100,27 @@ const SESSION_EXPIRED: ApiError = {
     status: 401,
 };
 
+/**
+ * En un navegador recien llegado aun no existe la cookie XSRF-TOKEN, y el primer POST (el login)
+ * seria rechazado con 403. auth-service la entrega en cualquier respuesta: se pide su JWKS (publico
+ * y barato) una vez y se lee la cookie.
+ */
+let xsrfPriming: Promise<string | undefined> | null = null;
+
+function fetchXsrfToken(): Promise<string | undefined> {
+    const base = resolveHost("/.well-known/jwks.json");
+    if (typeof base !== "string") return Promise.resolve(undefined);
+    if (!xsrfPriming) {
+        xsrfPriming = fetch(`${base}/.well-known/jwks.json`, { credentials: "include" })
+            .then(() => xsrfToken())
+            .catch(() => undefined)
+            .finally(() => {
+                xsrfPriming = null;
+            });
+    }
+    return xsrfPriming;
+}
+
 async function request<T>(endpoint: string, init: RequestInit = {}): Promise<ApiResponse<T>> {
     const first = await send<T>(endpoint, init);
     // /auth/* queda fuera: un 401 del login o del propio refresh no se reintenta (evita bucles).
@@ -123,7 +146,7 @@ async function send<T>(endpoint: string, init: RequestInit): Promise<ApiResponse
     }
     try {
         const method = (init.method ?? "GET").toUpperCase();
-        const token = SAFE_METHODS.has(method) ? undefined : xsrfToken();
+        const token = SAFE_METHODS.has(method) ? undefined : (xsrfToken() ?? (await fetchXsrfToken()));
         const res = await fetch(`${base}${endpoint}`, {
             ...init,
             headers: {

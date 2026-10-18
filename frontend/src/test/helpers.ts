@@ -41,5 +41,7 @@ export function stubFetch() {
     const fetchMock = vi.fn();
     vi.stubGlobal("fetch", fetchMock);
     window.APP_CONFIG = { ...API };
+    // Cookie CSRF ya presente, como tras la primera visita: las pruebas no ven la peticion previa.
+    document.cookie = "XSRF-TOKEN=prueba; path=/";
     return fetchMock;
 }
