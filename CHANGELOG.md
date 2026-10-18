@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.3.0 — 2026-10-17
 
 ### Novedades
 - Calidad y cobertura verificadas en SonarQube Cloud en cada pull request y en `develop`/`main`:
