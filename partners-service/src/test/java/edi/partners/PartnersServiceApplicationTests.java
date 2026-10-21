@@ -15,10 +15,11 @@ import org.springframework.test.web.servlet.MockMvc;
  * La base de datos se excluye para que corra sin PostgreSQL; la conexion real se comprueba
  * arrancando el servicio contra el docker-compose de la raiz (ver README).
  */
-@SpringBootTest(properties = "spring.autoconfigure.exclude="
+@SpringBootTest(properties = {"spring.autoconfigure.exclude="
         + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
         + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
-        + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration")
+        + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration",
+        "partners.jpa-auditing=false"})
 @AutoConfigureMockMvc
 class PartnersServiceApplicationTests {
 
