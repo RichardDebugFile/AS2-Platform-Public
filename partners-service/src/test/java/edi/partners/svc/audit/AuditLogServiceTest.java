@@ -129,7 +129,7 @@ class AuditLogServiceTest {
         nuevo.setTransportType(TransportType.HTTPS);
         Partner p = partners.saveAndFlush(nuevo);
 
-        AuditLogResponse r = service.record(new AuditLogRequest("DOCUMENT_RECEIVED", AuditStatus.SUCCESS, "as2-adapter",
+        AuditLogResponse r = service.register(new AuditLogRequest("DOCUMENT_RECEIVED", AuditStatus.SUCCESS, "as2-adapter",
                 null, null, "socio-int", "<m1@as2.example.com>", "Factura recibida",
                 Map.of("bytes", new AuditLogRequest.ChangeValue(null, 1200))));
 

@@ -18,6 +18,17 @@ Los servicios de documentos, alertas y AS2 se incorporan al stack con sus histor
 
 Requisito: Docker (Docker Desktop en Windows). En Windows, los scripts se ejecutan con Git Bash.
 
+Todo en orden con un solo comando (secretos, imágenes, almacenamiento y arranque esperando a que
+cada servicio esté sano):
+
+```bash
+cd deploy/docker
+./start.sh              # ./start.sh --no-build si las imágenes ya están construidas
+./stop.sh               # detiene conservando los datos (./stop.sh --purge los borra)
+```
+
+O paso a paso:
+
 ```bash
 cd deploy/docker
 ./init-env.sh                  # una vez: .env con secretos aleatorios y certificado TLS (certs/)
