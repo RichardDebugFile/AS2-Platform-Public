@@ -49,7 +49,7 @@ class PartnerRepositoryTest {
     @Autowired
     private TestEntityManager em;
 
-    public static Partner partner(String as2Name, boolean active) {
+    static Partner partner(String as2Name, boolean active) {
         Partner p = new Partner();
         p.setAs2Name(as2Name);
         p.setServerAddress("as2." + as2Name.toLowerCase() + ".example");

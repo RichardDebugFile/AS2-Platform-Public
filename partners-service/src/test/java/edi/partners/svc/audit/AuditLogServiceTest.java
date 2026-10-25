@@ -9,7 +9,7 @@ import edi.partners.dto.AuditLogRequest;
 import edi.partners.dto.AuditLogResponse;
 import edi.partners.repo.AuditLogRepository;
 import edi.partners.repo.PartnerRepository;
-import edi.partners.repo.PartnerRepositoryTest;
+import edi.partners.domain.TransportType;
 import edi.partners.testsupport.TickingClock;
 import java.time.Instant;
 import java.util.Map;
@@ -122,7 +122,12 @@ class AuditLogServiceTest {
 
     @Test
     void eventoDeOtroServicio_completaElSocioPorSuIdentificador_yUsuarioSystem() {
-        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-INT", true));
+        Partner nuevo = new Partner();
+        nuevo.setAs2Name("SOCIO-INT");
+        nuevo.setServerAddress("as2.socio-int.example");
+        nuevo.setPort(443);
+        nuevo.setTransportType(TransportType.HTTPS);
+        Partner p = partners.saveAndFlush(nuevo);
 
         AuditLogResponse r = service.record(new AuditLogRequest("DOCUMENT_RECEIVED", AuditStatus.SUCCESS, "as2-adapter",
                 null, null, "socio-int", "<m1@as2.example.com>", "Factura recibida",

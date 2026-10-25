@@ -13,6 +13,8 @@
     "documents": "EDI documents",
     "alertsGroup": "Alerts",
     "alerts": "Alerts and notifications",
+    "auditGroup": "Audit",
+    "audit": "Audit log",
     "administration": "Administration",
     "users": "Users"
   },
