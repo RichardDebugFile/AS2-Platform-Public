@@ -29,8 +29,10 @@ export const FIELD_TAB: Record<string, string> = {
 export function endpointPreview(v: Partial<PartnerInput>): string {
     if (!v.serverAddress) return "";
     const scheme = (v.transportType ?? "HTTPS").toLowerCase();
-    const path = v.path ? (v.path.startsWith("/") ? v.path : `/${v.path}`) : "";
-    return `${scheme}://${v.serverAddress.trim()}${v.port ? `:${v.port}` : ""}${path}`;
+    let path = v.path ?? "";
+    if (path && !path.startsWith("/")) path = "/" + path;
+    const port = v.port ? ":" + String(v.port) : "";
+    return `${scheme}://${v.serverAddress.trim()}${port}${path}`;
 }
 
 /** Lo que el API devuelve del socio pero no acepta en la edicion. */
