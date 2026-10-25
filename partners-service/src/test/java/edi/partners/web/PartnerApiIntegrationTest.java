@@ -33,7 +33,7 @@ import org.springframework.test.web.servlet.ResultActions;
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.username=sa",
     "spring.datasource.password=",
-    "partners.storage.root=/data/partners"
+    "partners.storage.root=target/test-storage/api", "partners.shared.root=target/test-shared/api"
 })
 @AutoConfigureMockMvc
 class PartnerApiIntegrationTest {

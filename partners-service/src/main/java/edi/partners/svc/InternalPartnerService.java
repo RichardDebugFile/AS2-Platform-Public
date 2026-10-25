@@ -2,6 +2,7 @@ package edi.partners.svc;
 
 import edi.partners.domain.Partner;
 import edi.partners.domain.SendingMode;
+import edi.partners.dto.FolderStatusResponse;
 import edi.partners.dto.IncomingConfigResponse;
 import edi.partners.dto.InternalPartnerView;
 import edi.partners.dto.MdnConfigResponse;
@@ -24,15 +25,17 @@ public class InternalPartnerService {
     private final OutgoingConfigRepository outgoing;
     private final IncomingConfigRepository incoming;
     private final MdnConfigRepository mdn;
+    private final PartnerFolderService folders;
 
     public InternalPartnerService(PartnerService partners, PartnerRepository partnerRepo,
                                   OutgoingConfigRepository outgoing, IncomingConfigRepository incoming,
-                                  MdnConfigRepository mdn) {
+                                  MdnConfigRepository mdn, PartnerFolderService folders) {
         this.partners = partners;
         this.partnerRepo = partnerRepo;
         this.outgoing = outgoing;
         this.incoming = incoming;
         this.mdn = mdn;
+        this.folders = folders;
     }
 
     /** Socio activo por su identificador AS2 (cabecera AS2-From) con su configuracion vigente. */
@@ -45,11 +48,15 @@ public class InternalPartnerService {
                 mdn.findByPartnerId(p.getId()).map(MdnConfigResponse::of).orElse(null));
     }
 
-    /** Socios activos cuya carpeta de salida se vigila: tienen envio automatico configurado. */
+    /**
+     * Socios activos cuya carpeta de salida se vigila: tienen envio automatico configurado y sus
+     * carpetas estan sanas (con el recurso compartido caido, el socio sale de la lista hasta que vuelva).
+     */
     @Transactional(readOnly = true)
     public List<String> fileWatcherEnabled() {
         return partnerRepo.findAllByActiveOrderByAs2NameAsc(true).stream()
                 .filter(p -> outgoing.existsByPartnerIdAndSendingModeNot(p.getId(), SendingMode.NONE))
+                .filter(p -> folders.status(p).health() == FolderStatusResponse.Health.OK)
                 .map(Partner::getAs2Name)
                 .toList();
     }

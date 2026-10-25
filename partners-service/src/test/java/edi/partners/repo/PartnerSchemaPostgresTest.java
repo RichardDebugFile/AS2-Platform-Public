@@ -75,6 +75,16 @@ class PartnerSchemaPostgresTest {
     }
 
     @Test
+    void etapaDeCarpetas_porDefectoLocal_ySoloValoresConocidos() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-F", true));
+
+        assertThat(jdbc.queryForObject("SELECT folder_state FROM partner WHERE id = ?", String.class, p.getId()))
+                .isEqualTo("LOCAL");
+        assertThatThrownBy(() -> jdbc.update("UPDATE partner SET folder_state = 'OTRO' WHERE id = ?", p.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
     void bitacora_esDeSoloInsercion_yConservaElEventoAunqueSeBorreElSocio() {
         Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-E", true));
         java.util.UUID id = java.util.UUID.randomUUID();

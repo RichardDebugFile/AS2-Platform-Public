@@ -29,23 +29,38 @@ public final class PartnerRules {
 
     /** Identificador AS2 recortado y valido; si no, {@link IllegalArgumentException} con la regla. */
     public static String as2Name(String raw) {
+        return folderName(raw, "El identificador AS2", AS2_NAME_MAX, " porque da nombre a sus carpetas");
+    }
+
+    /**
+     * Nombre de la carpeta del socio dentro del recurso compartido (un solo nivel, sin rutas). Vacio
+     * = sin carpeta compartida.
+     */
+    public static String sharedFolderName(String raw) {
         if (raw == null || raw.isBlank()) {
-            throw new IllegalArgumentException("El identificador AS2 es obligatorio");
+            return null;
+        }
+        return folderName(raw, "La carpeta compartida", 255, ": debe ser un nombre de carpeta, no una ruta");
+    }
+
+    /** Nombre valido como carpeta en Windows y Linux: ASCII imprimible, sin separadores ni reservados. */
+    private static String folderName(String raw, String label, int max, String why) {
+        if (raw == null || raw.isBlank()) {
+            throw new IllegalArgumentException(label + " es obligatorio");
         }
         String name = raw.strip();
-        if (name.length() > AS2_NAME_MAX) {
-            throw new IllegalArgumentException("El identificador AS2 admite como maximo 128 caracteres");
+        if (name.length() > max) {
+            throw new IllegalArgumentException(label + " admite como maximo " + max + " caracteres");
         }
         if (!PRINTABLE_ASCII.matcher(name).matches()) {
             throw new IllegalArgumentException(
-                    "El identificador AS2 solo admite caracteres ASCII imprimibles (sin tildes ni eñes)");
+                    label + " solo admite caracteres ASCII imprimibles (sin tildes ni eñes)");
         }
         if (FORBIDDEN_FOLDER_CHARS.matcher(name).find()) {
-            throw new IllegalArgumentException(
-                    "El identificador AS2 no puede contener \\ / : * ? \" < > | porque da nombre a sus carpetas");
+            throw new IllegalArgumentException(label + " no puede contener \\ / : * ? \" < > |" + why);
         }
         if (name.endsWith(".")) {
-            throw new IllegalArgumentException("El identificador AS2 no puede terminar en punto");
+            throw new IllegalArgumentException(label + " no puede terminar en punto");
         }
         String base = name.contains(".") ? name.substring(0, name.indexOf('.')) : name;
         if (WINDOWS_RESERVED.contains(base.toUpperCase(Locale.ROOT))) {

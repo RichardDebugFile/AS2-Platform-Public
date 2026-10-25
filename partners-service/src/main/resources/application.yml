@@ -34,5 +34,8 @@ partners:
   # Clave AES de 32 bytes en Base64 para la clave basica de los socios. Vacio = clave temporal (solo desarrollo).
   secret-key: ${PARTNERS_SECRET_KEY:}
   storage:
-    # Raiz de las carpetas de los socios: <raiz>/<as2Name>/Outgoing|Incoming|MDN|Archive (HU-09).
+    # Raiz de las carpetas de los socios: <raiz>/<as2Name>/{Archive,Certs,Error,Incoming,MDN,Outgoing}.
     root: ${AS2_STORAGE_ROOT:/opt/as2_data/partners}
+  shared:
+    # Montaje del recurso compartido del ERP (Samba/CIFS): <montaje>/<carpeta del socio>/<subcarpeta>.
+    root: ${AS2_SHARED_ROOT:/mnt/erp}
