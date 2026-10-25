@@ -6,6 +6,16 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ## Sin publicar
 
+### Novedades
+- Registro de socios comerciales desde la consola: en un solo paso se da de alta el socio con su
+  identificador AS2, la dirección de su servidor, los algoritmos de firma y cifrado, cómo recibe los
+  acuses (MDN) y sus configuraciones de salida, entrada y MDN, sin tocar archivos ni reiniciar
+  servicios. Si algo falla, no queda nada a medias. La consola sugiere los algoritmos recomendados
+  (SHA-256 y AES-256) y ofrece los antiguos solo por compatibilidad. Un identificador repetido o que
+  no sirve como nombre de carpeta se rechaza con un mensaje claro; dar de baja un socio libera su
+  identificador, y solo un administrador puede borrarlo definitivamente. El Auditor consulta sin
+  modificar, y cada cambio queda con el usuario que lo hizo (HU-08).
+
 ### Correcciones
 - El comentario de SonarQube Cloud en la historia de Jira muestra ahora las métricas del código
   nuevo de cada pull request (cobertura, incidencias, hotspots y duplicación), que antes salían

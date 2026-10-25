@@ -31,6 +31,7 @@ ALERTS_DB_PASSWORD=$(rand)
 AUTH_JWT_PRIVATE_KEY_PEM=$(pem_body < "$tmp/jwt.pem")
 AUTH_JWT_PUBLIC_KEY_PEM=$(pem_body < "$tmp/jwt.pub")
 AUTH_MFA_SECRET_KEY=$(openssl rand -base64 32)
+PARTNERS_SECRET_KEY=$(openssl rand -base64 32)
 ADMIN_USER=admin
 ADMIN_PASSWORD=$admin_password
 ADMIN_EMAIL=admin@example.com
@@ -40,6 +41,9 @@ ENV
 else
     echo ".env ya existe: se conserva."
 fi
+
+# Claves que agregan historias posteriores: se anaden a un .env existente sin tocar lo demas.
+grep -q '^PARTNERS_SECRET_KEY=' .env || echo "PARTNERS_SECRET_KEY=$(openssl rand -base64 32)" >> .env
 
 mkdir -p certs backups
 if [ ! -f certs/tls.crt ] || [ ! -f certs/tls.key ]; then

@@ -1,0 +1,945 @@
+{
+  "info": {
+    "name": "partners-service",
+    "description": "Socios comerciales y su configuración AS2 (HU-08). Contra el stack Docker: host = https://localhost y ejecutar primero la carpeta \"Sesión (vía gateway)\" (Postman guarda las cookies). Contra el servicio en local (sin gateway): host = http://localhost:8081 y omitir esa carpeta. La colección deja la base como estaba: borra los socios que crea.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "as2Name",
+      "value": "SOCIO-POSTMAN"
+    },
+    {
+      "key": "as2NameInternal",
+      "value": "SOCIO-POSTMAN-INTERNO"
+    },
+    {
+      "key": "partnerId",
+      "value": ""
+    },
+    {
+      "key": "internalId",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Sesión (vía gateway)",
+      "description": "Solo contra el stack completo (host = https://localhost). Sin esta carpeta, el gateway responde 401.",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Socios",
+      "item": [
+        {
+          "name": "Catálogo de algoritmos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/catalogs/algorithms",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "algorithms"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('SHA-256 recomendado', () => pm.expect(c.signing.find(i => i.status === 'recommended').key).to.eql('RSA_SHA256'));",
+                  "pm.test('SHA-1 solo por compatibilidad', () => pm.expect(c.signing.find(i => i.key === 'RSA_SHA1').status).to.eql('legacy'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alta completa",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2Name}}\",\n    \"partnerName\": \"Socio de prueba\",\n    \"partnerType\": \"CUSTOMER\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\",\n    \"signingAlgorithm\": \"RSA_SHA256\",\n    \"encryptionAlgorithm\": \"AES256\",\n    \"micAlgorithm\": \"SHA256\",\n    \"basicAuthUsername\": \"usuario\",\n    \"basicAuthPassword\": \"secreto-de-prueba\",\n    \"contactEmail\": \"ops@example.com\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.collectionVariables.set('partnerId', r.partner.id);",
+                  "pm.test('activo con sus tres configuraciones', () => { pm.expect(r.partner.active).to.be.true; pm.expect(r.outgoing).to.be.an('object'); pm.expect(r.incoming).to.be.an('object'); pm.expect(r.mdn).to.be.an('object'); });",
+                  "pm.test('la clave básica no sale', () => { pm.expect(r.partner).to.not.have.property('basicAuthPassword'); pm.expect(r.partner.hasBasicAuthPassword).to.be.true; });",
+                  "pm.test('dirección AS2', () => pm.expect(r.partner.endpointUrl).to.eql('https://as2.socio.example:4443/as2'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Alta duplicada (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2Name}}\",\n    \"partnerName\": \"Socio de prueba\",\n    \"partnerType\": \"CUSTOMER\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\",\n    \"signingAlgorithm\": \"RSA_SHA256\",\n    \"encryptionAlgorithm\": \"AES256\",\n    \"micAlgorithm\": \"SHA256\",\n    \"basicAuthUsername\": \"usuario\",\n    \"basicAuthPassword\": \"secreto-de-prueba\",\n    \"contactEmail\": \"ops@example.com\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('código AS2_NAME_TAKEN', () => pm.expect(pm.response.json().code).to.eql('AS2_NAME_TAKEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Nombre inválido para carpeta (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as2Name\": \"COM1\",\n  \"partnerName\": \"Socio de prueba\",\n  \"partnerType\": \"CUSTOMER\",\n  \"serverAddress\": \"as2.socio.example\",\n  \"port\": 4443,\n  \"transportType\": \"HTTPS\",\n  \"path\": \"/as2\",\n  \"signingAlgorithm\": \"RSA_SHA256\",\n  \"encryptionAlgorithm\": \"AES256\",\n  \"micAlgorithm\": \"SHA256\",\n  \"basicAuthUsername\": \"usuario\",\n  \"basicAuthPassword\": \"secreto-de-prueba\",\n  \"contactEmail\": \"ops@example.com\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('indica la regla', () => pm.expect(pm.response.json().message).to.include('reservado'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar activos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el socio', () => pm.expect(pm.response.json().map(p => p.as2Name)).to.include(pm.collectionVariables.get('as2Name')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('mismo socio', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('partnerId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Editar",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"as2Name\": \"{{as2Name}}\",\n  \"partnerName\": \"Socio renombrado\",\n  \"partnerType\": \"CUSTOMER\",\n  \"serverAddress\": \"as2.socio.example\",\n  \"port\": 4443,\n  \"transportType\": \"HTTPS\",\n  \"path\": \"/as2\",\n  \"signingAlgorithm\": \"RSA_SHA256\",\n  \"encryptionAlgorithm\": \"AES256\",\n  \"micAlgorithm\": \"SHA256\",\n  \"basicAuthUsername\": \"usuario\",\n  \"contactEmail\": \"ops@example.com\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('nombre cambiado', () => pm.expect(pm.response.json().partnerName).to.eql('Socio renombrado'));",
+                  "pm.test('conserva la clave guardada', () => pm.expect(pm.response.json().hasBasicAuthPassword).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Configuración de salida",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/outgoing-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "outgoing-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('envío regular y archivo por defecto', () => { const c = pm.response.json(); pm.expect(c.sendingMode).to.eql('REGULAR'); pm.expect(c.archiveMode).to.eql('MOVE'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Salida con filtro sin patrón (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/outgoing-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "outgoing-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localFolder\": \"/opt/as2_data/partners/{{as2Name}}/Outgoing\",\n  \"sendingMode\": \"FILENAME_FILTER\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guardar configuración de salida",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/outgoing-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "outgoing-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"localFolder\": \"/opt/as2_data/partners/{{as2Name}}/Outgoing\",\n  \"sendingMode\": \"FILENAME_FILTER\",\n  \"filenameFilter\": \"*.edi\",\n  \"archiveMode\": \"MOVE\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('filtro guardado', () => pm.expect(pm.response.json().filenameFilter).to.eql('*.edi'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Configuración de entrada",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/incoming-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "incoming-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('carpeta de entrada', () => pm.expect(pm.response.json().incomingFolder).to.include('Incoming'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Configuración MDN",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/mdn-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "mdn-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('MDN firmado y síncrono', () => { const c = pm.response.json(); pm.expect(c.receiptType).to.eql('SIGNED'); pm.expect(c.deliveryMode).to.eql('SYNC'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Sugerencia de algoritmos (compatibilidad)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/algorithm-suggestion?legacyCompatibility=true",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "algorithm-suggestion"
+              ],
+              "query": [
+                {
+                  "key": "legacyCompatibility",
+                  "value": "true"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('SHA-1 y 3DES', () => { const s = pm.response.json(); pm.expect(s.signing).to.eql('RSA_SHA1'); pm.expect(s.encryption).to.eql('TRIPLE_DES'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dar de baja",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar dados de baja",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/inactive",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "inactive"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('aparece dado de baja', () => pm.expect(pm.response.json().map(p => p.id)).to.include(pm.collectionVariables.get('partnerId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrado definitivo sin confirmar (400)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/purge?confirm=otro",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "otro"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrado definitivo (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/purge?confirm={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle tras borrar (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('código PARTNER_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('PARTNER_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Motor AS2 (red interna)",
+      "description": "Consultas que usa el motor AS2. El gateway no las enruta: se ejecutan directo contra partners-service (host = http://localhost:8081), dentro de la red de contenedores o con el servicio en local.",
+      "item": [
+        {
+          "name": "Alta del socio de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2NameInternal}}\",\n    \"partnerName\": \"Socio de prueba\",\n    \"partnerType\": \"CUSTOMER\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\",\n    \"signingAlgorithm\": \"RSA_SHA256\",\n    \"encryptionAlgorithm\": \"AES256\",\n    \"micAlgorithm\": \"SHA256\",\n    \"basicAuthUsername\": \"usuario\",\n    \"basicAuthPassword\": \"secreto-de-prueba\",\n    \"contactEmail\": \"ops@example.com\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('internalId', pm.response.json().partner.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consulta por identificador AS2",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/internal/partners/search?as2Name={{as2NameInternal}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "partners",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "as2Name",
+                  "value": "{{as2NameInternal}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const v = pm.response.json();",
+                  "pm.test('id y configuración vigente', () => { pm.expect(v.partner.id).to.eql(pm.collectionVariables.get('internalId')); pm.expect(v.outgoing.sendingMode).to.eql('REGULAR'); pm.expect(v.mdn).to.be.an('object'); });",
+                  "pm.test('sin clave básica', () => pm.expect(JSON.stringify(v)).to.not.include('secreto-de-prueba'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Socios con envío habilitado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/internal/partners/filewatcher-enabled",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "partners",
+                "filewatcher-enabled"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el socio', () => pm.expect(pm.response.json()).to.include(pm.collectionVariables.get('as2NameInternal')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: baja",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{internalId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{internalId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: borrado definitivo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{internalId}}/purge?confirm={{as2NameInternal}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{internalId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "{{as2NameInternal}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

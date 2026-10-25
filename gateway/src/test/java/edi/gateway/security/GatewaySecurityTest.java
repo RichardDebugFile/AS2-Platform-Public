@@ -29,7 +29,8 @@ import org.springframework.security.oauth2.jwt.ReactiveJwtDecoder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.reactive.server.WebTestClient;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.ResponseStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import reactor.core.publisher.Mono;
 
@@ -96,11 +97,13 @@ class GatewaySecurityTest {
         }
     }
 
+    /** Responde 204 y devuelve en {@code X-Visto-Usuario} el usuario que le llego del gateway. */
     @RestController
     static class Sumidero {
         @RequestMapping("/__sumidero")
-        @ResponseStatus(HttpStatus.NO_CONTENT)
-        void aceptar() {}
+        ResponseEntity<Void> aceptar(@RequestHeader(value = "X-User-Name", required = false) String usuario) {
+            return ResponseEntity.noContent().header("X-Visto-Usuario", usuario == null ? "" : usuario).build();
+        }
     }
 
     static final String XSRF = "xsrf-123";
@@ -298,5 +301,27 @@ class GatewaySecurityTest {
         try (HttpClient http = HttpClient.newHttpClient()) {
             return http.send(req, HttpResponse.BodyHandlers.discarding()).statusCode();
         }
+    }
+
+    // ---- HU-08: usuario hacia los servicios y borrado definitivo de socios ------------------
+
+    @Test
+    void usuarioDelToken_llegaAlServicio_yLaCabeceraDelClienteSeDescarta() {
+        client.get().uri("/api/partners").cookie("access_token", OPERADOR)
+                .header("X-User-Name", "suplantador")
+                .exchange()
+                .expectHeader().valueEquals("X-Visto-Usuario", "operador1");
+        client.get().uri("/.well-known/jwks.json")
+                .header("X-User-Name", "suplantador")
+                .exchange()
+                .expectHeader().valueEquals("X-Visto-Usuario", "");
+    }
+
+    @Test
+    void borradoDefinitivoDeSocio_soloAdmin() {
+        navegador(client.delete().uri("/api/partners/123/purge?confirm=X"), OPERADOR)
+                .exchange().expectStatus().isForbidden();
+        dejoPasar(navegador(client.delete().uri("/api/partners/123/purge?confirm=X"), ADMIN).exchange());
+        dejoPasar(navegador(client.delete().uri("/api/partners/123"), OPERADOR).exchange());
     }
 }

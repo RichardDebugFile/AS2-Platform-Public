@@ -37,6 +37,15 @@ El menú (`src/routes/menu.ts`) se organiza por categorías (Operación, Socios,
 Administración) y se filtra por rol: Administración solo la ve `ADMIN`, y sus rutas están además
 protegidas por `RequireRole`. La seguridad real está en el servidor (gateway y auth-service).
 
+## Socios comerciales
+
+`/partners` (`src/pages/partners/`, store `partnersStore`): lista de socios activos o dados de baja
+con búsqueda; alta en un paso (`POST /api/partners/complete`, crea también las configuraciones de
+salida, entrada y MDN por defecto) y edición en un panel con pestañas Datos, Conexión, Seguridad AS2,
+Salida, Entrada y MDN (cada configuración se guarda por separado). Todos los roles consultan;
+`ADMIN` y `OPERATOR` registran, editan, dan de baja y reactivan; solo `ADMIN` borra definitivamente,
+escribiendo el identificador AS2 para confirmar.
+
 ## Idiomas
 
 Textos por espacios de nombres en `src/i18n/locales/{es,en}/` (`common`, `auth`, `session`,
