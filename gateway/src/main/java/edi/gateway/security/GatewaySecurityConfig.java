@@ -53,6 +53,9 @@ public class GatewaySecurityConfig {
     /** APIs de configuracion que solo usa una pantalla de administracion. */
     static final String[] ADMIN_PATHS = {"/api/smtp-config", "/api/smtp-config/**"};
 
+    /** Borrado definitivo de un socio. */
+    static final String PARTNER_PURGE = "/api/partners/*/purge";
+
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String[] ROLES_QUE_EDITAN = {"ADMIN", "OPERATOR"};
 
@@ -119,6 +122,9 @@ public class GatewaySecurityConfig {
                 .securityContextRepository(NoOpServerSecurityContextRepository.getInstance())
                 // Modificar algo en /api/** exige ADMIN u OPERATOR; AUDITOR solo consulta.
                 .authorizeExchange(ex -> ex.pathMatchers(ADMIN_PATHS)
+                        .hasRole("ADMIN")
+                        // Borrado definitivo de un socio (y sus configuraciones): solo ADMIN.
+                        .pathMatchers(HttpMethod.DELETE, PARTNER_PURGE)
                         .hasRole("ADMIN")
                         .pathMatchers(HttpMethod.POST, "/api/**")
                         .hasAnyRole(ROLES_QUE_EDITAN)

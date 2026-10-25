@@ -8,10 +8,11 @@ La plataforma corre en contenedores con Docker Compose. Se valida primero en loc
 | `proxy` | nginx: TLS, redirección HTTP→HTTPS, consola web y proxy hacia el gateway | 80, 443 |
 | `gateway` | Punto único de entrada (JWT, rutas, traza de acceso) | ninguno |
 | `auth-service` | Identidad y sesiones | ninguno |
+| `partners-service` | Socios comerciales y su configuración AS2 | ninguno |
 | `db` | PostgreSQL 16 con una base y un usuario por servicio | ninguno |
 | `backup` | `pg_dump` diario de cada base, conserva 7 días | ninguno |
 
-Los servicios de socios, documentos, alertas y AS2 se incorporan al stack con sus historias.
+Los servicios de documentos, alertas y AS2 se incorporan al stack con sus historias.
 
 ## Puesta en marcha
 
@@ -54,6 +55,7 @@ Consola: `https://localhost` (usuario `admin`; la contraseña la muestra `init-e
 | `POSTGRES_PASSWORD`, `*_DB_PASSWORD` | Superusuario y usuario de cada base |
 | `AUTH_JWT_PRIVATE_KEY_PEM`, `AUTH_JWT_PUBLIC_KEY_PEM` | Par RSA de los JWT (fijo: reiniciar no cierra sesiones) |
 | `AUTH_MFA_SECRET_KEY` | Clave AES de los secretos MFA |
+| `PARTNERS_SECRET_KEY` | Clave AES de las claves de autenticación básica de los socios (se añade a un `.env` existente) |
 | `ADMIN_USER`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | Administrador inicial |
 | `BACKUP_INTERVAL_SECONDS`, `BACKUP_RETENTION_DAYS` | Frecuencia y retención del respaldo (opcionales) |
 

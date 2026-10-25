@@ -49,6 +49,8 @@ else
 fi
 code="$("${CURL[@]}" -b "$jar" -o /dev/null -w '%{http_code}' "$BASE/users/me")"
 [ "$code" = "200" ] && ok "Con la cookie de sesion el gateway deja pasar (/users/me 200)" || fail "/users/me con sesion respondio $code"
+code="$("${CURL[@]}" -b "$jar" -o /dev/null -w '%{http_code}' "$BASE/api/partners")"
+[ "$code" = "200" ] && ok "Servicio de socios alcanzable por el gateway (/api/partners 200)" || fail "/api/partners con sesion respondio $code"
 rm -f "$jar"
 
 # 6. Reinicio automatico del gateway tras un fallo (el proceso termina)
