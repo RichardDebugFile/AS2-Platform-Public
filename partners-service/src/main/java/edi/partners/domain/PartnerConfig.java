@@ -9,6 +9,8 @@ import jakarta.persistence.MappedSuperclass;
 import jakarta.persistence.OneToOne;
 import java.time.Instant;
 import java.util.UUID;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 import org.springframework.data.annotation.CreatedBy;
 import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedBy;
@@ -24,6 +26,7 @@ public abstract class PartnerConfig {
     private UUID id = UUID.randomUUID();
 
     @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @OnDelete(action = OnDeleteAction.CASCADE) // igual que V2: ON DELETE CASCADE
     @JoinColumn(name = "partner_id", nullable = false, unique = true, updatable = false)
     private Partner partner;
 
