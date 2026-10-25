@@ -53,4 +53,24 @@ class GatewayRoutesTest {
             assertThat(f.getArgs().values()).contains("/internal/as2/mdn");
         });
     }
+
+    /**
+     * Las consultas y registros internos de los servicios (motor AS2, bitacora) no se publican: ningun
+     * patron de ruta los alcanza. Solo el callback MDN de los socios entra por /internal.
+     */
+    @Test
+    void lasRutasInternasDeLosServicios_noSePublican() {
+        var parser = new org.springframework.web.util.pattern.PathPatternParser();
+        var patrones = rutas().values().stream()
+                .flatMap(r -> java.util.Arrays.stream(paths(r).split(",")))
+                .map(parser::parse)
+                .toList();
+        for (String interna : java.util.List.of("/internal/audit-logs", "/internal/partners/search",
+                "/internal/partners/filewatcher-enabled")) {
+            var ruta = org.springframework.http.server.PathContainer.parsePath(interna);
+            assertThat(patrones).as(interna).noneMatch(p -> p.matches(ruta));
+        }
+        var bitacora = org.springframework.http.server.PathContainer.parsePath("/api/audit-logs/export");
+        assertThat(patrones).anyMatch(p -> p.matches(bitacora));
+    }
 }
