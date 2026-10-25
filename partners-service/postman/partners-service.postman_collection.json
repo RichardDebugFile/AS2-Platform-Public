@@ -1,7 +1,7 @@
 {
   "info": {
     "name": "partners-service",
-    "description": "Socios comerciales y su configuración AS2 (HU-08). Contra el stack Docker: host = https://localhost y ejecutar primero la carpeta \"Sesión (vía gateway)\" (Postman guarda las cookies). Contra el servicio en local (sin gateway): host = http://localhost:8081 y omitir esa carpeta. La colección deja la base como estaba: borra los socios que crea.",
+    "description": "Socios comerciales y su configuración AS2 (HU-08). Contra el stack Docker: host = https://localhost y ejecutar primero la carpeta \"Sesión (vía gateway)\" (Postman guarda las cookies). Contra el servicio en local (sin gateway): host = http://localhost:8081 y omitir esa carpeta. Borra los socios que crea; sus eventos quedan en la bitácora, que es de solo inserción.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "variable": [
@@ -31,6 +31,10 @@
     },
     {
       "key": "internalId",
+      "value": ""
+    },
+    {
+      "key": "messageId",
       "value": ""
     },
     {
@@ -764,8 +768,163 @@
       ]
     },
     {
+      "name": "Bitácora",
+      "description": "Después de la carpeta Socios: su historia queda en la bitácora aunque el socio se haya borrado.",
+      "item": [
+        {
+          "name": "Eventos del socio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?partnerAs2Name={{as2Name}}&size=50",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "partnerAs2Name",
+                  "value": "{{as2Name}}"
+                },
+                {
+                  "key": "size",
+                  "value": "50"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const tipos = pm.response.json().content.map(e => e.eventType);",
+                  "pm.test('alta, edición y borrado registrados', () => pm.expect(tipos).to.include.members(['PARTNER_CREATED', 'PARTNER_UPDATED', 'PARTNER_DEACTIVATED', 'PARTNER_PURGED']));",
+                  "pm.test('del más reciente al más antiguo', () => pm.expect(tipos[0]).to.eql('PARTNER_PURGED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Edición con los datos cambiados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?partnerAs2Name={{as2Name}}&eventType=PARTNER_UPDATED",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "partnerAs2Name",
+                  "value": "{{as2Name}}"
+                },
+                {
+                  "key": "eventType",
+                  "value": "PARTNER_UPDATED"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const e = pm.response.json().content[0];",
+                  "pm.test('usuario y cambio registrados', () => { pm.expect(e.actor).to.be.a('string').and.not.empty; pm.expect(e.changes.partnerName.to).to.eql('Socio renombrado'); });",
+                  "pm.test('sin claves en la bitácora', () => pm.expect(JSON.stringify(e)).to.not.include('secreto-de-prueba'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tipos de evento",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs/event-types",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs",
+                "event-types"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el alta', () => pm.expect(pm.response.json()).to.include('PARTNER_CREATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Exportar CSV",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs/export?partnerAs2Name={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs",
+                "export"
+              ],
+              "query": [
+                {
+                  "key": "partnerAs2Name",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('CSV descargable', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'); });",
+                  "pm.test('cabecera y filas', () => pm.expect(pm.response.text()).to.include('fecha_utc,evento,estado'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
       "name": "Motor AS2 (red interna)",
-      "description": "Consultas que usa el motor AS2. El gateway no las enruta: se ejecutan directo contra partners-service (host = http://localhost:8081), dentro de la red de contenedores o con el servicio en local.",
+      "description": "Consultas y registro de eventos que usa el motor AS2. El gateway no las enruta: se ejecutan directo contra partners-service (host = http://localhost:8081), dentro de la red de contenedores o con el servicio en local.",
       "item": [
         {
           "name": "Alta del socio de prueba",
@@ -869,6 +1028,200 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "pm.test('incluye el socio', () => pm.expect(pm.response.json()).to.include(pm.collectionVariables.get('as2NameInternal')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento: documento enviado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/internal/audit-logs",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"DOCUMENT_SENT\",\n  \"status\": \"SUCCESS\",\n  \"source\": \"as2-adapter\",\n  \"partnerAs2Name\": \"{{as2NameInternal}}\",\n  \"messageId\": \"{{messageId}}\",\n  \"detail\": \"Documento enviado\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('socio completado por su identificador', () => pm.expect(pm.response.json().partnerId).to.eql(pm.collectionVariables.get('internalId')));"
+                ]
+              }
+            },
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('messageId')) pm.collectionVariables.set('messageId', '<postman-' + Date.now() + '@as2.example.com>');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento: MDN recibido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/internal/audit-logs",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"MDN_RECEIVED\",\n  \"status\": \"SUCCESS\",\n  \"source\": \"as2-adapter\",\n  \"partnerAs2Name\": \"{{as2NameInternal}}\",\n  \"messageId\": \"{{messageId}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento: MIC verificado",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/internal/audit-logs",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"MIC_VERIFIED\",\n  \"status\": \"SUCCESS\",\n  \"source\": \"as2-adapter\",\n  \"partnerAs2Name\": \"{{as2NameInternal}}\",\n  \"messageId\": \"{{messageId}}\",\n  \"detail\": \"El MIC del MDN coincide\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Evento con tipo inválido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/internal/audit-logs",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"eventType\": \"documento enviado\",\n  \"status\": \"SUCCESS\",\n  \"source\": \"as2-adapter\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Historia del Message-ID en orden cronológico",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?messageId={{messageId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "messageId",
+                  "value": "{{messageId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('los tres eventos en orden', () => pm.expect(pm.response.json().content.map(e => e.eventType)).to.eql(['DOCUMENT_SENT', 'MDN_RECEIVED', 'MIC_VERIFIED']));",
+                  "pm.collectionVariables.set('messageId', '');"
                 ]
               }
             }
