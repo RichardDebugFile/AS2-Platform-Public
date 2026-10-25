@@ -8,6 +8,9 @@ export default defineConfig({
     globals: true,
     environment: 'jsdom',
     setupFiles: './src/setupTests.ts',
+    // Las pantallas con formularios de Ant Design (socios) tardan mas de los 5 s por defecto en los
+    // runners de CI con cobertura activa; el limite solo corta pruebas colgadas.
+    testTimeout: 20_000,
     // Cobertura para SonarQube Cloud (frontend/coverage/lcov.info). Se genera con npm run test:coverage.
     coverage: {
       provider: 'v8',
