@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.4.0 — 2026-10-25
 
 ### Novedades
 - Registro de socios comerciales desde la consola: en un solo paso se da de alta el socio con su
