@@ -4,6 +4,8 @@ import edi.partners.dto.ApiError;
 import edi.partners.error.ConfigNotFoundException;
 import edi.partners.error.DuplicateAs2NameException;
 import edi.partners.error.PartnerNotFoundException;
+import edi.partners.error.FolderPrecheckException;
+import edi.partners.error.PartnerStateException;
 import edi.partners.svc.folders.PartnerFolderException;
 import java.util.stream.Collectors;
 import org.slf4j.Logger;
@@ -48,9 +50,19 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(PartnerFolderException.class)
     ResponseEntity<ApiError> onFolders(PartnerFolderException e) {
-        log.error("No se pudieron preparar las carpetas del socio", e);
-        return error(HttpStatus.INTERNAL_SERVER_ERROR, "PARTNER_FOLDERS_FAILED",
-                "No se pudieron crear las carpetas del socio; no se guardo nada. " + e.getMessage());
+        log.error("Operacion de carpetas del socio fallida", e);
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "PARTNER_FOLDERS_FAILED", e.getMessage());
+    }
+
+    /** La verificacion previa encontro problemas: no se toco ninguna carpeta. */
+    @ExceptionHandler(FolderPrecheckException.class)
+    ResponseEntity<ApiError> onPrecheck(FolderPrecheckException e) {
+        return error(HttpStatus.CONFLICT, "FOLDERS_PRECHECK_FAILED", e.getMessage());
+    }
+
+    @ExceptionHandler(PartnerStateException.class)
+    ResponseEntity<ApiError> onState(PartnerStateException e) {
+        return error(HttpStatus.CONFLICT, "INVALID_STATE", e.getMessage());
     }
 
     @ExceptionHandler(IllegalArgumentException.class)

@@ -1,6 +1,7 @@
 package edi.partners.svc;
 
 import edi.partners.config.RequestIdentity;
+import edi.partners.domain.FolderState;
 import edi.partners.domain.MdnMode;
 import edi.partners.domain.Partner;
 import edi.partners.domain.TransportType;
@@ -14,10 +15,12 @@ import edi.partners.svc.audit.AuditEvent.Change;
 import edi.partners.svc.audit.AuditEventTypes;
 import edi.partners.svc.audit.AuditLogPublisher;
 import edi.partners.svc.audit.Changes;
+import edi.partners.svc.folders.PartnerFolderException;
 import edi.partners.svc.folders.PartnerFolderProvisioner;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -56,7 +59,11 @@ public class PartnerService {
         p.setAs2Name(as2Name);
         apply(p, r, true);
         p = repo.saveAndFlush(p);
-        folders.provision(p);
+        try {
+            folders.provision(p);
+        } catch (PartnerFolderException e) {
+            throw new PartnerFolderException(e.getMessage() + ". El socio no se guardo.", e);
+        }
         publish(AuditEventTypes.PARTNER_CREATED, p, "Socio creado: " + as2Name,
                 Changes.between(null, PartnerResponse.of(p)));
         return p;
@@ -197,8 +204,13 @@ public class PartnerService {
         p.setValidateMic(or(r.validateMic(), p.isValidateMic()));
 
         p.setEnableDualStorage(or(r.enableDualStorage(), p.isEnableDualStorage()));
-        p.setEnableIncomingQueue(or(r.enableIncomingQueue(), p.isEnableIncomingQueue()));
-        p.setSharedFolderName(PartnerRules.trim(r.sharedFolderName()));
+        // La cola de entrada y la carpeta compartida enlazada solo cambian por sus operaciones (HU-09).
+        String shared = PartnerRules.sharedFolderName(r.sharedFolderName());
+        if (p.getFolderState() != FolderState.LOCAL && !Objects.equals(shared, p.getSharedFolderName())) {
+            throw new IllegalArgumentException(
+                    "La carpeta compartida no se puede cambiar con el socio ya enlazado: " + p.getSharedFolderName());
+        }
+        p.setSharedFolderName(shared);
         p.setDataLocation(PartnerRules.trim(r.dataLocation()));
 
         p.setContactName(PartnerRules.trim(r.contactName()));

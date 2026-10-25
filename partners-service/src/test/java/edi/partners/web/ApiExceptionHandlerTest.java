@@ -18,11 +18,11 @@ class ApiExceptionHandlerTest {
 
     @Test
     void carpetasFallidas_500ConCodigoPropio() {
-        ResponseEntity<ApiError> r = handler.onFolders(new PartnerFolderException("sin permisos"));
+        ResponseEntity<ApiError> r = handler.onFolders(new PartnerFolderException("sin permisos. El socio no se guardo."));
 
         assertThat(r.getStatusCode()).isEqualTo(HttpStatus.INTERNAL_SERVER_ERROR);
         assertThat(r.getBody().code()).isEqualTo("PARTNER_FOLDERS_FAILED");
-        assertThat(r.getBody().message()).contains("no se guardo nada");
+        assertThat(r.getBody().message()).contains("no se guardo");
     }
 
     @Test

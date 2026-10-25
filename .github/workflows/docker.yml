@@ -2,7 +2,7 @@ name: Docker
 
 # Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo y verifica los
 # criterios de aceptacion con deploy/docker/smoke-test.sh (HTTPS, puertos, reinicio automatico,
-# cookies Secure y respaldo restaurable). Corre cuando cambia el despliegue.
+# cookies Secure, respaldo restaurable y carpetas de los socios). Corre cuando cambia el despliegue.
 
 permissions:
   contents: read
@@ -44,6 +44,10 @@ jobs:
         id: build
         run: docker compose build 2>&1 | tee /tmp/build.log
 
+      - name: Almacenamiento de las carpetas de los socios
+        id: storage
+        run: ./prepare-storage.sh
+
       - name: Levantar
         id: up
         run: docker compose up -d --wait --wait-timeout 300
@@ -56,7 +60,7 @@ jobs:
       - name: Diagnostico ante un fallo
         if: failure()
         run: |
-          echo "::error title=Pasos::init=${{ steps.init.outcome }} build=${{ steps.build.outcome }} up=${{ steps.up.outcome }}"
+          echo "::error title=Pasos::init=${{ steps.init.outcome }} build=${{ steps.build.outcome }} storage=${{ steps.storage.outcome }} up=${{ steps.up.outcome }}"
           if [ "${{ steps.build.outcome }}" = "failure" ]; then
             grep -iE 'error|failed' /tmp/build.log | tail -n 15 | while IFS= read -r l; do echo "::error title=build::$l"; done
           fi

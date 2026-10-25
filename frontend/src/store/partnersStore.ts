@@ -51,8 +51,40 @@ export interface PartnerInput {
     alertOnFailure?: boolean;
 }
 
+export type FolderState = "LOCAL" | "SAMBA_LINKED" | "PRODUCTION";
+export type FolderHealth = "OK" | "MISSING" | "NO_ACCESS" | "ERROR";
+
+export interface FolderEntry {
+    name: string;
+    path: string;
+    exists: boolean;
+    readable: boolean;
+    writable: boolean;
+    linked: boolean;
+    target?: string | null;
+}
+
+export interface FolderStatus {
+    partnerId: string;
+    as2Name: string;
+    folderState: FolderState;
+    sharedFolderName?: string | null;
+    health: FolderHealth;
+    folders: FolderEntry[];
+    problems: string[];
+}
+
+export interface FolderPrecheck {
+    ok: boolean;
+    sharedFolderName: string;
+    target: string;
+    problems: string[];
+    actions: string[];
+}
+
 export interface Partner extends Omit<PartnerInput, "basicAuthPassword"> {
     id: string;
+    folderState?: FolderState;
     endpointUrl: string;
     hasBasicAuthPassword: boolean;
     active: boolean;
@@ -129,6 +161,14 @@ interface PartnersState {
     loading: boolean;
     error: string | null;
     catalog: AlgorithmCatalog | null;
+    /** Estado de las carpetas por id de socio (activos). */
+    folderStatuses: Record<string, FolderStatus>;
+    fetchFolderStatuses: () => Promise<void>;
+    getFolderStatus: (id: string) => Promise<ActionResult<FolderStatus>>;
+    repairFolders: (id: string) => Promise<ActionResult<FolderStatus>>;
+    precheckFolders: (id: string, sharedFolderName: string) => Promise<ActionResult<FolderPrecheck>>;
+    linkFolders: (id: string, sharedFolderName: string) => Promise<ActionResult<FolderStatus>>;
+    setProduction: (id: string, enabled: boolean, confirm: string) => Promise<ActionResult<Partner>>;
     fetchPartners: (inactive?: boolean) => Promise<void>;
     fetchCatalog: () => Promise<void>;
     getConfigs: (id: string) => Promise<ActionResult<PartnerConfigs>>;
@@ -152,12 +192,45 @@ export const usePartnersStore = create<PartnersState>((set, get) => {
 
     const done = (r: ActionResult<unknown>): ActionResult => (r.ok ? { ok: true, data: undefined } : r);
 
+    /** Guarda el estado de carpetas recibido para que la lista lo muestre sin otra consulta. */
+    const remember = (r: ActionResult<FolderStatus>): ActionResult<FolderStatus> => {
+        if (r.ok) set({ folderStatuses: { ...get().folderStatuses, [r.data.partnerId]: r.data } });
+        return r;
+    };
+
     return {
         partners: [],
         showInactive: false,
         loading: false,
         error: null,
         catalog: null,
+        folderStatuses: {},
+
+        fetchFolderStatuses: async () => {
+            const res = await dataService.get<FolderStatus[]>(`${BASE}/folder-statuses`);
+            if (res.ok && Array.isArray(res.data)) {
+                set({ folderStatuses: Object.fromEntries(res.data.map((f) => [f.partnerId, f])) });
+            }
+        },
+
+        getFolderStatus: async (id) => remember(result(await dataService.get<FolderStatus>(`${byId(id)}/folders`))),
+
+        repairFolders: async (id) => remember(result(await dataService.post<FolderStatus>(`${byId(id)}/folders/repair`))),
+
+        precheckFolders: async (id, sharedFolderName) =>
+            result(await dataService.post<FolderPrecheck>(`${byId(id)}/folders/precheck`, { sharedFolderName })),
+
+        linkFolders: async (id, sharedFolderName) => {
+            const res = remember(result(await dataService.post<FolderStatus>(`${byId(id)}/folders/link`, { sharedFolderName })));
+            if (res.ok) await reload();
+            return res;
+        },
+
+        setProduction: async (id, enabled, confirm) => {
+            const res = await afterChange(await dataService.post<Partner>(`${byId(id)}/production`, { enabled, confirm }));
+            if (res.ok) await get().getFolderStatus(id);
+            return res;
+        },
 
         fetchPartners: async (inactive = false) => {
             set({ loading: true, error: null, showInactive: inactive });

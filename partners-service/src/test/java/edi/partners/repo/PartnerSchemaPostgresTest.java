@@ -74,6 +74,16 @@ class PartnerSchemaPostgresTest {
         assertThatThrownBy(() -> partners.saveAndFlush(p)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
+    @Test
+    void etapaDeCarpetas_porDefectoLocal_ySoloValoresConocidos() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-F", true));
+
+        assertThat(jdbc.queryForObject("SELECT folder_state FROM partner WHERE id = ?", String.class, p.getId()))
+                .isEqualTo("LOCAL");
+        assertThatThrownBy(() -> jdbc.update("UPDATE partner SET folder_state = 'OTRO' WHERE id = ?", p.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
     /**
      * Un evento de la bitacora del socio. Cada prueba siguiente provoca un solo error: tras el primero,
      * PostgreSQL anula la transaccion de la prueba y rechaza cualquier otra sentencia.

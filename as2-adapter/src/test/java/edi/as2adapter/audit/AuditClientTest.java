@@ -37,7 +37,7 @@ class AuditClientTest {
                     """))
                 .andRespond(withStatus(HttpStatus.CREATED));
 
-        new AuditClient(builder, "http://partners.test", Runnable::run).record(SENT);
+        new AuditClient(builder, "http://partners.test", Runnable::run).publish(SENT);
 
         server.verify();
     }
@@ -48,7 +48,7 @@ class AuditClientTest {
         MockRestServiceServer server = MockRestServiceServer.bindTo(builder).build();
         server.expect(requestTo("http://partners.test/internal/audit-logs")).andRespond(withServerError());
 
-        assertThatCode(() -> new AuditClient(builder, "http://partners.test", Runnable::run).record(SENT))
+        assertThatCode(() -> new AuditClient(builder, "http://partners.test", Runnable::run).publish(SENT))
                 .doesNotThrowAnyException();
 
         assertThat(out.getOut()).contains("No se pudo registrar en la bitacora: event=DOCUMENT_SENT")
@@ -61,17 +61,23 @@ class AuditClientTest {
         try (ServerSocket s = new ServerSocket(0)) {
             puertoCerrado = s.getLocalPort();
         }
-        AuditClient client = new AuditClient("http://127.0.0.1:" + puertoCerrado);
+        java.util.List<Thread> hilos = new java.util.concurrent.CopyOnWriteArrayList<>();
+        AuditClient client = new AuditClient(RestClient.builder(), "http://127.0.0.1:" + puertoCerrado,
+                tarea -> hilos.add(Thread.ofVirtual().start(tarea)));
 
         long inicio = System.nanoTime();
-        client.record(SENT);
+        client.publish(SENT);
         assertThat(Duration.ofNanos(System.nanoTime() - inicio)).isLessThan(Duration.ofMillis(500));
 
-        long limite = System.currentTimeMillis() + 10_000;
-        while (!out.getOut().contains("No se pudo registrar en la bitacora") && System.currentTimeMillis() < limite) {
-            Thread.sleep(50);
+        for (Thread h : hilos) {
+            assertThat(h.join(Duration.ofSeconds(10))).isTrue();
         }
         assertThat(out.getOut()).contains("No se pudo registrar en la bitacora: event=DOCUMENT_SENT");
+    }
+
+    @Test
+    void elConstructorDeSpringUsaUnEjecutorEnSegundoPlano() {
+        assertThatCode(() -> new AuditClient("http://127.0.0.1:1").publish(SENT)).doesNotThrowAnyException();
     }
 
     @Test
@@ -80,7 +86,7 @@ class AuditClientTest {
             throw new java.util.concurrent.RejectedExecutionException("cerrado");
         });
 
-        assertThatCode(() -> client.record(SENT)).doesNotThrowAnyException();
+        assertThatCode(() -> client.publish(SENT)).doesNotThrowAnyException();
         assertThat(out.getOut()).contains("RejectedExecutionException");
     }
 }

@@ -1,6 +1,7 @@
 package edi.partners.dto;
 
 import edi.partners.domain.EncryptionAlgorithm;
+import edi.partners.domain.FolderState;
 import edi.partners.domain.MdnMode;
 import edi.partners.domain.MicAlgorithm;
 import edi.partners.domain.Partner;
@@ -44,6 +45,7 @@ public record PartnerResponse(
         boolean enableDualStorage,
         boolean enableIncomingQueue,
         String sharedFolderName,
+        FolderState folderState,
         String dataLocation,
         String contactName,
         String contactPhone,
@@ -65,7 +67,7 @@ public record PartnerResponse(
                 p.getEncryptionAlgorithm(), p.getMicAlgorithm(), p.isCompressionEnabled(), p.isRequestMdn(),
                 p.isRequestSignedMdn(), p.getMdnMode(), p.getMdnReceiptUrl(), p.isValidateCertificate(),
                 p.isValidateSignature(), p.isValidateMic(), p.isEnableDualStorage(), p.isEnableIncomingQueue(),
-                p.getSharedFolderName(), p.getDataLocation(), p.getContactName(), p.getContactPhone(),
+                p.getSharedFolderName(), p.getFolderState(), p.getDataLocation(), p.getContactName(), p.getContactPhone(),
                 p.getContactEmail(), p.getTradingPartnerEmail(), p.isAlertOnFailure(), p.isActive(),
                 p.getCreatedBy(), p.getCreatedAt(), p.getUpdatedBy(), p.getUpdatedAt());
     }

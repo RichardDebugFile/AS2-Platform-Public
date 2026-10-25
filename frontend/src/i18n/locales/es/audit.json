@@ -47,6 +47,10 @@
     "DOCUMENT_RECEIVED": "Documento recibido",
     "MDN_SENT": "MDN enviado",
     "MDN_RECEIVED": "MDN recibido",
-    "MIC_VERIFIED": "MIC verificado"
+    "MIC_VERIFIED": "MIC verificado",
+    "FOLDERS_REPAIRED": "Carpetas recreadas",
+    "FOLDERS_LINKED": "Carpetas enlazadas con el ERP",
+    "PRODUCTION_ENABLED": "Producción activada",
+    "PRODUCTION_DISABLED": "Producción desactivada"
   }
 }

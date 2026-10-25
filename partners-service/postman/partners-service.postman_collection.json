@@ -26,11 +26,23 @@
       "value": "SOCIO-POSTMAN-INTERNO"
     },
     {
+      "key": "as2NameFolders",
+      "value": "SOCIO-POSTMAN-CARPETAS"
+    },
+    {
+      "key": "sharedFolder",
+      "value": "SocioPostman"
+    },
+    {
       "key": "partnerId",
       "value": ""
     },
     {
       "key": "internalId",
+      "value": ""
+    },
+    {
+      "key": "foldersId",
       "value": ""
     },
     {
@@ -915,6 +927,501 @@
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "pm.test('CSV descargable', () => { pm.expect(pm.response.headers.get('Content-Type')).to.include('text/csv'); pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'); });",
                   "pm.test('cabecera y filas', () => pm.expect(pm.response.text()).to.include('fecha_utc,evento,estado'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Carpetas",
+      "description": "HU-09. Antes de ejecutarla, crear en el recurso compartido la carpeta {{sharedFolder}} (en Docker: docker compose exec partners-service mkdir -p /mnt/erp/<carpeta>). El enlace y la producción exigen ADMIN.",
+      "item": [
+        {
+          "name": "Alta del socio de carpetas",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2NameFolders}}\",\n    \"partnerName\": \"Socio de prueba\",\n    \"partnerType\": \"CUSTOMER\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\",\n    \"signingAlgorithm\": \"RSA_SHA256\",\n    \"encryptionAlgorithm\": \"AES256\",\n    \"micAlgorithm\": \"SHA256\",\n    \"basicAuthUsername\": \"usuario\",\n    \"basicAuthPassword\": \"secreto-de-prueba\",\n    \"contactEmail\": \"ops@example.com\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('foldersId', pm.response.json().partner.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado de sus carpetas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/folders",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "folders"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json();",
+                  "pm.test('árbol estándar completo', () => { pm.expect(f.health).to.eql('OK'); pm.expect(f.folders.map(x => x.name)).to.eql(['Archive', 'Certs', 'Error', 'Incoming', 'MDN', 'Outgoing']); });",
+                  "pm.test('etapa LOCAL', () => pm.expect(f.folderState).to.eql('LOCAL'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Precheck con una carpeta que no existe",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/folders/precheck",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "folders",
+                "precheck"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sharedFolderName\": \"NoExiste-{{$timestamp}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('negativo con el problema', () => { pm.expect(pm.response.json().ok).to.be.false; pm.expect(pm.response.json().problems[0]).to.include('no existe en el montaje'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Precheck con nombre que es una ruta (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/folders/precheck",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "folders",
+                "precheck"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sharedFolderName\": \"../otra\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Precheck positivo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/folders/precheck",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "folders",
+                "precheck"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sharedFolderName\": \"{{sharedFolder}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('se puede enlazar', () => pm.expect(pm.response.json().ok).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Enlazar (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/folders/link",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "folders",
+                "link"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"sharedFolderName\": \"{{sharedFolder}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const f = pm.response.json();",
+                  "pm.test('SAMBA_LINKED y cada subcarpeta enlazada', () => { pm.expect(f.folderState).to.eql('SAMBA_LINKED'); pm.expect(f.folders.every(x => x.linked)).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado de carpetas de todos",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/folder-statuses",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "folder-statuses"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el socio enlazado', () => pm.expect(pm.response.json().find(f => f.partnerId === pm.collectionVariables.get('foldersId')).folderState).to.eql('SAMBA_LINKED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Producción sin confirmar (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/production",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "production"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"confirm\": \"otro\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activar producción (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/production",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "production"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": true,\n  \"confirm\": \"{{as2NameFolders}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('PRODUCTION con la cola activa', () => { pm.expect(pm.response.json().folderState).to.eql('PRODUCTION'); pm.expect(pm.response.json().enableIncomingQueue).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar producción (ADMIN)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/production",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "production"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"enabled\": false,\n  \"confirm\": \"{{as2NameFolders}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('vuelve a SAMBA_LINKED sin cola', () => { pm.expect(pm.response.json().folderState).to.eql('SAMBA_LINKED'); pm.expect(pm.response.json().enableIncomingQueue).to.be.false; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bitácora del enlace",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?partnerId={{foldersId}}&eventType=FOLDERS_LINKED",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "partnerId",
+                  "value": "{{foldersId}}"
+                },
+                {
+                  "key": "eventType",
+                  "value": "FOLDERS_LINKED"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('registrado con la carpeta', () => pm.expect(pm.response.json().content[0].changes.sharedFolderName.to).to.eql(pm.collectionVariables.get('sharedFolder')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: baja",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: borrado definitivo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{foldersId}}/purge?confirm={{as2NameFolders}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{foldersId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "{{as2NameFolders}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }

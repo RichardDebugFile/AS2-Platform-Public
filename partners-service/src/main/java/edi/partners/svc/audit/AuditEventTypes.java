@@ -11,6 +11,10 @@ public final class AuditEventTypes {
     public static final String OUTGOING_CONFIG_UPDATED = "OUTGOING_CONFIG_UPDATED";
     public static final String INCOMING_CONFIG_UPDATED = "INCOMING_CONFIG_UPDATED";
     public static final String MDN_CONFIG_UPDATED = "MDN_CONFIG_UPDATED";
+    public static final String FOLDERS_REPAIRED = "FOLDERS_REPAIRED";
+    public static final String FOLDERS_LINKED = "FOLDERS_LINKED";
+    public static final String PRODUCTION_ENABLED = "PRODUCTION_ENABLED";
+    public static final String PRODUCTION_DISABLED = "PRODUCTION_DISABLED";
 
     private AuditEventTypes() {
     }

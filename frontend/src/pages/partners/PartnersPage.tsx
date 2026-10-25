@@ -6,13 +6,15 @@ import { useTranslation } from "react-i18next";
 import { hasAnyRole, useAuthStore } from "../../store/authStore";
 import { usePartnersStore, type Partner } from "../../store/partnersStore";
 import PartnerDrawer from "./PartnerDrawer";
+import { HEALTH_COLOR, STATE_COLOR } from "./folderStyles";
 
 /** Socios comerciales: todos los roles consultan; ADMIN y OPERATOR registran y editan. */
 export default function PartnersPage() {
     const { t } = useTranslation("partners");
     const { message, modal } = App.useApp();
     const user = useAuthStore((s) => s.user);
-    const { partners, loading, error, showInactive, fetchPartners, setActive, remove, purge } = usePartnersStore();
+    const { partners, loading, error, showInactive, folderStatuses, fetchPartners, fetchFolderStatuses, setActive, remove, purge } =
+        usePartnersStore();
     const [query, setQuery] = useState("");
     const [drawer, setDrawer] = useState<{ partner: Partner | null } | null>(null);
     const [purging, setPurging] = useState<Partner | null>(null);
@@ -24,6 +26,11 @@ export default function PartnersPage() {
     useEffect(() => {
         void fetchPartners(false);
     }, [fetchPartners]);
+
+    // Estado de carpetas de los activos (HU-09), cada vez que cambia la lista.
+    useEffect(() => {
+        if (!showInactive && partners.length > 0) void fetchFolderStatuses();
+    }, [partners, showInactive, fetchFolderStatuses]);
 
     const visible = useMemo(() => {
         const q = query.trim().toLowerCase();
@@ -70,6 +77,20 @@ export default function PartnersPage() {
             title: t("list.columns.type"),
             dataIndex: "partnerType",
             render: (v?: string) => (v ? t(`types.${v}`) : "—"),
+        },
+        {
+            title: t("list.columns.folders"),
+            key: "folders",
+            render: (_: unknown, p: Partner) => {
+                const f = folderStatuses[p.id];
+                if (!p.active || !f) return "—";
+                return (
+                    <Space size={4} wrap>
+                        <Tag color={STATE_COLOR[f.folderState]}>{t(`folders.states.${f.folderState}`)}</Tag>
+                        {f.health !== "OK" && <Tag color={HEALTH_COLOR[f.health]}>{t(`folders.healths.${f.health}`)}</Tag>}
+                    </Space>
+                );
+            },
         },
         {
             title: t("list.columns.status"),
@@ -160,6 +181,7 @@ export default function PartnersPage() {
                     key={drawer.partner?.id ?? "new"}
                     partner={drawer.partner}
                     readOnly={!canEdit}
+                    isAdmin={isAdmin}
                     onClose={() => setDrawer(null)}
                 />
             )}

@@ -1,10 +1,10 @@
 import type { Dayjs } from "dayjs";
-import type { AuditFilters } from "../../store/auditStore";
+import type { AuditFilters, AuditStatus } from "../../store/auditStore";
 
 export interface FilterForm {
     partnerAs2Name?: string;
     eventType?: string;
-    status?: AuditFilters["status"];
+    status?: AuditStatus;
     actor?: string;
     messageId?: string;
     range?: [Dayjs | null, Dayjs | null] | null;

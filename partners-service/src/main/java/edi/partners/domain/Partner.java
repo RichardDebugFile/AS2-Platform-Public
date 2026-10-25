@@ -93,6 +93,9 @@ public class Partner {
     private boolean enableIncomingQueue = false;
     @Column(name = "shared_folder_name")
     private String sharedFolderName;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "folder_state", nullable = false, length = 16)
+    private FolderState folderState = FolderState.LOCAL;
     @Column(name = "data_location", length = 1024)
     private String dataLocation;
     @Column(name = "contact_name")
@@ -382,6 +385,14 @@ public class Partner {
 
     public void setSharedFolderName(String sharedFolderName) {
         this.sharedFolderName = sharedFolderName;
+    }
+
+    public FolderState getFolderState() {
+        return folderState;
+    }
+
+    public void setFolderState(FolderState folderState) {
+        this.folderState = folderState;
     }
 
     public String getDataLocation() {

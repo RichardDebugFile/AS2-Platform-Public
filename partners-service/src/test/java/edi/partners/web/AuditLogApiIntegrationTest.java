@@ -31,7 +31,7 @@ import org.springframework.test.web.servlet.MockMvc;
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.username=sa",
     "spring.datasource.password=",
-    "partners.storage.root=/data/partners"
+    "partners.storage.root=target/test-storage/audit", "partners.shared.root=target/test-shared/audit"
 })
 @AutoConfigureMockMvc
 class AuditLogApiIntegrationTest {
