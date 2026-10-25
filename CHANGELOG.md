@@ -15,6 +15,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   no sirve como nombre de carpeta se rechaza con un mensaje claro; dar de baja un socio libera su
   identificador, y solo un administrador puede borrarlo definitivamente. El Auditor consulta sin
   modificar, y cada cambio queda con el usuario que lo hizo (HU-08).
+- Bitácora de auditoría consultable desde la consola: cada alta, cambio, baja o borrado de un socio
+  y de su configuración queda registrado con quién lo hizo, cuándo y qué datos cambiaron (antes y
+  después, sin mostrar nunca claves). Se filtra por socio, tipo de evento, estado, usuario, Message-ID
+  y fechas, y se exporta a CSV. Buscar un Message-ID muestra la historia de ese intercambio en orden.
+  Los registros no se pueden modificar ni borrar, y se conservan aunque el socio se elimine. El motor
+  AS2 registra sus eventos sin detener nunca un envío si la bitácora no responde (HU-10).
 
 ### Correcciones
 - El comentario de SonarQube Cloud en la historia de Jira muestra ahora las métricas del código
