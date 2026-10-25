@@ -44,8 +44,8 @@ con búsqueda; alta en un paso (`POST /api/partners/complete`, crea también las
 salida, entrada y MDN por defecto) y edición en un panel con pestañas Datos, Conexión, Seguridad AS2,
 Salida, Entrada, MDN y Carpetas (cada configuración se guarda por separado). La pestaña Carpetas
 muestra el estado del árbol del socio, verifica y enlaza la carpeta compartida del ERP (el botón
-"Enlazar" solo se habilita tras una verificación positiva) y activa o desactiva producción. Todos los roles consultan;
-`ADMIN` y `OPERATOR` registran, editan, dan de baja y reactivan; solo `ADMIN` borra definitivamente,
+"Enlazar" solo se habilita tras una verificación positiva) y activa o desactiva producción.
+Todos los roles consultan; `ADMIN` y `OPERATOR` registran, editan, dan de baja y reactivan; solo `ADMIN` borra definitivamente,
 escribiendo el identificador AS2 para confirmar; el enlace con el ERP y la producción también son
 solo de `ADMIN`.
 
@@ -58,7 +58,7 @@ consultan; no tiene acciones de modificación.
 ## Idiomas
 
 Textos por espacios de nombres en `src/i18n/locales/{es,en}/` (`common`, `auth`, `session`,
-`admin`, `partners`, `documents`, `alerts`). El idioma elegido se recuerda en el navegador. Una
+`admin`, `partners`, `documents`, `alerts`, `audit`). El idioma elegido se recuerda en el navegador. Una
 prueba exige que español e inglés tengan exactamente las mismas claves.
 
 ## Comandos
