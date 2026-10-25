@@ -56,6 +56,9 @@ class PartnerFolderServiceTest {
         service = new PartnerFolderService(partners, repo, layout, provisioner, audit);
         socio = new Partner();
         socio.setAs2Name("SOCIO-A");
+        socio.setServerAddress("as2.socio.example");
+        socio.setPort(443);
+        socio.setTransportType(edi.partners.domain.TransportType.HTTPS);
         when(partners.active(socio.getId())).thenReturn(socio);
         when(repo.saveAndFlush(any())).thenAnswer(inv -> inv.getArgument(0));
         provisioner.create("SOCIO-A");
