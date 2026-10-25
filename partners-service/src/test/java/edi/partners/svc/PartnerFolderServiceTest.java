@@ -272,4 +272,59 @@ class PartnerFolderServiceTest {
         assertThatThrownBy(() -> service.production(socio.getId(), true, "SOCIO-A"))
                 .isInstanceOf(PartnerStateException.class).hasMessageContaining("Error: el enlace apunta");
     }
+
+    @Test
+    void precheck_enlacesAOtraCarpeta_oNombresOcupadosPorArchivos_impidenEnlazar() throws IOException {
+        Files.createDirectories(mount.resolve("SocioA"));
+        Files.writeString(mount.resolve("SocioA/MDN"), "un archivo con el nombre de la carpeta");
+        Files.delete(local("Certs"));
+        Files.createSymbolicLink(local("Certs"), Files.createDirectories(tmp.resolve("otra")));
+        Files.delete(local("Error"));
+        Files.writeString(local("Error"), "archivo suelto");
+
+        FolderPrecheckResponse r = service.precheck(socio.getId(), "SocioA");
+
+        assertThat(r.ok()).isFalse();
+        assertThat(r.problems()).anySatisfy(p -> assertThat(p).startsWith("Certs: ya es un enlace a otra carpeta"))
+                .anySatisfy(p -> assertThat(p).startsWith("MDN: en la carpeta compartida existe"))
+                .anySatisfy(p -> assertThat(p).startsWith("Error: ").contains("no es una carpeta"));
+    }
+
+    @Test
+    void socioEnlazado_conUnaSubcarpetaQueYaNoEsEnlace_apareceConError() throws IOException {
+        Files.createDirectories(mount.resolve("SocioA"));
+        service.link(socio.getId(), "SocioA");
+        Files.delete(local("Archive"));
+        Files.createDirectories(local("Archive"));
+
+        FolderStatusResponse st = service.status(socio.getId());
+
+        assertThat(st.health()).isEqualTo(Health.ERROR);
+        assertThat(st.problems()).contains("Archive: deberia ser un enlace a la carpeta compartida");
+    }
+
+    @Test
+    void produccion_conUnaCarpetaLocalIncomingQueueQueNoEsEnlace_rechazada() throws IOException {
+        Files.createDirectories(mount.resolve("SocioA"));
+        service.link(socio.getId(), "SocioA");
+        Files.createDirectories(local("Incoming_queue"));
+
+        assertThatThrownBy(() -> service.production(socio.getId(), true, "SOCIO-A"))
+                .isInstanceOf(PartnerStateException.class).hasMessageContaining("no es un enlace");
+        assertThat(socio.getFolderState()).isEqualTo(FolderState.SAMBA_LINKED);
+    }
+
+    @Test
+    void sinPermisoDeEscrituraEnLaCarpetaCompartida_precheckLoIndica() throws IOException {
+        Path shared = Files.createDirectories(mount.resolve("SocioA"));
+        boolean restringida = shared.toFile().setWritable(false, false);
+        try {
+            org.junit.jupiter.api.Assumptions.assumeTrue(restringida && !Files.isWritable(shared),
+                    "el usuario de la prueba puede escribir igual (p. ej. root)");
+            assertThat(service.precheck(socio.getId(), "SocioA").problems())
+                    .singleElement().asString().contains("permiso de escritura");
+        } finally {
+            shared.toFile().setWritable(true, false);
+        }
+    }
 }
