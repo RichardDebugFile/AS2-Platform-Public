@@ -96,7 +96,8 @@ export const useAuditStore = create<AuditState>((set, get) => ({
 
     exportCsv: async () => {
         const query = auditParams(get().filters).toString();
-        const res = await dataService.get<string>(`/audit-logs/export${query ? `?${query}` : ""}`);
+        const url = query ? "/audit-logs/export?" + query : "/audit-logs/export";
+        const res = await dataService.get<string>(url);
         if (!res.ok) {
             set({ error: res.error.message });
             return null;

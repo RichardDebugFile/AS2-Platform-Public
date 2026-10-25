@@ -28,7 +28,7 @@ public class InternalAuditLogController {
 
     @PostMapping
     @ResponseStatus(HttpStatus.CREATED)
-    public AuditLogResponse record(@Valid @RequestBody AuditLogRequest r) {
-        return audit.record(r);
+    public AuditLogResponse register(@Valid @RequestBody AuditLogRequest r) {
+        return audit.register(r);
     }
 }

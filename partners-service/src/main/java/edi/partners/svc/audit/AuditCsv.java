@@ -10,6 +10,8 @@ import tools.jackson.databind.json.JsonMapper;
 /** Exportacion de la bitacora a CSV (UTF-8 con BOM, para que Excel respete los acentos). */
 public final class AuditCsv {
 
+    /** Marca de orden de bytes UTF-8: Excel la usa para leer bien los acentos. */
+    static final char BOM = 0xFEFF;
     static final String HEADER = "fecha_utc,evento,estado,usuario,origen,socio,message_id,detalle,cambios";
     private static final JsonMapper JSON = JsonMapper.builder().build();
 
@@ -17,7 +19,7 @@ public final class AuditCsv {
     }
 
     public static String write(List<AuditLogResponse> rows) {
-        StringBuilder out = new StringBuilder("﻿").append(HEADER).append("\r\n");
+        StringBuilder out = new StringBuilder().append(BOM).append(HEADER).append("\r\n");
         for (AuditLogResponse r : rows) {
             out.append(List.of(Objects.toString(r.occurredAt(), ""), r.eventType(), r.status().name(), r.actor(),
                             r.source(), Objects.toString(r.partnerAs2Name(), ""), Objects.toString(r.messageId(), ""),

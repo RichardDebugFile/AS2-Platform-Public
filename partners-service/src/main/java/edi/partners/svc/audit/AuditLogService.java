@@ -9,6 +9,8 @@ import edi.partners.dto.AuditLogResponse;
 import edi.partners.repo.AuditLogRepository;
 import edi.partners.repo.PartnerRepository;
 import edi.partners.svc.PartnerRules;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import jakarta.persistence.criteria.Predicate;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -63,7 +65,7 @@ public class AuditLogService {
 
     /** Evento de otro servicio. Si llega solo el identificador AS2 de un socio activo, se completa su id. */
     @Transactional
-    public AuditLogResponse record(AuditLogRequest r) {
+    public AuditLogResponse register(AuditLogRequest r) {
         String as2Name = PartnerRules.trim(r.partnerAs2Name());
         var partnerId = r.partnerId();
         if (partnerId == null && as2Name != null) {
@@ -80,40 +82,45 @@ public class AuditLogService {
         return AuditLogResponse.of(saved);
     }
 
+    private static final String OCCURRED_AT = "occurredAt";
+
     private static Sort order(AuditLogQuery q) {
         Sort.Direction dir = present(q.messageId()) ? Sort.Direction.ASC : Sort.Direction.DESC;
-        return Sort.by(dir, "occurredAt").and(Sort.by(dir, "id"));
+        return Sort.by(dir, OCCURRED_AT).and(Sort.by(dir, "id"));
     }
 
     static Specification<AuditLogEntry> spec(AuditLogQuery q) {
         return (root, query, cb) -> {
             List<Predicate> where = new ArrayList<>();
-            if (q.partnerId() != null) {
-                where.add(cb.equal(root.get("partnerId"), q.partnerId()));
-            }
-            if (present(q.partnerAs2Name())) {
-                where.add(cb.equal(cb.lower(root.get("partnerAs2Name")), lower(q.partnerAs2Name())));
-            }
+            equal(where, cb, root.get("partnerId"), q.partnerId());
+            equalIgnoringCase(where, cb, root.get("partnerAs2Name"), q.partnerAs2Name());
             if (present(q.eventType())) {
                 where.add(cb.equal(root.get("eventType"), q.eventType().strip().toUpperCase(Locale.ROOT)));
             }
-            if (q.status() != null) {
-                where.add(cb.equal(root.get("status"), q.status()));
-            }
-            if (present(q.actor())) {
-                where.add(cb.equal(cb.lower(root.get("actor")), lower(q.actor())));
-            }
-            if (present(q.messageId())) {
-                where.add(cb.equal(root.get("messageId"), q.messageId().strip()));
-            }
+            equal(where, cb, root.get("status"), q.status());
+            equalIgnoringCase(where, cb, root.get("actor"), q.actor());
+            equal(where, cb, root.get("messageId"), present(q.messageId()) ? q.messageId().strip() : null);
             if (q.from() != null) {
-                where.add(cb.greaterThanOrEqualTo(root.get("occurredAt"), q.from()));
+                where.add(cb.greaterThanOrEqualTo(root.get(OCCURRED_AT), q.from()));
             }
             if (q.to() != null) {
-                where.add(cb.lessThan(root.get("occurredAt"), q.to()));
+                where.add(cb.lessThan(root.get(OCCURRED_AT), q.to()));
             }
             return cb.and(where.toArray(Predicate[]::new));
         };
+    }
+
+    private static void equal(List<Predicate> where, CriteriaBuilder cb, Expression<?> field, Object value) {
+        if (value != null) {
+            where.add(cb.equal(field, value));
+        }
+    }
+
+    private static void equalIgnoringCase(List<Predicate> where, CriteriaBuilder cb, Expression<String> field,
+                                          String value) {
+        if (present(value)) {
+            where.add(cb.equal(cb.lower(field), lower(value)));
+        }
     }
 
     private static boolean present(String s) {

@@ -9,7 +9,9 @@ import { toFilters, type FilterForm } from "./auditFilters";
 /** Texto de un valor anterior o nuevo en la tabla de cambios. */
 function shown(v: unknown): string {
     if (v === null || v === undefined || v === "") return "—";
-    return typeof v === "object" ? JSON.stringify(v) : String(v);
+    if (typeof v === "string") return v;
+    if (typeof v === "number" || typeof v === "boolean") return v.toString();
+    return JSON.stringify(v);
 }
 
 /** Descarga un texto como archivo en el navegador. */

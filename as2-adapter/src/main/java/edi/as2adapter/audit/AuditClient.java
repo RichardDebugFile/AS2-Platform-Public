@@ -45,7 +45,7 @@ public class AuditClient {
     }
 
     /** Vuelve de inmediato y nunca lanza: la bitacora no puede detener un envio o una recepcion. */
-    public void record(AuditEvent event) {
+    public void publish(AuditEvent event) {
         try {
             executor.execute(() -> send(event));
         } catch (RuntimeException e) {
@@ -62,6 +62,9 @@ public class AuditClient {
     }
 
     private static void failed(AuditEvent e, Exception cause) {
+        if (!log.isWarnEnabled()) {
+            return;
+        }
         log.warn("No se pudo registrar en la bitacora: event={} status={} partner={} messageId={} causa={}",
                 e.eventType(), e.status(), e.partnerAs2Name(), e.messageId(), cause.toString());
     }
