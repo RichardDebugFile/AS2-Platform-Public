@@ -15,9 +15,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Esquema real: Flyway aplica V1 y V2 sobre PostgreSQL y Hibernate lo valida contra las entidades
- * ({@code ddl-auto=validate}). Comprueba lo que H2 no puede: el indice unico parcial del
- * identificador AS2 y el borrado en cascada de las configuraciones.
+ * Esquema real: Flyway aplica las migraciones sobre PostgreSQL y Hibernate lo valida contra las
+ * entidades ({@code ddl-auto=validate}). Comprueba lo que H2 no puede: el indice unico parcial del
+ * identificador AS2, el borrado en cascada de las configuraciones y que la bitacora sea de solo
+ * insercion.
  */
 @EnabledIfPostgres
 @DataJpaTest
@@ -71,5 +72,32 @@ class PartnerSchemaPostgresTest {
         p.setPort(70000);
 
         assertThatThrownBy(() -> partners.saveAndFlush(p)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void bitacora_esDeSoloInsercion_yConservaElEventoAunqueSeBorreElSocio() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-E", true));
+        java.util.UUID id = java.util.UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source, partner_id, partner_as2_name)
+                VALUES (?, now(), 'PARTNER_CREATED', 'SUCCESS', 'operador1', 'partners-service', ?, 'SOCIO-PG-E')
+                """, id, p.getId());
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE audit_log SET actor = 'otro' WHERE id = ?", id))
+                .hasMessageContaining("solo insercion");
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM audit_log WHERE id = ?", id))
+                .hasMessageContaining("solo insercion");
+    }
+
+    @Test
+    void bitacora_rechazaTiposDeEventoYEstadosFueraDeFormato() {
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source)
+                VALUES (gen_random_uuid(), now(), 'documento enviado', 'SUCCESS', 'system', 'x')
+                """)).isInstanceOf(DataIntegrityViolationException.class);
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source)
+                VALUES (gen_random_uuid(), now(), 'DOCUMENT_SENT', 'QUIZAS', 'system', 'x')
+                """)).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

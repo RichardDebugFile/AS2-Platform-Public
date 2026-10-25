@@ -1,10 +1,9 @@
 package edi.partners.svc.audit;
 
-/**
- * Punto unico por el que el servicio registra sus cambios administrativos. Hasta HU-10 la
- * implementacion escribe en el log; con HU-10 pasa a la tabla de bitacora sin tocar a quien publica.
- */
+import edi.partners.domain.AuditLogEntry;
+
+/** Punto unico por el que se registra un evento en la bitacora (HU-10). */
 public interface AuditLogPublisher {
 
-    void publish(AuditEvent event);
+    AuditLogEntry publish(AuditEvent event);
 }

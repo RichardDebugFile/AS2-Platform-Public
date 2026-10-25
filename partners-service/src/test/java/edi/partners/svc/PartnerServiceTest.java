@@ -19,6 +19,8 @@ import edi.partners.error.DuplicateAs2NameException;
 import edi.partners.error.PartnerNotFoundException;
 import edi.partners.repo.PartnerRepository;
 import edi.partners.svc.audit.AuditEvent;
+import edi.partners.svc.audit.AuditEvent.Change;
+import edi.partners.svc.audit.AuditEventTypes;
 import edi.partners.svc.audit.AuditLogPublisher;
 import edi.partners.svc.folders.PartnerFolderException;
 import edi.partners.svc.folders.PartnerFolderProvisioner;
@@ -80,7 +82,7 @@ class PartnerServiceTest {
         order.verify(repo).saveAndFlush(p);
         order.verify(folders).provision(p);
         order.verify(audit).publish(any());
-        assertThat(lastAudit().action()).isEqualTo("partners:CREATE");
+        assertThat(lastAudit().eventType()).isEqualTo(AuditEventTypes.PARTNER_CREATED);
         assertThat(lastAudit().actor()).isEqualTo("system");
     }
 
@@ -142,7 +144,7 @@ class PartnerServiceTest {
 
         service.update(p.getId(), Fixtures.request("SOCIO-A", null, null, null, null));
         assertThat(p.getBasicAuthPasswordEnc()).isNull();
-        assertThat(lastAudit().action()).isEqualTo("partners:UPDATE");
+        assertThat(lastAudit().eventType()).isEqualTo(AuditEventTypes.PARTNER_UPDATED);
     }
 
     @Test
@@ -162,6 +164,35 @@ class PartnerServiceTest {
 
         assertThat(r.as2Name()).isEqualTo("SOCIO-A2");
         assertThat(lastAudit().detail()).contains("SOCIO-A -> SOCIO-A2");
+        assertThat(lastAudit().changes()).containsEntry("as2Name", new Change("SOCIO-A", "SOCIO-A2"));
+    }
+
+    @Test
+    void edicion_delEndpoint_registraSoloLosDatosCambiados() {
+        Partner p = stored("SOCIO-A", true);
+
+        service.update(p.getId(), Fixtures.request("SOCIO-A"));
+        service.update(p.getId(), Fixtures.endpoint("SOCIO-A", "as2-nuevo.socio.example", 8443));
+
+        AuditEvent e = lastAudit();
+        assertThat(e.eventType()).isEqualTo(AuditEventTypes.PARTNER_UPDATED);
+        assertThat(e.partnerAs2Name()).isEqualTo("SOCIO-A");
+        assertThat(e.actor()).isEqualTo("system");
+        assertThat(e.changes()).containsOnlyKeys("serverAddress", "port", "endpointUrl");
+        assertThat(e.changes().get("port")).isEqualTo(new Change(443, 8443));
+    }
+
+    @Test
+    void cambioDeClave_quedaEnLaBitacoraSinSuValor() {
+        Partner p = stored("SOCIO-A", true);
+        p.setBasicAuthUsername("usuario");
+        p.setBasicAuthPasswordEnc(crypto.encrypt("secreto"));
+
+        service.update(p.getId(), Fixtures.request("SOCIO-A", null, null, "usuario", "clave-nueva"));
+
+        AuditEvent e = lastAudit();
+        assertThat(e.changes()).containsEntry("basicAuthPassword", new Change("(oculta)", "(cambiada)"));
+        assertThat(e.changes().toString()).doesNotContain("clave-nueva").doesNotContain("secreto");
     }
 
     @Test
@@ -179,7 +210,7 @@ class PartnerServiceTest {
         service.delete(p.getId());
 
         assertThat(p.isActive()).isFalse();
-        assertThat(lastAudit().action()).isEqualTo("partners:DEACTIVATE");
+        assertThat(lastAudit().eventType()).isEqualTo(AuditEventTypes.PARTNER_DEACTIVATED);
     }
 
     @Test
@@ -195,7 +226,7 @@ class PartnerServiceTest {
         Partner p = stored("SOCIO-B", false);
 
         assertThat(service.setActive(p.getId(), true).active()).isTrue();
-        assertThat(lastAudit().action()).isEqualTo("partners:ACTIVATE");
+        assertThat(lastAudit().eventType()).isEqualTo(AuditEventTypes.PARTNER_ACTIVATED);
         org.mockito.Mockito.clearInvocations(audit);
 
         service.setActive(p.getId(), true);
@@ -212,7 +243,7 @@ class PartnerServiceTest {
 
         service.purge(p.getId(), " SOCIO-A ");
         verify(repo).delete(p);
-        assertThat(lastAudit().action()).isEqualTo("partners:PURGE");
+        assertThat(lastAudit().eventType()).isEqualTo(AuditEventTypes.PARTNER_PURGED);
     }
 
     @Test
