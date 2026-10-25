@@ -74,7 +74,17 @@ public class PartnerService {
     /** Activa o desactiva. Reactivar falla si otro socio activo ya usa el identificador. */
     @Transactional
     public PartnerResponse setActive(UUID id, boolean active) {
-        Partner p = any(id);
+        return changeActive(any(id), active);
+    }
+
+    /** Baja logica: el socio deja de operar pero conserva su historial. */
+    @Transactional
+    public void delete(UUID id) {
+        changeActive(active(id), false);
+    }
+
+    private PartnerResponse changeActive(Partner p, boolean active) {
+        UUID id = p.getId();
         if (active && !p.isActive() && repo.existsByAs2NameIgnoreCaseAndActiveTrueAndIdNot(p.getAs2Name(), id)) {
             throw new DuplicateAs2NameException(p.getAs2Name());
         }
@@ -85,12 +95,6 @@ public class PartnerService {
                     (active ? "Socio activado: " : "Socio desactivado: ") + p.getAs2Name());
         }
         return PartnerResponse.of(p);
-    }
-
-    /** Baja logica: el socio deja de operar pero conserva su historial. */
-    @Transactional
-    public void delete(UUID id) {
-        setActive(active(id).getId(), false);
     }
 
     /**

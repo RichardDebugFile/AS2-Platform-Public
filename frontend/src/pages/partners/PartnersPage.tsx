@@ -42,7 +42,9 @@ export default function PartnersPage() {
             title: t("list.confirmDeactivate", { name: p.as2Name }),
             okButtonProps: { danger: true },
             okText: t("list.deactivate"),
-            onOk: async () => void notify(await remove(p.id), "list.deactivated"),
+            onOk: async () => {
+                notify(await remove(p.id), "list.deactivated");
+            },
         });
 
     const reactivate = async (p: Partner) => notify(await setActive(p.id, true), "list.activated");

@@ -129,7 +129,10 @@ public class Partner {
 
     /** URL del servidor AS2 del socio: protocolo, host, puerto y ruta. */
     public String endpointUrl() {
-        String p = path == null || path.isBlank() ? "" : (path.startsWith("/") ? path : "/" + path);
+        String p = "";
+        if (path != null && !path.isBlank()) {
+            p = path.startsWith("/") ? path : "/" + path;
+        }
         return transportType.scheme() + "://" + serverAddress + ":" + port + p;
     }
 
