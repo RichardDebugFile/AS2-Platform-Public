@@ -97,7 +97,7 @@ public class PartnerConfigService {
         return after;
     }
 
-    /** Valores por defecto: envio de todo lo que aparezca en Outgoing y archivo en Archive. */
+    /** Valores por defecto: se envia cada archivo que aparezca en Outgoing y se archiva en Archive. */
     public OutgoingConfigRequest defaultOutgoing(Partner p) {
         return new OutgoingConfigRequest(storage.folder(p.getAs2Name(), StorageLayout.OUTGOING),
                 SendingMode.REGULAR, null, p.getEncryptionAlgorithm(), p.getSigningAlgorithm(),

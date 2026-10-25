@@ -20,8 +20,8 @@ public final class PartnerRules {
             "CON", "PRN", "AUX", "NUL",
             "COM1", "COM2", "COM3", "COM4", "COM5", "COM6", "COM7", "COM8", "COM9",
             "LPT1", "LPT2", "LPT3", "LPT4", "LPT5", "LPT6", "LPT7", "LPT8", "LPT9");
-    private static final Pattern HOSTNAME = Pattern.compile(
-            "(?=.{1,253}$)[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?(?:\\.[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?)*");
+    /** Una etiqueta del nombre de host (entre puntos): sin repeticiones anidadas, lineal en la entrada. */
+    private static final Pattern HOST_LABEL = Pattern.compile("[A-Za-z0-9](?:[A-Za-z0-9-]{0,61}[A-Za-z0-9])?");
     private static final Pattern IPV6_LITERAL = Pattern.compile("\\[[0-9A-Fa-f:.]{2,45}]");
 
     private PartnerRules() {
@@ -80,10 +80,22 @@ public final class PartnerRules {
             throw new IllegalArgumentException(
                     "Indique solo el host del servidor (p. ej. as2.socio.com): el protocolo va en el campo de transporte");
         }
-        if (!HOSTNAME.matcher(host).matches() && !IPV6_LITERAL.matcher(host).matches()) {
+        if (!isHostname(host) && !IPV6_LITERAL.matcher(host).matches()) {
             throw new IllegalArgumentException("Direccion de servidor no valida: " + host);
         }
         return host;
+    }
+
+    private static boolean isHostname(String host) {
+        if (host.isEmpty() || host.length() > 253 || host.startsWith(".") || host.endsWith(".")) {
+            return false;
+        }
+        for (String label : host.split("\\.", -1)) {
+            if (!HOST_LABEL.matcher(label).matches()) {
+                return false;
+            }
+        }
+        return true;
     }
 
     /** Ruta del endpoint AS2: vacia = sin ruta; si no, empieza por "/". */

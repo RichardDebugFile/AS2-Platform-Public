@@ -418,7 +418,8 @@ export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onCl
         : [];
 
     const name = partner?.as2Name ?? "";
-    const title = !editing ? t("drawer.newTitle") : t(readOnly ? "drawer.viewTitle" : "drawer.editTitle", { name });
+    let title = t("drawer.newTitle");
+    if (editing) title = t(readOnly ? "drawer.viewTitle" : "drawer.editTitle", { name });
 
     return (
         <Drawer
