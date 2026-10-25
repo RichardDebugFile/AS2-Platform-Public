@@ -74,7 +74,6 @@ class PartnerSchemaPostgresTest {
         assertThatThrownBy(() -> partners.saveAndFlush(p)).isInstanceOf(DataIntegrityViolationException.class);
     }
 
-<<<<<<< HEAD
     @Test
     void etapaDeCarpetas_porDefectoLocal_ySoloValoresConocidos() {
         Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-F", true));
@@ -85,17 +84,12 @@ class PartnerSchemaPostgresTest {
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
-    @Test
-    void bitacora_esDeSoloInsercion_yConservaElEventoAunqueSeBorreElSocio() {
-        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-E", true));
-=======
     /**
      * Un evento de la bitacora del socio. Cada prueba siguiente provoca un solo error: tras el primero,
      * PostgreSQL anula la transaccion de la prueba y rechaza cualquier otra sentencia.
      */
     private java.util.UUID evento(String as2Name) {
         Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner(as2Name, true));
->>>>>>> feature/HU-10-bitacora
         java.util.UUID id = java.util.UUID.randomUUID();
         jdbc.update("""
                 INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source, partner_id, partner_as2_name)
