@@ -13,7 +13,7 @@ el cliente se descarta).
 | `GET /api/partners/{id}` | todos los roles | Detalle (la clave básica nunca sale: solo `hasBasicAuthPassword`) |
 | `POST /api/partners/complete` | ADMIN, OPERATOR | Alta en un paso: el socio y sus tres configuraciones (las que no vengan, por defecto). Atómica: si algo falla no queda nada |
 | `POST /api/partners` | ADMIN, OPERATOR | Alta solo del socio |
-| `PUT /api/partners/{id}` | ADMIN, OPERATOR | Edición; los campos en `null` conservan su valor y la clave vacía conserva la guardada |
+| `PUT /api/partners/{id}` | ADMIN, OPERATOR | Edición con el socio completo: un texto vacío se borra; los indicadores, el protocolo y el modo MDN en `null` conservan su valor, y la clave vacía conserva la guardada |
 | `PATCH /api/partners/{id}/status` | ADMIN, OPERATOR | `{"active": true\|false}` |
 | `DELETE /api/partners/{id}` | ADMIN, OPERATOR | Baja lógica: el identificador queda libre para un socio nuevo |
 | `DELETE /api/partners/{id}/purge?confirm=<as2Name>` | ADMIN | Borrado definitivo del socio con su configuración; exige escribir su identificador (la consola solo lo ofrece para socios dados de baja) |

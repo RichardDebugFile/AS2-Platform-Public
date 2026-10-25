@@ -2,7 +2,7 @@ import { Alert, App, Button, Col, Drawer, Form, Input, InputNumber, Row, Select,
 import type { TabsProps } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import { FIELD_TAB, NEW_PARTNER, endpointPreview } from "./partnerForm";
+import { FIELD_TAB, NEW_PARTNER, editableFields, endpointPreview } from "./partnerForm";
 import {
     usePartnersStore,
     type AlgorithmItem,
@@ -87,7 +87,9 @@ export default function PartnerDrawer({ partner, readOnly, onClose }: Readonly<P
 
     const onSubmit = async (v: PartnerInput) => {
         setSaving(true);
-        const res = editing ? await updatePartner(partner.id, v) : await createPartner(v);
+        // En la edicion se parte del socio guardado: los campos que la pantalla no muestra (p. ej. la
+        // carpeta compartida, HU-09) se reenvian tal cual y no se pierden.
+        const res = editing ? await updatePartner(partner.id, { ...editableFields(partner), ...v }) : await createPartner(v);
         setSaving(false);
         if (!res.ok) {
             void message.error(res.message);

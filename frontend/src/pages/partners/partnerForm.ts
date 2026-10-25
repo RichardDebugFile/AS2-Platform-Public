@@ -1,4 +1,4 @@
-import type { PartnerInput } from "../../store/partnersStore";
+import type { Partner, PartnerInput } from "../../store/partnersStore";
 
 /** Valores con los que arranca el alta (los mismos que aplica el servicio si no se envian). */
 export const NEW_PARTNER: Partial<PartnerInput> = {
@@ -31,4 +31,12 @@ export function endpointPreview(v: Partial<PartnerInput>): string {
     const scheme = (v.transportType ?? "HTTPS").toLowerCase();
     const path = v.path ? (v.path.startsWith("/") ? v.path : `/${v.path}`) : "";
     return `${scheme}://${v.serverAddress.trim()}${v.port ? `:${v.port}` : ""}${path}`;
+}
+
+/** Lo que el API devuelve del socio pero no acepta en la edicion. */
+const RESPONSE_ONLY = new Set(["id", "endpointUrl", "hasBasicAuthPassword", "active", "createdBy", "createdAt", "updatedBy", "updatedAt"]);
+
+/** Campos del socio que acepta la edicion. */
+export function editableFields(p: Partner): Partial<PartnerInput> {
+    return Object.fromEntries(Object.entries(p).filter(([k]) => !RESPONSE_ONLY.has(k))) as Partial<PartnerInput>;
 }

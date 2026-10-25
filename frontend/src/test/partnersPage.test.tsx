@@ -11,6 +11,7 @@ const OPERATOR: AuthUser = { username: "operador1", email: "operador1@example.co
 
 const active = {
     id: "p1",
+    sharedFolderName: "SocioA",
     as2Name: "SOCIO-A",
     partnerName: "Socio de prueba",
     partnerType: "CUSTOMER",
@@ -181,6 +182,8 @@ describe("pantalla de socios", () => {
         const put = calls().find((c) => c.method === "PUT" && c.url === "/partners/p1")?.body;
         expect(put.partnerName).toBe("Socio renombrado");
         expect(put).not.toHaveProperty("basicAuthPassword");
+        expect(put.sharedFolderName).toBe("SocioA");
+        expect(put).not.toHaveProperty("endpointUrl");
     });
 
     it("guarda la pestana de entrada con su propio PUT", async () => {
