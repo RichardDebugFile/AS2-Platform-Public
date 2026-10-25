@@ -12,7 +12,8 @@
       "endpoint": "Dirección AS2",
       "type": "Tipo",
       "status": "Estado",
-      "actions": "Acciones"
+      "actions": "Acciones",
+      "folders": "Carpetas"
     },
     "statusActive": "Activo",
     "statusInactive": "Dado de baja",
@@ -52,7 +53,8 @@
       "security": "Seguridad AS2",
       "outgoing": "Salida",
       "incoming": "Entrada",
-      "mdn": "MDN"
+      "mdn": "MDN",
+      "folders": "Carpetas"
     }
   },
   "form": {
@@ -123,5 +125,52 @@
     "KEEP": "Dejar en la carpeta",
     "SIGNED": "Firmado",
     "UNSIGNED": "Sin firma"
+  },
+  "folders": {
+    "state": "Etapa",
+    "health": "Estado",
+    "shared": "Carpeta compartida",
+    "sharedPlaceholder": "Nombre de la carpeta del socio en el recurso compartido",
+    "refresh": "Actualizar",
+    "repair": "Crear las carpetas que faltan",
+    "repaired": "Carpetas creadas",
+    "ok": "Correcta",
+    "problem": "Con problemas",
+    "problemsTitle": "Problemas en las carpetas",
+    "columns": {
+      "name": "Carpeta",
+      "path": "Ruta",
+      "status": "Estado"
+    },
+    "states": {
+      "LOCAL": "Local",
+      "SAMBA_LINKED": "Enlazado con el ERP",
+      "PRODUCTION": "En producción"
+    },
+    "healths": {
+      "OK": "Correctas",
+      "MISSING": "Faltan carpetas",
+      "NO_ACCESS": "Sin permisos",
+      "ERROR": "Error"
+    },
+    "linkTitle": "Enlace con la carpeta compartida del ERP",
+    "linkHelp": "Primero se verifica que la carpeta exista y que ningún archivo choque; al enlazar, los archivos de cada subcarpeta se mueven a la carpeta compartida y nunca se borran.",
+    "precheck": "Verificar",
+    "precheckOk": "Verificación correcta: se enlazará con {{target}}",
+    "precheckFailed": "No se puede enlazar todavía",
+    "link": "Enlazar",
+    "linked": "Carpetas enlazadas con el ERP",
+    "adminOnly": "Solo un administrador puede enlazar.",
+    "productionTitle": "Producción",
+    "productionOffHelp": "Al activar producción se crea la cola Incoming_queue y el ERP empieza a recibir los documentos nuevos del socio.",
+    "productionOnHelp": "El ERP recibe los documentos nuevos en Incoming_queue. Al desactivar deja de recibirlos; lo ya entregado se conserva.",
+    "activateProduction": "Activar producción",
+    "deactivateProduction": "Desactivar producción",
+    "productionOn": "Producción activada",
+    "productionOff": "Producción desactivada",
+    "confirmOn": "Esto hace que el ERP reciba los documentos de {{name}}. Escriba el identificador AS2 para autorizarlo.",
+    "confirmOff": "El ERP dejará de recibir documentos nuevos de {{name}}. Escriba el identificador AS2 para confirmar.",
+    "confirmLabel": "Identificador AS2 para confirmar",
+    "confirmOk": "Confirmar"
   }
 }

@@ -2,6 +2,7 @@ import { Alert, App, Button, Col, Drawer, Form, Input, InputNumber, Row, Select,
 import type { TabsProps } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import FoldersPanel from "./FoldersPanel";
 import { FIELD_TAB, NEW_PARTNER, editableFields, endpointPreview } from "./partnerForm";
 import {
     usePartnersStore,
@@ -16,6 +17,8 @@ interface Props {
     /** null: alta de un socio nuevo. */
     partner: Partner | null;
     readOnly: boolean;
+    /** Solo ADMIN enlaza las carpetas con el ERP y activa produccion. */
+    isAdmin?: boolean;
     onClose: () => void;
 }
 
@@ -23,7 +26,7 @@ interface Props {
  * Alta y edicion de un socio: datos, conexion y seguridad; en la edicion, tambien sus configuraciones.
  * La pagina lo monta de nuevo en cada apertura (key), asi arranca siempre limpio.
  */
-export default function PartnerDrawer({ partner, readOnly, onClose }: Readonly<Props>) {
+export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onClose }: Readonly<Props>) {
     const { t } = useTranslation("partners");
     const { message } = App.useApp();
     const { catalog, fetchCatalog, createPartner, updatePartner, getConfigs, saveConfig } = usePartnersStore();
@@ -406,6 +409,11 @@ export default function PartnerDrawer({ partner, readOnly, onClose }: Readonly<P
               { key: "outgoing", label: t("drawer.tabs.outgoing"), children: outgoing, forceRender: true },
               { key: "incoming", label: t("drawer.tabs.incoming"), children: incoming, forceRender: true },
               { key: "mdn", label: t("drawer.tabs.mdn"), children: mdn, forceRender: true },
+              {
+                  key: "folders",
+                  label: t("drawer.tabs.folders"),
+                  children: <FoldersPanel partner={partner} canEdit={!readOnly} isAdmin={isAdmin && !readOnly} />,
+              },
           ]
         : [];
 

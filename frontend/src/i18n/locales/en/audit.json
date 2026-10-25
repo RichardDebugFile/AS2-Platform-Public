@@ -47,6 +47,10 @@
     "DOCUMENT_RECEIVED": "Document received",
     "MDN_SENT": "MDN sent",
     "MDN_RECEIVED": "MDN received",
-    "MIC_VERIFIED": "MIC verified"
+    "MIC_VERIFIED": "MIC verified",
+    "FOLDERS_REPAIRED": "Folders recreated",
+    "FOLDERS_LINKED": "Folders linked to the ERP",
+    "PRODUCTION_ENABLED": "Production enabled",
+    "PRODUCTION_DISABLED": "Production disabled"
   }
 }

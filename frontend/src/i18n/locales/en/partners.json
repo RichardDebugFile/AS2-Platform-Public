@@ -12,7 +12,8 @@
       "endpoint": "AS2 address",
       "type": "Type",
       "status": "Status",
-      "actions": "Actions"
+      "actions": "Actions",
+      "folders": "Folders"
     },
     "statusActive": "Active",
     "statusInactive": "Deactivated",
@@ -52,7 +53,8 @@
       "security": "AS2 security",
       "outgoing": "Outgoing",
       "incoming": "Incoming",
-      "mdn": "MDN"
+      "mdn": "MDN",
+      "folders": "Folders"
     }
   },
   "form": {
@@ -123,5 +125,52 @@
     "KEEP": "Leave in the folder",
     "SIGNED": "Signed",
     "UNSIGNED": "Unsigned"
+  },
+  "folders": {
+    "state": "Stage",
+    "health": "Status",
+    "shared": "Shared folder",
+    "sharedPlaceholder": "Partner folder name in the shared resource",
+    "refresh": "Refresh",
+    "repair": "Create missing folders",
+    "repaired": "Folders created",
+    "ok": "Correct",
+    "problem": "With problems",
+    "problemsTitle": "Folder problems",
+    "columns": {
+      "name": "Folder",
+      "path": "Path",
+      "status": "Status"
+    },
+    "states": {
+      "LOCAL": "Local",
+      "SAMBA_LINKED": "Linked to the ERP",
+      "PRODUCTION": "In production"
+    },
+    "healths": {
+      "OK": "Correct",
+      "MISSING": "Missing folders",
+      "NO_ACCESS": "No permission",
+      "ERROR": "Error"
+    },
+    "linkTitle": "Link with the ERP shared folder",
+    "linkHelp": "First it checks that the folder exists and that no file collides; linking moves the files of each subfolder into the shared folder and never deletes them.",
+    "precheck": "Check",
+    "precheckOk": "Check passed: it will be linked with {{target}}",
+    "precheckFailed": "It cannot be linked yet",
+    "link": "Link",
+    "linked": "Folders linked with the ERP",
+    "adminOnly": "Only an administrator can link.",
+    "productionTitle": "Production",
+    "productionOffHelp": "Enabling production creates the Incoming_queue folder and the ERP starts receiving the partner's new documents.",
+    "productionOnHelp": "The ERP receives new documents in Incoming_queue. Disabling stops new deliveries; what was already delivered is kept.",
+    "activateProduction": "Enable production",
+    "deactivateProduction": "Disable production",
+    "productionOn": "Production enabled",
+    "productionOff": "Production disabled",
+    "confirmOn": "This makes the ERP receive the documents of {{name}}. Type the AS2 identifier to authorise it.",
+    "confirmOff": "The ERP will stop receiving new documents from {{name}}. Type the AS2 identifier to confirm.",
+    "confirmLabel": "AS2 identifier to confirm",
+    "confirmOk": "Confirm"
   }
 }
