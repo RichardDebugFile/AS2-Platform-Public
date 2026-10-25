@@ -1,0 +1,56 @@
+{
+  "title": "Bitácora de auditoría",
+  "filters": {
+    "partner": "Socio (identificador AS2)",
+    "eventType": "Tipo de evento",
+    "status": "Estado",
+    "actor": "Usuario",
+    "messageId": "Message-ID",
+    "from": "Desde",
+    "to": "Hasta",
+    "search": "Buscar",
+    "clear": "Limpiar"
+  },
+  "export": "Exportar CSV",
+  "exportError": "No se pudo exportar la bitácora",
+  "empty": "No hay eventos para estos filtros",
+  "noChanges": "Este evento no registra datos cambiados.",
+  "columns": {
+    "occurredAt": "Fecha",
+    "eventType": "Evento",
+    "partner": "Socio",
+    "actor": "Usuario",
+    "status": "Estado",
+    "detail": "Detalle",
+    "source": "Origen",
+    "messageId": "Message-ID"
+  },
+  "changes": {
+    "field": "Campo",
+    "from": "Antes",
+    "to": "Después"
+  },
+  "status": {
+    "SUCCESS": "Correcto",
+    "FAILURE": "Fallo"
+  },
+  "types": {
+    "PARTNER_CREATED": "Socio registrado",
+    "PARTNER_UPDATED": "Socio modificado",
+    "PARTNER_ACTIVATED": "Socio reactivado",
+    "PARTNER_DEACTIVATED": "Socio dado de baja",
+    "PARTNER_PURGED": "Socio borrado definitivamente",
+    "OUTGOING_CONFIG_UPDATED": "Configuración de salida",
+    "INCOMING_CONFIG_UPDATED": "Configuración de entrada",
+    "MDN_CONFIG_UPDATED": "Configuración de MDN",
+    "DOCUMENT_SENT": "Documento enviado",
+    "DOCUMENT_RECEIVED": "Documento recibido",
+    "MDN_SENT": "MDN enviado",
+    "MDN_RECEIVED": "MDN recibido",
+    "MIC_VERIFIED": "MIC verificado",
+    "FOLDERS_REPAIRED": "Carpetas recreadas",
+    "FOLDERS_LINKED": "Carpetas enlazadas con el ERP",
+    "PRODUCTION_ENABLED": "Producción activada",
+    "PRODUCTION_DISABLED": "Producción desactivada"
+  }
+}

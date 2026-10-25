@@ -1,5 +1,6 @@
 #!/usr/bin/env bash
-# Verifica los criterios de aceptacion de HU-07 sobre el entorno levantado con docker compose.
+# Verifica los criterios de aceptacion de HU-07 (y las carpetas de HU-09) sobre el entorno levantado
+# con docker compose.
 # Uso: ./smoke-test.sh   (desde deploy/docker, con el entorno arriba)
 # En GitHub Actions cada resultado queda ademas como anotacion del job.
 set -uo pipefail
@@ -49,6 +50,37 @@ else
 fi
 code="$("${CURL[@]}" -b "$jar" -o /dev/null -w '%{http_code}' "$BASE/users/me")"
 [ "$code" = "200" ] && ok "Con la cookie de sesion el gateway deja pasar (/users/me 200)" || fail "/users/me con sesion respondio $code"
+code="$("${CURL[@]}" -b "$jar" -o /dev/null -w '%{http_code}' "$BASE/api/partners")"
+[ "$code" = "200" ] && ok "Servicio de socios alcanzable por el gateway (/api/partners 200)" || fail "/api/partners con sesion respondio $code"
+
+# 5b. Carpetas del socio (HU-09): arbol estandar al registrar, enlace verificado con el recurso compartido
+xsrf="$(awk '$6 == "XSRF-TOKEN" {print $7}' "$jar")"
+api() { "${CURL[@]}" -b "$jar" -c "$jar" -H 'Content-Type: application/json' -H "X-XSRF-TOKEN: $xsrf" "$@"; }
+socio="SOCIO-SMOKE-$(date +%s)"; compartida="Smoke$(date +%s)"
+alta="$(api -d "{\"partner\":{\"as2Name\":\"$socio\",\"serverAddress\":\"as2.socio.example\",\"port\":4443}}" \
+    "$BASE/api/partners/complete")"
+id="$(echo "$alta" | sed -n 's/.*"partner":{"id":"\([^"]*\)".*/\1/p')"
+if [ -n "$id" ] && docker compose exec -T partners-service sh -c "for d in Archive Certs Error Incoming MDN Outgoing; do test -d /opt/as2_data/partners/$socio/\$d || exit 1; done"; then
+    ok "Alta de socio crea su arbol de carpetas en el volumen"
+else
+    fail "Alta de socio o arbol de carpetas: $(echo "$alta" | head -c 200)"
+fi
+pre="$(api -d "{\"sharedFolderName\":\"$compartida\"}" "$BASE/api/partners/$id/folders/precheck")"
+echo "$pre" | grep -q '"ok":false' && ok "Precheck sin la carpeta compartida: negativo" || fail "Precheck esperado negativo: $pre"
+docker compose exec -T partners-service mkdir -p "/mnt/erp/$compartida"
+enlace="$(api -d "{\"sharedFolderName\":\"$compartida\"}" "$BASE/api/partners/$id/folders/link")"
+if echo "$enlace" | grep -q '"folderState":"SAMBA_LINKED"' \
+    && docker compose exec -T partners-service test -L "/opt/as2_data/partners/$socio/Incoming"; then
+    ok "Enlace con el recurso compartido: subcarpetas como enlaces simbolicos"
+else
+    fail "Enlace con el recurso compartido: $(echo "$enlace" | head -c 200)"
+fi
+code="$("${CURL[@]}" -b "$jar" -o /dev/null -w '%{http_code}' "$BASE/api/partners/folder-statuses")"
+[ "$code" = "200" ] && ok "Estado de carpetas de todos los socios (folder-statuses 200)" || fail "folder-statuses respondio $code"
+# Limpieza del socio de prueba (la bitacora conserva sus eventos).
+api -X DELETE -o /dev/null "$BASE/api/partners/$id"
+api -X DELETE -o /dev/null "$BASE/api/partners/$id/purge?confirm=$socio"
+docker compose exec -T partners-service rm -rf "/opt/as2_data/partners/$socio" "/mnt/erp/$compartida"
 rm -f "$jar"
 
 # 6. Reinicio automatico del gateway tras un fallo (el proceso termina)

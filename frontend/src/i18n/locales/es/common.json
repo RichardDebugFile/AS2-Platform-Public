@@ -13,6 +13,8 @@
     "documents": "Documentos EDI",
     "alertsGroup": "Alertas",
     "alerts": "Alertas y notificaciones",
+    "auditGroup": "Auditoría",
+    "audit": "Bitácora de auditoría",
     "administration": "Administración",
     "users": "Usuarios"
   },

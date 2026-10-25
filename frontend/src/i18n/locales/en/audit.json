@@ -1,0 +1,56 @@
+{
+  "title": "Audit log",
+  "filters": {
+    "partner": "Partner (AS2 identifier)",
+    "eventType": "Event type",
+    "status": "Status",
+    "actor": "User",
+    "messageId": "Message-ID",
+    "from": "From",
+    "to": "To",
+    "search": "Search",
+    "clear": "Clear"
+  },
+  "export": "Export CSV",
+  "exportError": "The audit log could not be exported",
+  "empty": "No events for these filters",
+  "noChanges": "This event records no changed data.",
+  "columns": {
+    "occurredAt": "Date",
+    "eventType": "Event",
+    "partner": "Partner",
+    "actor": "User",
+    "status": "Status",
+    "detail": "Detail",
+    "source": "Source",
+    "messageId": "Message-ID"
+  },
+  "changes": {
+    "field": "Field",
+    "from": "Before",
+    "to": "After"
+  },
+  "status": {
+    "SUCCESS": "Success",
+    "FAILURE": "Failure"
+  },
+  "types": {
+    "PARTNER_CREATED": "Partner registered",
+    "PARTNER_UPDATED": "Partner changed",
+    "PARTNER_ACTIVATED": "Partner reactivated",
+    "PARTNER_DEACTIVATED": "Partner deactivated",
+    "PARTNER_PURGED": "Partner deleted permanently",
+    "OUTGOING_CONFIG_UPDATED": "Outgoing configuration",
+    "INCOMING_CONFIG_UPDATED": "Incoming configuration",
+    "MDN_CONFIG_UPDATED": "MDN configuration",
+    "DOCUMENT_SENT": "Document sent",
+    "DOCUMENT_RECEIVED": "Document received",
+    "MDN_SENT": "MDN sent",
+    "MDN_RECEIVED": "MDN received",
+    "MIC_VERIFIED": "MIC verified",
+    "FOLDERS_REPAIRED": "Folders recreated",
+    "FOLDERS_LINKED": "Folders linked to the ERP",
+    "PRODUCTION_ENABLED": "Production enabled",
+    "PRODUCTION_DISABLED": "Production disabled"
+  }
+}

@@ -6,19 +6,22 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
 /**
- * Prueba de humo del esqueleto: el contexto arranca y /actuator/health responde UP.
- * La base de datos se excluye para que corra sin PostgreSQL; la conexion real se comprueba
- * arrancando el servicio contra el docker-compose de la raiz (ver README).
+ * Prueba de humo: el servicio completo arranca y /actuator/health responde UP. Usa H2 con el
+ * esquema generado desde las entidades; el esquema real de Flyway se prueba contra PostgreSQL.
  */
-@SpringBootTest(properties = "spring.autoconfigure.exclude="
-        + "org.springframework.boot.jdbc.autoconfigure.DataSourceAutoConfiguration,"
-        + "org.springframework.boot.hibernate.autoconfigure.HibernateJpaAutoConfiguration,"
-        + "org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration")
+@SpringBootTest(properties = {
+    "spring.flyway.enabled=false",
+    "spring.jpa.hibernate.ddl-auto=create-drop",
+    "spring.datasource.url=jdbc:h2:mem:smoke;DB_CLOSE_DELAY=-1;MODE=PostgreSQL",
+    "spring.datasource.driver-class-name=org.h2.Driver",
+    "spring.datasource.username=sa",
+    "spring.datasource.password="
+})
 @AutoConfigureMockMvc
 class PartnersServiceApplicationTests {
 

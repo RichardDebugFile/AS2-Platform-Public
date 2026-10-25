@@ -66,6 +66,14 @@ describe("rutas y menu por rol", () => {
         expect(within(menu).getByText("Usuarios")).toBeInTheDocument();
     });
 
+    it("un AUDITOR ve la bitacora en el menu y la abre", async () => {
+        signIn(AUDITOR);
+        renderAt("/audit");
+        const menu = await screen.findByRole("menu");
+        expect(within(menu).getByText("Bitácora de auditoría")).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { name: "Bitácora de auditoría" })).toBeInTheDocument();
+    });
+
     it("un AUDITOR que escribe la URL de Usuarios vuelve al inicio", async () => {
         signIn(AUDITOR);
         renderAt("/admin/users");
@@ -79,7 +87,7 @@ describe("rutas y menu por rol", () => {
     });
 
     it("menuFor quita las entradas de otros roles y las categorias vacias", () => {
-        expect(menuFor(["OPERATOR"]).map((s) => s.key)).toEqual(["operation", "partners", "documents", "alerts"]);
+        expect(menuFor(["OPERATOR"]).map((s) => s.key)).toEqual(["operation", "partners", "documents", "alerts", "audit"]);
         expect(menuFor(["ADMIN"]).map((s) => s.key)).toContain("administration");
         expect(menuFor(undefined).map((s) => s.key)).not.toContain("administration");
     });

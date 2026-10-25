@@ -1,11 +1,13 @@
 # Entorno de ejecucion contenerizado de la plataforma (HU-07).
 #
 #   ./init-env.sh                 # una vez: secretos (.env) y certificado TLS (certs/)
-#   docker compose up -d --build  # construye y arranca
+#   docker compose build          # construye las imagenes
+#   ./prepare-storage.sh          # una vez: carpetas de los socios y del recurso compartido
+#   docker compose up -d          # arranca
 #   ./smoke-test.sh               # verifica HTTPS, puertos, reinicio, cookies y respaldo
 #
 # Solo el proxy TLS (nginx) publica puertos. Los servicios y PostgreSQL quedan en la red interna.
-# Los demas servicios (socios, documentos, alertas, AS2) se incorporan con sus historias.
+# Los demas servicios (documentos, alertas, AS2) se incorporan con sus historias.
 name: as2-platform
 
 x-restart: &restart
@@ -73,6 +75,32 @@ services:
       <<: *java-health
     networks: [backend]
 
+  # Socios comerciales y su configuracion AS2 (HU-08).
+  partners-service:
+    image: as2-platform-services:local
+    command: ["java", "-jar", "/app/partners-service.jar"]
+    <<: [*restart, *logging]
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/partners
+      DB_USERNAME: partners
+      DB_PASSWORD: ${PARTNERS_DB_PASSWORD}
+      PARTNERS_SECRET_KEY: ${PARTNERS_SECRET_KEY:?Ejecute init-env.sh}
+      AS2_STORAGE_ROOT: /opt/as2_data/partners
+      AS2_SHARED_ROOT: /mnt/erp
+    volumes:
+      # Carpetas de los socios (HU-09): volumen propio, sobrevive a recrear el contenedor.
+      - as2data:/opt/as2_data
+      # Recurso compartido del ERP: en el servidor, la ruta donde esta montado (Samba/CIFS);
+      # en local, ./shared. Preparar permisos con ./prepare-storage.sh.
+      - ${ERP_SHARED_PATH:-./shared}:/mnt/erp
+    depends_on:
+      db: { condition: service_healthy }
+      auth-service: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8081/actuator/health | grep -q UP"]
+      <<: *java-health
+    networks: [backend]
+
   gateway:
     image: as2-platform-services:local
     command: ["java", "-jar", "/app/gateway.jar"]
@@ -87,6 +115,7 @@ services:
       APP_CORS_ALLOWED_ORIGINS: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
     depends_on:
       auth-service: { condition: service_healthy }
+      partners-service: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8765/actuator/health | grep -q UP"]
       <<: *java-health
@@ -138,6 +167,7 @@ services:
 
 volumes:
   dbdata:
+  as2data:
 
 networks:
   backend:

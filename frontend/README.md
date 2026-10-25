@@ -37,10 +37,28 @@ El menú (`src/routes/menu.ts`) se organiza por categorías (Operación, Socios,
 Administración) y se filtra por rol: Administración solo la ve `ADMIN`, y sus rutas están además
 protegidas por `RequireRole`. La seguridad real está en el servidor (gateway y auth-service).
 
+## Socios comerciales
+
+`/partners` (`src/pages/partners/`, store `partnersStore`): lista de socios activos o dados de baja
+con búsqueda; alta en un paso (`POST /api/partners/complete`, crea también las configuraciones de
+salida, entrada y MDN por defecto) y edición en un panel con pestañas Datos, Conexión, Seguridad AS2,
+Salida, Entrada, MDN y Carpetas (cada configuración se guarda por separado). La pestaña Carpetas
+muestra el estado del árbol del socio, verifica y enlaza la carpeta compartida del ERP (el botón
+"Enlazar" solo se habilita tras una verificación positiva) y activa o desactiva producción.
+Todos los roles consultan; `ADMIN` y `OPERATOR` registran, editan, dan de baja y reactivan; solo `ADMIN` borra definitivamente,
+escribiendo el identificador AS2 para confirmar; el enlace con el ERP y la producción también son
+solo de `ADMIN`.
+
+## Bitácora
+
+`/audit` (`src/pages/audit/`, store `auditStore`): eventos con filtros por socio, tipo, estado,
+usuario, Message-ID y fechas, detalle de los datos cambiados y exportación CSV. Todos los roles la
+consultan; no tiene acciones de modificación.
+
 ## Idiomas
 
 Textos por espacios de nombres en `src/i18n/locales/{es,en}/` (`common`, `auth`, `session`,
-`admin`, `partners`, `documents`, `alerts`). El idioma elegido se recuerda en el navegador. Una
+`admin`, `partners`, `documents`, `alerts`, `audit`). El idioma elegido se recuerda en el navegador. Una
 prueba exige que español e inglés tengan exactamente las mismas claves.
 
 ## Comandos
