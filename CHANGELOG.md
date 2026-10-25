@@ -15,6 +15,13 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   no sirve como nombre de carpeta se rechaza con un mensaje claro; dar de baja un socio libera su
   identificador, y solo un administrador puede borrarlo definitivamente. El Auditor consulta sin
   modificar, y cada cambio queda con el usuario que lo hizo (HU-08).
+- Carpetas por socio e integración con la carpeta compartida del ERP: al registrar un socio se crea
+  su árbol estándar de carpetas (y no queda nada si el alta falla). Desde la consola se verifica la
+  carpeta de red del ERP antes de enlazarla —el botón "Enlazar" solo se habilita si todo está bien— y
+  al enlazar, los archivos que hubiera se trasladan sin perder ninguno. Pasar un socio a producción
+  (el ERP empieza a recibir sus documentos) es un paso que autoriza un administrador escribiendo el
+  identificador del socio, y se puede revertir. Si el recurso compartido se desconecta, el socio se
+  muestra en error con la explicación y la plataforma sigue funcionando (HU-09).
 - Bitácora de auditoría consultable desde la consola: cada alta, cambio, baja o borrado de un socio
   y de su configuración queda registrado con quién lo hizo, cuándo y qué datos cambiaron (antes y
   después, sin mostrar nunca claves). Se filtra por socio, tipo de evento, estado, usuario, Message-ID
