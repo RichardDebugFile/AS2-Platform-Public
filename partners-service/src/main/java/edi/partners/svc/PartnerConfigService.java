@@ -21,7 +21,12 @@ import edi.partners.repo.IncomingConfigRepository;
 import edi.partners.repo.MdnConfigRepository;
 import edi.partners.repo.OutgoingConfigRepository;
 import edi.partners.svc.audit.AuditEvent;
+import edi.partners.svc.audit.AuditEvent.Change;
+import edi.partners.svc.audit.AuditEventTypes;
 import edi.partners.svc.audit.AuditLogPublisher;
+import edi.partners.svc.audit.Changes;
+import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +65,7 @@ public class PartnerConfigService {
                 .orElseThrow(() -> new ConfigNotFoundException("salida", partnerId));
     }
 
+    /** Crea o reemplaza la configuracion; la bitacora guarda los campos que cambiaron. */
     @Transactional
     public OutgoingConfigResponse upsertOutgoing(UUID partnerId, OutgoingConfigRequest r) {
         Partner p = partners.active(partnerId);
@@ -72,7 +78,9 @@ public class PartnerConfigService {
         if (archiveMode == ArchiveMode.MOVE && archiveFolder == null) {
             archiveFolder = storage.folder(p.getAs2Name(), StorageLayout.ARCHIVE);
         }
-        OutgoingConfig c = outgoing.findByPartnerId(partnerId).orElseGet(() -> new OutgoingConfig(p));
+        Optional<OutgoingConfig> existing = outgoing.findByPartnerId(partnerId);
+        OutgoingConfigResponse before = existing.map(OutgoingConfigResponse::of).orElse(null);
+        OutgoingConfig c = existing.orElseGet(() -> new OutgoingConfig(p));
         c.setLocalFolder(r.localFolder().strip());
         c.setSendingMode(r.sendingMode());
         c.setFilenameFilter(r.sendingMode() == SendingMode.FILENAME_FILTER ? filter : null);
@@ -83,8 +91,10 @@ public class PartnerConfigService {
         c.setArchiveMode(archiveMode);
         c.setArchiveFolder(archiveMode == ArchiveMode.MOVE ? archiveFolder : null);
         c = outgoing.saveAndFlush(c);
-        publish("outgoing-config:UPSERT", partnerId, "Configuracion de salida guardada");
-        return OutgoingConfigResponse.of(c);
+        OutgoingConfigResponse after = OutgoingConfigResponse.of(c);
+        publish(AuditEventTypes.OUTGOING_CONFIG_UPDATED, p, "Configuracion de salida guardada",
+                Changes.between(before, after));
+        return after;
     }
 
     /** Valores por defecto: se envia cada archivo que aparezca en Outgoing y se archiva en Archive. */
@@ -107,12 +117,16 @@ public class PartnerConfigService {
     @Transactional
     public IncomingConfigResponse upsertIncoming(UUID partnerId, IncomingConfigRequest r) {
         Partner p = partners.active(partnerId);
-        IncomingConfig c = incoming.findByPartnerId(partnerId).orElseGet(() -> new IncomingConfig(p));
+        Optional<IncomingConfig> existing = incoming.findByPartnerId(partnerId);
+        IncomingConfigResponse before = existing.map(IncomingConfigResponse::of).orElse(null);
+        IncomingConfig c = existing.orElseGet(() -> new IncomingConfig(p));
         c.setIncomingFolder(r.incomingFolder().strip());
         c.setParserProfile(PartnerRules.trim(r.parserProfile()));
         c = incoming.saveAndFlush(c);
-        publish("incoming-config:UPSERT", partnerId, "Configuracion de entrada guardada");
-        return IncomingConfigResponse.of(c);
+        IncomingConfigResponse after = IncomingConfigResponse.of(c);
+        publish(AuditEventTypes.INCOMING_CONFIG_UPDATED, p, "Configuracion de entrada guardada",
+                Changes.between(before, after));
+        return after;
     }
 
     public IncomingConfigRequest defaultIncoming(Partner p) {
@@ -132,14 +146,18 @@ public class PartnerConfigService {
     public MdnConfigResponse upsertMdn(UUID partnerId, MdnConfigRequest r) {
         Partner p = partners.active(partnerId);
         String url = PartnerRules.mdnUrl(r.deliveryMode(), r.asyncMdnUrl(), "La URL del MDN asincrono");
-        MdnConfig c = mdn.findByPartnerId(partnerId).orElseGet(() -> new MdnConfig(p));
+        Optional<MdnConfig> existing = mdn.findByPartnerId(partnerId);
+        MdnConfigResponse before = existing.map(MdnConfigResponse::of).orElse(null);
+        MdnConfig c = existing.orElseGet(() -> new MdnConfig(p));
         c.setLocalFolder(r.localFolder().strip());
         c.setReceiptType(r.receiptType());
         c.setDeliveryMode(r.deliveryMode());
         c.setAsyncMdnUrl(url);
         c = mdn.saveAndFlush(c);
-        publish("mdn-config:UPSERT", partnerId, "Configuracion de MDN guardada");
-        return MdnConfigResponse.of(c);
+        MdnConfigResponse after = MdnConfigResponse.of(c);
+        publish(AuditEventTypes.MDN_CONFIG_UPDATED, p, "Configuracion de MDN guardada",
+                Changes.between(before, after));
+        return after;
     }
 
     /** Valores por defecto tomados de lo que el socio exige: firmado o no, sincrono o asincrono. */
@@ -149,7 +167,8 @@ public class PartnerConfigService {
                 p.getMdnMode(), p.getMdnMode() == MdnMode.ASYNC ? p.getMdnReceiptUrl() : null);
     }
 
-    private void publish(String action, UUID partnerId, String detail) {
-        audit.publish(new AuditEvent(action, partnerId, RequestIdentity.currentUser(), true, detail));
+    private void publish(String eventType, Partner p, String detail, Map<String, Change> changes) {
+        audit.publish(AuditEvent.of(eventType, p.getId(), p.getAs2Name(), RequestIdentity.currentUser(), detail,
+                changes));
     }
 }

@@ -212,6 +212,7 @@ class GatewaySecurityTest {
         dejoPasar(client.get().uri("/api/partners").cookie("access_token", AUDITOR).exchange());
         dejoPasar(client.get().uri("/api/documents").cookie("access_token", AUDITOR).exchange());
         dejoPasar(client.get().uri("/api/audit-logs").cookie("access_token", AUDITOR).exchange());
+        dejoPasar(client.get().uri("/api/audit-logs/export?status=FAILURE").cookie("access_token", AUDITOR).exchange());
     }
 
     @Test
@@ -221,6 +222,7 @@ class GatewaySecurityTest {
         navegador(client.patch().uri("/api/partners/x/status"), AUDITOR).exchange().expectStatus().isForbidden();
         client.delete().uri("/api/partners/x").header("Authorization", "Bearer " + AUDITOR).exchange().expectStatus().isForbidden();
         navegador(client.post().uri("/api/as2/send"), AUDITOR).exchange().expectStatus().isForbidden();
+        navegador(client.post().uri("/api/audit-logs"), AUDITOR).exchange().expectStatus().isForbidden();
     }
 
     /** Su propia sesion y su propio MFA no son "modificar la plataforma". */

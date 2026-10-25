@@ -15,9 +15,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 /**
- * Esquema real: Flyway aplica V1 y V2 sobre PostgreSQL y Hibernate lo valida contra las entidades
- * ({@code ddl-auto=validate}). Comprueba lo que H2 no puede: el indice unico parcial del
- * identificador AS2 y el borrado en cascada de las configuraciones.
+ * Esquema real: Flyway aplica las migraciones sobre PostgreSQL y Hibernate lo valida contra las
+ * entidades ({@code ddl-auto=validate}). Comprueba lo que H2 no puede: el indice unico parcial del
+ * identificador AS2, el borrado en cascada de las configuraciones y que la bitacora sea de solo
+ * insercion.
  */
 @EnabledIfPostgres
 @DataJpaTest
@@ -71,5 +72,61 @@ class PartnerSchemaPostgresTest {
         p.setPort(70000);
 
         assertThatThrownBy(() -> partners.saveAndFlush(p)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    /**
+     * Un evento de la bitacora del socio. Cada prueba siguiente provoca un solo error: tras el primero,
+     * PostgreSQL anula la transaccion de la prueba y rechaza cualquier otra sentencia.
+     */
+    private java.util.UUID evento(String as2Name) {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner(as2Name, true));
+        java.util.UUID id = java.util.UUID.randomUUID();
+        jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source, partner_id, partner_as2_name)
+                VALUES (?, now(), 'PARTNER_CREATED', 'SUCCESS', 'operador1', 'partners-service', ?, ?)
+                """, id, p.getId(), as2Name);
+        return id;
+    }
+
+    @Test
+    void bitacora_noSePuedeModificar() {
+        java.util.UUID id = evento("SOCIO-PG-E1");
+
+        assertThatThrownBy(() -> jdbc.update("UPDATE audit_log SET actor = 'otro' WHERE id = ?", id))
+                .hasMessageContaining("solo insercion");
+    }
+
+    @Test
+    void bitacora_noSePuedeBorrar() {
+        java.util.UUID id = evento("SOCIO-PG-E2");
+
+        assertThatThrownBy(() -> jdbc.update("DELETE FROM audit_log WHERE id = ?", id))
+                .hasMessageContaining("solo insercion");
+    }
+
+    @Test
+    void bitacora_conservaElEventoAunqueSeBorreElSocio() {
+        java.util.UUID id = evento("SOCIO-PG-E3");
+
+        jdbc.update("DELETE FROM partner WHERE as2_name = 'SOCIO-PG-E3'");
+
+        assertThat(jdbc.queryForObject("SELECT partner_as2_name FROM audit_log WHERE id = ?", String.class, id))
+                .isEqualTo("SOCIO-PG-E3");
+    }
+
+    @Test
+    void bitacora_rechazaTiposDeEventoFueraDeFormato() {
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source)
+                VALUES (gen_random_uuid(), now(), 'documento enviado', 'SUCCESS', 'system', 'x')
+                """)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void bitacora_rechazaEstadosDesconocidos() {
+        assertThatThrownBy(() -> jdbc.update("""
+                INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source)
+                VALUES (gen_random_uuid(), now(), 'DOCUMENT_SENT', 'QUIZAS', 'system', 'x')
+                """)).isInstanceOf(DataIntegrityViolationException.class);
     }
 }

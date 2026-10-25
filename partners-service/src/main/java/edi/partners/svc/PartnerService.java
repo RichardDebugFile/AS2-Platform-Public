@@ -10,9 +10,14 @@ import edi.partners.error.DuplicateAs2NameException;
 import edi.partners.error.PartnerNotFoundException;
 import edi.partners.repo.PartnerRepository;
 import edi.partners.svc.audit.AuditEvent;
+import edi.partners.svc.audit.AuditEvent.Change;
+import edi.partners.svc.audit.AuditEventTypes;
 import edi.partners.svc.audit.AuditLogPublisher;
+import edi.partners.svc.audit.Changes;
 import edi.partners.svc.folders.PartnerFolderProvisioner;
+import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -26,6 +31,9 @@ public class PartnerService {
 
     private final PartnerRepository repo;
     private final CryptoService crypto;
+    /** Lo que la bitacora muestra en lugar de una clave. */
+    static final String HIDDEN = "(oculta)";
+
     private final AuditLogPublisher audit;
     private final PartnerFolderProvisioner folders;
 
@@ -49,7 +57,8 @@ public class PartnerService {
         apply(p, r, true);
         p = repo.saveAndFlush(p);
         folders.provision(p);
-        publish("partners:CREATE", p.getId(), "Socio creado: " + as2Name);
+        publish(AuditEventTypes.PARTNER_CREATED, p, "Socio creado: " + as2Name,
+                Changes.between(null, PartnerResponse.of(p)));
         return p;
     }
 
@@ -61,14 +70,20 @@ public class PartnerService {
                 && repo.existsByAs2NameIgnoreCaseAndActiveTrueAndIdNot(as2Name, id)) {
             throw new DuplicateAs2NameException(as2Name);
         }
+        PartnerResponse snapshot = PartnerResponse.of(p);
         String before = p.getAs2Name();
         p.setAs2Name(as2Name);
         apply(p, r, false);
         repo.saveAndFlush(p);
-        publish("partners:UPDATE", id, before.equals(as2Name)
+        PartnerResponse after = PartnerResponse.of(p);
+        Map<String, Change> changes = new LinkedHashMap<>(Changes.between(snapshot, after));
+        if (r.basicAuthPassword() != null && !r.basicAuthPassword().isBlank() && after.hasBasicAuthPassword()) {
+            changes.put("basicAuthPassword", new Change(HIDDEN, "(cambiada)")); // nunca el valor
+        }
+        publish(AuditEventTypes.PARTNER_UPDATED, p, before.equals(as2Name)
                 ? "Socio actualizado: " + as2Name
-                : "Socio actualizado: " + before + " -> " + as2Name);
-        return PartnerResponse.of(p);
+                : "Socio actualizado: " + before + " -> " + as2Name, changes);
+        return after;
     }
 
     /** Activa o desactiva. Reactivar falla si otro socio activo ya usa el identificador. */
@@ -91,8 +106,9 @@ public class PartnerService {
         if (p.isActive() != active) {
             p.setActive(active);
             repo.saveAndFlush(p);
-            publish(active ? "partners:ACTIVATE" : "partners:DEACTIVATE", id,
-                    (active ? "Socio activado: " : "Socio desactivado: ") + p.getAs2Name());
+            publish(active ? AuditEventTypes.PARTNER_ACTIVATED : AuditEventTypes.PARTNER_DEACTIVATED, p,
+                    (active ? "Socio activado: " : "Socio desactivado: ") + p.getAs2Name(),
+                    Map.of("active", new Change(!active, active)));
         }
         return PartnerResponse.of(p);
     }
@@ -108,7 +124,7 @@ public class PartnerService {
             throw new IllegalArgumentException(
                     "Para borrar definitivamente escriba el identificador AS2 del socio: " + p.getAs2Name());
         }
-        publish("partners:PURGE", id, "Socio borrado definitivamente: " + p.getAs2Name());
+        publish(AuditEventTypes.PARTNER_PURGED, p, "Socio borrado definitivamente: " + p.getAs2Name(), Map.of());
         repo.delete(p);
     }
 
@@ -207,7 +223,8 @@ public class PartnerService {
         return value == null ? current : value;
     }
 
-    private void publish(String action, UUID partnerId, String detail) {
-        audit.publish(new AuditEvent(action, partnerId, RequestIdentity.currentUser(), true, detail));
+    private void publish(String eventType, Partner p, String detail, Map<String, Change> changes) {
+        audit.publish(AuditEvent.of(eventType, p.getId(), p.getAs2Name(), RequestIdentity.currentUser(), detail,
+                changes));
     }
 }

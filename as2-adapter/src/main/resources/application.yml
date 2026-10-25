@@ -5,6 +5,11 @@ spring:
   application:
     name: as2-adapter
 
+as2:
+  audit:
+    # Bitacora de partners-service (HU-10). En Docker: http://partners-service:8081
+    url: ${PARTNERS_SERVICE_URL:http://localhost:8081}
+
 management:
   endpoints:
     web:

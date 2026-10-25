@@ -29,6 +29,7 @@ export const MENU: MenuSection[] = [
     { key: "partners", label: "nav.partnersGroup", entries: [{ path: "/partners", label: "nav.partners" }] },
     { key: "documents", label: "nav.documentsGroup", entries: [{ path: "/documents", label: "nav.documents" }] },
     { key: "alerts", label: "nav.alertsGroup", entries: [{ path: "/alerts", label: "nav.alerts" }] },
+    { key: "audit", label: "nav.auditGroup", entries: [{ path: "/audit", label: "nav.audit" }] },
     {
         key: "administration",
         label: "nav.administration",
