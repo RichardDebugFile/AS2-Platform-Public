@@ -326,4 +326,16 @@ class GatewaySecurityTest {
         dejoPasar(navegador(client.delete().uri("/api/partners/123/purge?confirm=X"), ADMIN).exchange());
         dejoPasar(navegador(client.delete().uri("/api/partners/123"), OPERADOR).exchange());
     }
+
+    @Test
+    void enlaceConElErpYProduccion_soloAdmin_laVerificacionPreviaTambienOperador() {
+        for (String uri : new String[] {"/api/partners/123/folders/link", "/api/partners/123/production"}) {
+            navegador(client.post().uri(uri), OPERADOR).exchange().expectStatus().isForbidden();
+            navegador(client.post().uri(uri), AUDITOR).exchange().expectStatus().isForbidden();
+            dejoPasar(navegador(client.post().uri(uri), ADMIN).exchange());
+        }
+        dejoPasar(navegador(client.post().uri("/api/partners/123/folders/precheck"), OPERADOR).exchange());
+        dejoPasar(navegador(client.post().uri("/api/partners/123/folders/repair"), OPERADOR).exchange());
+        dejoPasar(client.get().uri("/api/partners/folder-statuses").cookie("access_token", AUDITOR).exchange());
+    }
 }
