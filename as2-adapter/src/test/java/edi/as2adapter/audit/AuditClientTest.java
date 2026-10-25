@@ -61,7 +61,7 @@ class AuditClientTest {
         try (ServerSocket s = new ServerSocket(0)) {
             puertoCerrado = s.getLocalPort();
         }
-        AuditClient client = new AuditClient(RestClient.builder(), "http://127.0.0.1:" + puertoCerrado);
+        AuditClient client = new AuditClient("http://127.0.0.1:" + puertoCerrado);
 
         long inicio = System.nanoTime();
         client.record(SENT);

@@ -28,8 +28,8 @@ public class AuditClient {
     private final Executor executor;
 
     @Autowired
-    public AuditClient(RestClient.Builder builder, @Value("${as2.audit.url}") String baseUrl) {
-        this(builder.requestFactory(timeouts()), baseUrl, Executors.newVirtualThreadPerTaskExecutor());
+    public AuditClient(@Value("${as2.audit.url}") String baseUrl) {
+        this(RestClient.builder().requestFactory(timeouts()), baseUrl, Executors.newVirtualThreadPerTaskExecutor());
     }
 
     AuditClient(RestClient.Builder builder, String baseUrl, Executor executor) {
