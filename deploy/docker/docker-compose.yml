@@ -1,7 +1,9 @@
 # Entorno de ejecucion contenerizado de la plataforma (HU-07).
 #
 #   ./init-env.sh                 # una vez: secretos (.env) y certificado TLS (certs/)
-#   docker compose up -d --build  # construye y arranca
+#   docker compose build          # construye las imagenes
+#   ./prepare-storage.sh          # una vez: carpetas de los socios y del recurso compartido
+#   docker compose up -d          # arranca
 #   ./smoke-test.sh               # verifica HTTPS, puertos, reinicio, cookies y respaldo
 #
 # Solo el proxy TLS (nginx) publica puertos. Los servicios y PostgreSQL quedan en la red interna.
@@ -83,6 +85,14 @@ services:
       DB_USERNAME: partners
       DB_PASSWORD: ${PARTNERS_DB_PASSWORD}
       PARTNERS_SECRET_KEY: ${PARTNERS_SECRET_KEY:?Ejecute init-env.sh}
+      AS2_STORAGE_ROOT: /opt/as2_data/partners
+      AS2_SHARED_ROOT: /mnt/erp
+    volumes:
+      # Carpetas de los socios (HU-09): volumen propio, sobrevive a recrear el contenedor.
+      - as2data:/opt/as2_data
+      # Recurso compartido del ERP: en el servidor, la ruta donde esta montado (Samba/CIFS);
+      # en local, ./shared. Preparar permisos con ./prepare-storage.sh.
+      - ${ERP_SHARED_PATH:-./shared}:/mnt/erp
     depends_on:
       db: { condition: service_healthy }
       auth-service: { condition: service_healthy }
@@ -157,6 +167,7 @@ services:
 
 volumes:
   dbdata:
+  as2data:
 
 networks:
   backend:
