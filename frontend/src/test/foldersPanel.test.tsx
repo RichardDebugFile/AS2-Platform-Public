@@ -112,7 +112,7 @@ describe("carpetas del socio", () => {
         await waitFor(() => expect(calls().some((c) => c.url === "/partners/p1/folders/link")).toBe(true));
         expect(calls().find((c) => c.url === "/partners/p1/folders/link")?.body).toEqual({ sharedFolderName: "SocioA" });
         expect(await screen.findByText("Enlazado con el ERP")).toBeInTheDocument();
-        expect(screen.getAllByText(/\/mnt\/erp\/SocioA\//).length).toBe(6);
+        expect(screen.getAllByText(/\/mnt\/erp\/SocioA\//)).toHaveLength(6);
     });
 
     it("cambiar el nombre tras verificar obliga a verificar de nuevo", async () => {

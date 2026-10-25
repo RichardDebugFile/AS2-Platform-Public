@@ -79,25 +79,11 @@ public class PartnerFolderService {
                 health = Health.ERROR;
             }
             for (String name : expected(p)) {
-                Path local = base.resolve(name);
-                boolean link = Files.isSymbolicLink(local);
-                String target = link ? Files.readSymbolicLink(local).toString() : null;
-                boolean exists = Files.isDirectory(local);
-                boolean readable = exists && Files.isReadable(local);
-                boolean writable = exists && Files.isWritable(local);
-                folders.add(new Folder(name, local.toString(), exists, readable, writable, link, target));
-                if (link && !exists) {
-                    problems.add(name + ": el enlace apunta a " + target + ", que no esta disponible");
-                    health = worst(health, Health.ERROR);
-                } else if (linked && !link) {
-                    problems.add(name + ": deberia ser un enlace a la carpeta compartida");
-                    health = worst(health, Health.ERROR);
-                } else if (!exists) {
-                    problems.add(name + ": no existe");
-                    health = worst(health, Health.MISSING);
-                } else if (!readable || !writable) {
-                    problems.add(name + ": el servicio no tiene permiso de lectura y escritura");
-                    health = worst(health, Health.NO_ACCESS);
+                FolderCheck c = inspect(base.resolve(name), name, linked);
+                folders.add(c.folder());
+                if (c.problem() != null) {
+                    problems.add(c.problem());
+                    health = worst(health, c.health());
                 }
             }
         } catch (IOException | RuntimeException e) {
@@ -106,6 +92,33 @@ public class PartnerFolderService {
         }
         return new FolderStatusResponse(p.getId(), p.getAs2Name(), p.getFolderState(), p.getSharedFolderName(),
                 health, folders, problems);
+    }
+
+    /** Resultado de revisar una subcarpeta: su estado y, si lo hay, el problema. */
+    private record FolderCheck(Folder folder, Health health, String problem) {
+    }
+
+    private static FolderCheck inspect(Path local, String name, boolean linked) throws IOException {
+        boolean link = Files.isSymbolicLink(local);
+        String target = link ? Files.readSymbolicLink(local).toString() : null;
+        boolean exists = Files.isDirectory(local);
+        boolean readable = exists && Files.isReadable(local);
+        boolean writable = exists && Files.isWritable(local);
+        Folder f = new Folder(name, local.toString(), exists, readable, writable, link, target);
+        if (link && !exists) {
+            return new FolderCheck(f, Health.ERROR, name + ": el enlace apunta a " + target + ", que no esta disponible");
+        }
+        if (linked && !link) {
+            return new FolderCheck(f, Health.ERROR, name + ": deberia ser un enlace a la carpeta compartida");
+        }
+        if (!exists) {
+            return new FolderCheck(f, Health.MISSING, name + ": no existe");
+        }
+        if (!readable || !writable) {
+            return new FolderCheck(f, Health.NO_ACCESS,
+                    name + ": el servicio no tiene permiso de lectura y escritura");
+        }
+        return new FolderCheck(f, Health.OK, null);
     }
 
     private static List<String> expected(Partner p) {
@@ -174,11 +187,7 @@ public class PartnerFolderService {
                                        List<String> actions) {
         try {
             if (Files.isSymbolicLink(local)) {
-                if (Files.readSymbolicLink(local).equals(remote)) {
-                    actions.add(sub + ": ya enlazada");
-                } else {
-                    problems.add(sub + ": ya es un enlace a otra carpeta (" + Files.readSymbolicLink(local) + ")");
-                }
+                checkExistingLink(local, remote, sub, problems, actions);
                 return;
             }
             if (Files.exists(remote) && !Files.isDirectory(remote)) {
@@ -186,35 +195,46 @@ public class PartnerFolderService {
                 return;
             }
             if (Files.isDirectory(local)) {
-                List<Path> entries;
-                try (Stream<Path> s = Files.list(local)) {
-                    entries = s.toList();
-                }
-                List<String> dirs = entries.stream().filter(Files::isDirectory)
-                        .map(e -> e.getFileName().toString()).toList();
-                if (!dirs.isEmpty()) {
-                    problems.add(sub + ": contiene subcarpetas " + dirs + "; muevalas a mano antes de enlazar");
-                }
-                long files = 0;
-                for (Path e : entries) {
-                    if (!Files.isDirectory(e)) {
-                        files++;
-                        if (Files.exists(remote.resolve(e.getFileName()))) {
-                            problems.add(sub + "/" + e.getFileName()
-                                    + " ya existe en la carpeta compartida: no se sobrescribe");
-                        }
-                    }
-                }
-                if (files > 0) {
-                    actions.add(sub + ": se moveran " + files + " archivo(s) a " + remote);
-                }
+                checkFilesToMove(local, remote, sub, problems, actions);
             } else if (Files.exists(local)) {
                 problems.add(sub + ": " + local + " existe y no es una carpeta");
                 return;
             }
-            actions.add(sub + ": se enlazara con " + remote + (Files.isDirectory(remote) ? "" : " (se creara)"));
+            String created = Files.isDirectory(remote) ? "" : " (se creara)";
+            actions.add(sub + ": se enlazara con " + remote + created);
         } catch (IOException e) {
             problems.add(sub + ": no se pudo revisar (" + e.getMessage() + ")");
+        }
+    }
+
+    /** Subcarpeta que ya es un enlace: correcta si apunta a su destino en el recurso compartido. */
+    private static void checkExistingLink(Path local, Path remote, String sub, List<String> problems,
+                                          List<String> actions) throws IOException {
+        Path target = Files.readSymbolicLink(local);
+        if (target.equals(remote)) {
+            actions.add(sub + ": ya enlazada");
+        } else {
+            problems.add(sub + ": ya es un enlace a otra carpeta (" + target + ")");
+        }
+    }
+
+    /** Archivos que el enlace movera: no puede haber subcarpetas ni nombres que ya existan en el destino. */
+    private static void checkFilesToMove(Path local, Path remote, String sub, List<String> problems,
+                                         List<String> actions) throws IOException {
+        List<Path> entries;
+        try (Stream<Path> s = Files.list(local)) {
+            entries = s.toList();
+        }
+        List<String> dirs = entries.stream().filter(Files::isDirectory).map(e -> e.getFileName().toString()).toList();
+        if (!dirs.isEmpty()) {
+            problems.add(sub + ": contiene subcarpetas " + dirs + "; muevalas a mano antes de enlazar");
+        }
+        List<Path> files = entries.stream().filter(e -> !Files.isDirectory(e)).toList();
+        files.stream().filter(f -> Files.exists(remote.resolve(f.getFileName())))
+                .forEach(f -> problems.add(sub + "/" + f.getFileName()
+                        + " ya existe en la carpeta compartida: no se sobrescribe"));
+        if (!files.isEmpty()) {
+            actions.add(sub + ": se moveran " + files.size() + " archivo(s) a " + remote);
         }
     }
 

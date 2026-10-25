@@ -76,7 +76,7 @@ public class FilesystemPartnerFolderProvisioner implements PartnerFolderProvisio
             Path dir = created.get(i);
             try {
                 Files.deleteIfExists(dir);
-            } catch (DirectoryNotEmptyException e) {
+            } catch (DirectoryNotEmptyException _) {
                 log.warn("Se conserva {}: ya tiene contenido", dir);
             } catch (IOException e) {
                 log.warn("No se pudo quitar {}: {}", dir, e.toString());

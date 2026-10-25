@@ -92,14 +92,14 @@ public class AuditLogService {
     static Specification<AuditLogEntry> spec(AuditLogQuery q) {
         return (root, query, cb) -> {
             List<Predicate> where = new ArrayList<>();
-            equal(where, cb, root.get("partnerId"), q.partnerId());
-            equalIgnoringCase(where, cb, root.get("partnerAs2Name"), q.partnerAs2Name());
+            addEqual(where, cb, root.get("partnerId"), q.partnerId());
+            addEqualIgnoringCase(where, cb, root.get("partnerAs2Name"), q.partnerAs2Name());
             if (present(q.eventType())) {
                 where.add(cb.equal(root.get("eventType"), q.eventType().strip().toUpperCase(Locale.ROOT)));
             }
-            equal(where, cb, root.get("status"), q.status());
-            equalIgnoringCase(where, cb, root.get("actor"), q.actor());
-            equal(where, cb, root.get("messageId"), present(q.messageId()) ? q.messageId().strip() : null);
+            addEqual(where, cb, root.get("status"), q.status());
+            addEqualIgnoringCase(where, cb, root.get("actor"), q.actor());
+            addEqual(where, cb, root.get("messageId"), present(q.messageId()) ? q.messageId().strip() : null);
             if (q.from() != null) {
                 where.add(cb.greaterThanOrEqualTo(root.get(OCCURRED_AT), q.from()));
             }
@@ -110,14 +110,14 @@ public class AuditLogService {
         };
     }
 
-    private static void equal(List<Predicate> where, CriteriaBuilder cb, Expression<?> field, Object value) {
+    private static void addEqual(List<Predicate> where, CriteriaBuilder cb, Expression<?> field, Object value) {
         if (value != null) {
             where.add(cb.equal(field, value));
         }
     }
 
-    private static void equalIgnoringCase(List<Predicate> where, CriteriaBuilder cb, Expression<String> field,
-                                          String value) {
+    private static void addEqualIgnoringCase(List<Predicate> where, CriteriaBuilder cb, Expression<String> field,
+                                             String value) {
         if (present(value)) {
             where.add(cb.equal(cb.lower(field), lower(value)));
         }

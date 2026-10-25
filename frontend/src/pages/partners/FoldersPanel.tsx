@@ -23,7 +23,7 @@ export default function FoldersPanel({ partner, canEdit, isAdmin }: Readonly<Pro
     const [shared, setShared] = useState(partner.sharedFolderName ?? "");
     const [precheck, setPrecheck] = useState<FolderPrecheck | null>(null);
     const [busy, setBusy] = useState(false);
-    const [production, setProductionDialog] = useState<boolean | null>(null);
+    const [productionDialog, setProductionDialog] = useState<boolean | null>(null);
     const [confirm, setConfirm] = useState("");
 
     useEffect(() => {
@@ -53,8 +53,8 @@ export default function FoldersPanel({ partner, canEdit, isAdmin }: Readonly<Pro
     };
 
     const onProduction = async () => {
-        if (production === null) return;
-        const res = await run(() => setProduction(partner.id, production, confirm), production ? "folders.productionOn" : "folders.productionOff");
+        if (productionDialog === null) return;
+        const res = await run(() => setProduction(partner.id, productionDialog, confirm), productionDialog ? "folders.productionOn" : "folders.productionOff");
         if (res.ok) setProductionDialog(null);
     };
 
@@ -122,7 +122,7 @@ export default function FoldersPanel({ partner, canEdit, isAdmin }: Readonly<Pro
                 <Button icon={<ReloadOutlined />} onClick={() => void getFolderStatus(partner.id)}>
                     {t("folders.refresh")}
                 </Button>
-                {canEdit && !linked && status && status.health === "MISSING" && (
+                {canEdit && !linked && status?.health === "MISSING" && (
                     <Button loading={busy} onClick={() => void run(() => repairFolders(partner.id), "folders.repaired")}>
                         {t("folders.repair")}
                     </Button>
@@ -202,16 +202,16 @@ export default function FoldersPanel({ partner, canEdit, isAdmin }: Readonly<Pro
             )}
 
             <Modal
-                open={production !== null}
-                title={production ? t("folders.activateProduction") : t("folders.deactivateProduction")}
+                open={productionDialog !== null}
+                title={productionDialog ? t("folders.activateProduction") : t("folders.deactivateProduction")}
                 okText={t("folders.confirmOk")}
-                okButtonProps={{ disabled: confirm.trim() !== partner.as2Name, danger: production === false }}
+                okButtonProps={{ disabled: confirm.trim() !== partner.as2Name, danger: productionDialog === false }}
                 onOk={() => void onProduction()}
                 onCancel={() => setProductionDialog(null)}
                 destroyOnHidden
             >
                 <Typography.Paragraph>
-                    {production ? t("folders.confirmOn", { name: partner.as2Name }) : t("folders.confirmOff", { name: partner.as2Name })}
+                    {productionDialog ? t("folders.confirmOn", { name: partner.as2Name }) : t("folders.confirmOff", { name: partner.as2Name })}
                 </Typography.Paragraph>
                 <Input aria-label={t("folders.confirmLabel")} value={confirm} onChange={(e) => setConfirm(e.target.value)} placeholder={partner.as2Name} />
             </Modal>
