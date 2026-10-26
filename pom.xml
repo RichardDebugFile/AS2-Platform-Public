@@ -24,6 +24,7 @@
         <maven.compiler.release>25</maven.compiler.release>
         <spring.boot.version>4.1.1</spring.boot.version>
         <spring.cloud.version>2025.1.3</spring.cloud.version>
+        <bouncycastle.version>1.86</bouncycastle.version>
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
@@ -43,6 +44,12 @@
                 <version>${spring.cloud.version}</version>
                 <type>pom</type>
                 <scope>import</scope>
+            </dependency>
+            <!-- Criptografia X.509/CMS: certificados de prueba (HU-11) y motor AS2 (HU-15). -->
+            <dependency>
+                <groupId>org.bouncycastle</groupId>
+                <artifactId>bcpkix-jdk18on</artifactId>
+                <version>${bouncycastle.version}</version>
             </dependency>
         </dependencies>
     </dependencyManagement>

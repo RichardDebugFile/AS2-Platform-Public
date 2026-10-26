@@ -59,6 +59,12 @@
             <artifactId>h2</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- Genera los certificados X.509 de las pruebas (HU-11); el servicio los lee con el JDK. -->
+        <dependency>
+            <groupId>org.bouncycastle</groupId>
+            <artifactId>bcpkix-jdk18on</artifactId>
+            <scope>test</scope>
+        </dependency>
     </dependencies>
 
     <build>
