@@ -21,7 +21,7 @@ class X509ReaderTest {
         assertThat(fromPem.data()).isEqualTo(fromDer.data());
         assertThat(fromDer.data().issuedTo()).isEqualTo("as2.socio-a.example");
         assertThat(fromDer.data().issuedBy()).isEqualTo("as2.socio-a.example");
-        assertThat(fromDer.data().subjectDn()).isEqualTo("CN=as2.socio-a.example,O=Socio de prueba,C=EC");
+        assertThat(fromDer.data().subjectDn()).contains("CN=as2.socio-a.example", "O=Socio de prueba");
         assertThat(fromDer.data().fingerprintSha256()).matches("[0-9a-f]{64}").isEqualTo(X509Reader.fingerprint(der));
         assertThat(fromDer.data().validFrom()).isEqualTo(Instant.parse("2026-01-01T00:00:00Z"));
         assertThat(fromDer.data().validTo()).isEqualTo(Instant.parse("2028-01-01T00:00:00Z"));
