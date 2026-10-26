@@ -59,6 +59,9 @@ public class GatewaySecurityConfig {
     /** Enlace con la carpeta compartida y activacion de produccion: cambian lo que ve el ERP (HU-09). */
     static final String[] PARTNER_ERP_CHANGES = {"/api/partners/*/folders/link", "/api/partners/*/production"};
 
+    /** Eliminar un certificado de un socio (HU-11): solo ADMIN; desactivarlo lo puede hacer OPERATOR. */
+    static final String PARTNER_CERTIFICATE = "/api/partners/*/certificates/*";
+
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String ADMIN = "ADMIN";
     static final String[] ROLES_QUE_EDITAN = {ADMIN, "OPERATOR"};
@@ -129,6 +132,9 @@ public class GatewaySecurityConfig {
                         .hasRole(ADMIN)
                         // Borrado definitivo de un socio (y sus configuraciones): solo ADMIN.
                         .pathMatchers(HttpMethod.DELETE, PARTNER_PURGE)
+                        .hasRole(ADMIN)
+                        // Eliminar un certificado de un socio: solo ADMIN (HU-11).
+                        .pathMatchers(HttpMethod.DELETE, PARTNER_CERTIFICATE)
                         .hasRole(ADMIN)
                         // Enlazar carpetas con el ERP y pasar un socio a produccion: solo ADMIN.
                         .pathMatchers(HttpMethod.POST, PARTNER_ERP_CHANGES)

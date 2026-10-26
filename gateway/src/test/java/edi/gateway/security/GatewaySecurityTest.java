@@ -338,4 +338,15 @@ class GatewaySecurityTest {
         dejoPasar(navegador(client.post().uri("/api/partners/123/folders/repair"), OPERADOR).exchange());
         dejoPasar(client.get().uri("/api/partners/folder-statuses").cookie("access_token", AUDITOR).exchange());
     }
+
+    @Test
+    void certificados_eliminarSoloAdmin_cargarYDesactivarTambienOperador_auditorConsulta() {
+        String cert = "/api/partners/123/certificates/456";
+        navegador(client.delete().uri(cert), OPERADOR).exchange().expectStatus().isForbidden();
+        dejoPasar(navegador(client.delete().uri(cert), ADMIN).exchange());
+        dejoPasar(navegador(client.post().uri("/api/partners/123/certificates/upload"), OPERADOR).exchange());
+        dejoPasar(navegador(client.post().uri(cert + "/deactivate"), OPERADOR).exchange());
+        navegador(client.post().uri(cert + "/prefer"), AUDITOR).exchange().expectStatus().isForbidden();
+        dejoPasar(client.get().uri("/api/partners/123/certificates").cookie("access_token", AUDITOR).exchange());
+    }
 }
