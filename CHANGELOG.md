@@ -11,6 +11,13 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   tarea (`HU-XX` o `AS2-NN`) se rechaza en el equipo del desarrollador y en la verificación de cada
   pull request (AS2-75).
 
+### Correcciones
+- La plataforma vuelve a levantarse en Windows con `start.sh`: la preparación de secretos terminaba
+  sin mensaje en Git Bash, y la comprobación automática fallaba en el enlace con la carpeta
+  compartida y en el respaldo. Si falta el archivo de secretos pero quedan datos de una instalación
+  anterior, el arranque se detiene y explica cómo seguir, en lugar de dejar los servicios sin poder
+  conectarse a la base (HU-07).
+
 ---
 
 ## 0.4.0 — 2026-10-25
