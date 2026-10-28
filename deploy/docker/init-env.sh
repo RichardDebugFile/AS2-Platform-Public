@@ -7,12 +7,19 @@
 set -euo pipefail
 cd "$(dirname "$0")"
 SERVER_NAME="${SERVER_NAME:-localhost}"
-export MSYS_NO_PATHCONV=1   # Git Bash: no convertir "/CN=..." en una ruta de Windows
 
 rand() { openssl rand -base64 32 | tr -d '/+=\n' | cut -c1-24; }
 pem_body() { grep -v -- '-----' | tr -d '\r\n'; }
 
 if [ ! -f .env ]; then
+    # PostgreSQL solo aplica las contrasenas al crear la base: con un volumen de una instalacion
+    # anterior, las del .env nuevo no coincidirian y los servicios no podrian conectarse.
+    if docker volume inspect as2-platform_dbdata >/dev/null 2>&1; then
+        echo "Falta .env pero el volumen as2-platform_dbdata ya existe (instalacion anterior)." >&2
+        echo "Restaure el .env de esa instalacion, o respalde la base y borre el volumen:" >&2
+        echo "    docker compose down && docker volume rm as2-platform_dbdata" >&2
+        exit 1
+    fi
     tmp="$(mktemp -d)"
     openssl genpkey -algorithm RSA -pkeyopt rsa_keygen_bits:2048 -out "$tmp/jwt.pem" 2>/dev/null
     openssl pkey -in "$tmp/jwt.pem" -pubout -out "$tmp/jwt.pub" 2>/dev/null
@@ -47,7 +54,9 @@ grep -q '^PARTNERS_SECRET_KEY=' .env || echo "PARTNERS_SECRET_KEY=$(openssl rand
 
 mkdir -p certs backups
 if [ ! -f certs/tls.crt ] || [ ! -f certs/tls.key ]; then
-    openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
+    # Git Bash: no convertir "/CN=..." en una ruta de Windows. Solo en este comando: si se exporta
+    # para todo el script, openssl.exe recibe las rutas de mktemp (/tmp/...) sin convertir y falla.
+    MSYS_NO_PATHCONV=1 openssl req -x509 -newkey rsa:2048 -nodes -days 825 \
         -keyout certs/tls.key -out certs/tls.crt \
         -subj "/CN=$SERVER_NAME" \
         -addext "subjectAltName=DNS:$SERVER_NAME,DNS:localhost,IP:127.0.0.1" 2>/dev/null
