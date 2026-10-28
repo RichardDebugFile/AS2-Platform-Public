@@ -17,6 +17,10 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   compartida y en el respaldo. Si falta el archivo de secretos pero quedan datos de una instalación
   anterior, el arranque se detiene y explica cómo seguir, en lugar de dejar los servicios sin poder
   conectarse a la base (HU-07).
+- El inicio de sesión en la consola desplegada con Docker en el puerto 443 respondía "Invalid CORS
+  request": el navegador omite ese puerto al indicar el origen y solo se admitía con él. Ahora se
+  admiten ambas formas, y la comprobación automática envía el origen como lo hace el navegador
+  (HU-07).
 
 ---
 

@@ -11,7 +11,9 @@ set -a; . ./.env; set +a
 export MSYS2_ARG_CONV_EXCL="/bin/;/mnt/;/opt/;/usr/local/"
 HTTP_PORT="${HTTP_PORT:-80}"; HTTPS_PORT="${HTTPS_PORT:-443}"
 BASE="https://localhost:$HTTPS_PORT"
-CURL=(curl -sS --max-time 15 --cacert certs/tls.crt)
+# Origin como lo envia el navegador desde la consola: sin el puerto cuando es el 443.
+ORIGIN="https://${SERVER_NAME:-localhost}"; [ "$HTTPS_PORT" = "443" ] || ORIGIN="$ORIGIN:$HTTPS_PORT"
+CURL=(curl -sS --max-time 15 --cacert certs/tls.crt -H "Origin: $ORIGIN")
 fallos=0
 
 ok()   { echo "OK    $1"; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::notice title=HU-07 OK::$1"; return 0; }
