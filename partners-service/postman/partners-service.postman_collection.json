@@ -1512,7 +1512,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "partners-service/postman/certificados/socio-postman-c1.pem"
+                  "src": "partners-service/postman/certificados/socio-postman-c1.cer"
                 },
                 {
                   "key": "keyUsage",
@@ -1561,7 +1561,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "partners-service/postman/certificados/socio-postman-c2.pem"
+                  "src": "partners-service/postman/certificados/socio-postman-c2.cer"
                 },
                 {
                   "key": "keyUsage",
@@ -1642,7 +1642,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "partners-service/postman/certificados/socio-postman-c1.pem"
+                  "src": "partners-service/postman/certificados/socio-postman-c1.cer"
                 },
                 {
                   "key": "keyUsage",
@@ -1689,7 +1689,7 @@
                 {
                   "key": "file",
                   "type": "file",
-                  "src": "partners-service/postman/certificados/ca-postman.pem"
+                  "src": "partners-service/postman/certificados/ca-postman.cer"
                 },
                 {
                   "key": "keyUsage",
