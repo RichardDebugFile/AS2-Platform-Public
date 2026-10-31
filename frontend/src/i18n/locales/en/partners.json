@@ -54,7 +54,8 @@
       "outgoing": "Outgoing",
       "incoming": "Incoming",
       "mdn": "MDN",
-      "folders": "Folders"
+      "folders": "Folders",
+      "certificates": "Certificates"
     }
   },
   "form": {
@@ -172,5 +173,58 @@
     "confirmOff": "The ERP will stop receiving new documents from {{name}}. Type the AS2 identifier to confirm.",
     "confirmLabel": "AS2 identifier to confirm",
     "confirmOk": "Confirm"
+  },
+  "certificates": {
+    "usage": "Usage",
+    "usages": {
+      "ENCRYPTION": "Encryption",
+      "SIGNATURE": "Signature",
+      "SSL": "TLS"
+    },
+    "chooseFile": "Choose file (PEM or DER)",
+    "descriptionPlaceholder": "Description (optional)",
+    "upload": "Upload",
+    "uploaded": "Certificate uploaded",
+    "outcomes": {
+      "ALREADY_ACTIVE": "That certificate was already uploaded and active: nothing changed.",
+      "REACTIVATED": "That certificate was inactive: it is back as a backup."
+    },
+    "dualGateTitle": "Dual gate",
+    "dualGateHelp": "A newly uploaded certificate becomes the preferred one, and the previous one for the same usage stays active as a backup. If the partner switches keys before or after the announced date, exchanges keep working. Expired certificates that already have a valid replacement are retired every day.",
+    "columns": {
+      "issuedTo": "Issued to",
+      "fingerprint": "SHA-256 fingerprint",
+      "validity": "Validity",
+      "status": "Status",
+      "actions": "Actions"
+    },
+    "issuedBy": "Issued by {{name}}",
+    "validity": {
+      "VALID": "Valid",
+      "EXPIRING_one": "Expires in {{count}} day",
+      "EXPIRING_other": "Expires in {{count}} days",
+      "EXPIRED": "Expired",
+      "NOT_YET_VALID": "Not yet valid"
+    },
+    "preferred": "Preferred",
+    "backup": "Backup",
+    "inactive": "Inactive",
+    "download": "Download PEM",
+    "makePreferred": "Make preferred",
+    "preferredSet": "Certificate set as preferred",
+    "activate": "Activate",
+    "activated": "Certificate activated as backup",
+    "deactivate": "Deactivate",
+    "deactivated": "Certificate deactivated",
+    "remove": "Delete",
+    "removed": "Certificate deleted",
+    "confirmDeactivate": "Deactivate the certificate of {{name}}?",
+    "confirmRemove": "Permanently delete the certificate of {{name}}?",
+    "lastActive": {
+      "ENCRYPTION": "It is the only active encryption certificate: sending to this partner will fail until another one is uploaded.",
+      "SIGNATURE": "It is the only active signature certificate: the partner's signatures cannot be verified.",
+      "SSL": "It is the only active TLS certificate: the HTTPS connection to the partner will only trust the system authorities."
+    },
+    "empty": "No certificates for this usage"
   }
 }

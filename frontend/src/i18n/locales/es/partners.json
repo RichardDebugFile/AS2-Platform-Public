@@ -54,7 +54,8 @@
       "outgoing": "Salida",
       "incoming": "Entrada",
       "mdn": "MDN",
-      "folders": "Carpetas"
+      "folders": "Carpetas",
+      "certificates": "Certificados"
     }
   },
   "form": {
@@ -172,5 +173,58 @@
     "confirmOff": "El ERP dejará de recibir documentos nuevos de {{name}}. Escriba el identificador AS2 para confirmar.",
     "confirmLabel": "Identificador AS2 para confirmar",
     "confirmOk": "Confirmar"
+  },
+  "certificates": {
+    "usage": "Uso",
+    "usages": {
+      "ENCRYPTION": "Cifrado",
+      "SIGNATURE": "Firma",
+      "SSL": "TLS"
+    },
+    "chooseFile": "Elegir archivo (PEM o DER)",
+    "descriptionPlaceholder": "Descripción (opcional)",
+    "upload": "Cargar",
+    "uploaded": "Certificado cargado",
+    "outcomes": {
+      "ALREADY_ACTIVE": "Ese certificado ya estaba cargado y activo: no cambió nada.",
+      "REACTIVATED": "Ese certificado estaba inactivo: volvió como respaldo."
+    },
+    "dualGateTitle": "Doble compuerta",
+    "dualGateHelp": "Al cargar un certificado nuevo, queda como preferente y el anterior del mismo uso sigue activo como respaldo. Así, si el socio cambia su clave antes o después de lo anunciado, los envíos no se cortan. Cada día se retiran los caducados que ya tienen reemplazo vigente.",
+    "columns": {
+      "issuedTo": "Emitido a",
+      "fingerprint": "Huella SHA-256",
+      "validity": "Vigencia",
+      "status": "Estado",
+      "actions": "Acciones"
+    },
+    "issuedBy": "Emitido por {{name}}",
+    "validity": {
+      "VALID": "Vigente",
+      "EXPIRING_one": "Vence en {{count}} día",
+      "EXPIRING_other": "Vence en {{count}} días",
+      "EXPIRED": "Caducado",
+      "NOT_YET_VALID": "Aún no vigente"
+    },
+    "preferred": "Preferente",
+    "backup": "Respaldo",
+    "inactive": "Inactivo",
+    "download": "Descargar PEM",
+    "makePreferred": "Marcar preferente",
+    "preferredSet": "Certificado marcado como preferente",
+    "activate": "Activar",
+    "activated": "Certificado activado como respaldo",
+    "deactivate": "Desactivar",
+    "deactivated": "Certificado desactivado",
+    "remove": "Eliminar",
+    "removed": "Certificado eliminado",
+    "confirmDeactivate": "¿Desactivar el certificado de {{name}}?",
+    "confirmRemove": "¿Eliminar definitivamente el certificado de {{name}}?",
+    "lastActive": {
+      "ENCRYPTION": "Es el único certificado de cifrado activo: los envíos a este socio fallarán hasta cargar otro.",
+      "SIGNATURE": "Es el único certificado de firma activo: no se podrá verificar la firma de lo que envíe el socio.",
+      "SSL": "Es el único certificado TLS activo: la conexión HTTPS con el socio solo confiará en las autoridades del sistema."
+    },
+    "empty": "Sin certificados de este uso"
   }
 }
