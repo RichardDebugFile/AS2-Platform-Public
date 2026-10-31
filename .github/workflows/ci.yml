@@ -34,6 +34,22 @@ jobs:
       frontend: ${{ steps.modules.outputs.frontend }}
     steps:
       - uses: actions/checkout@v7
+        with:
+          # Historia completa: la verificacion de commits recorre los del PR.
+          fetch-depth: 0
+
+      # Cada commit del PR indica su historia o tarea (HU-XX o AS2-NN), como exige el hook
+      # commit-msg. No aplica a release/* y hotfix/* (commits de version) ni a Dependabot.
+      - name: Historia en cada commit
+        if: >-
+          github.event_name == 'pull_request'
+          && !startsWith(github.head_ref, 'release/')
+          && !startsWith(github.head_ref, 'hotfix/')
+          && !startsWith(github.head_ref, 'dependabot/')
+        env:
+          BASE_SHA: ${{ github.event.pull_request.base.sha }}
+          HEAD_SHA: ${{ github.event.pull_request.head.sha }}
+        run: sh .github/scripts/check_commit_refs.sh "$BASE_SHA" "$HEAD_SHA"
 
       - uses: dorny/paths-filter@v4
         id: filter

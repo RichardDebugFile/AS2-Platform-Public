@@ -4,6 +4,15 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Novedades
+- Cada cambio del código queda vinculado con su historia: un commit sin la clave de su historia o
+  tarea (`HU-XX` o `AS2-NN`) se rechaza en el equipo del desarrollador y en la verificación de cada
+  pull request (AS2-75).
+
+---
+
 ## 0.4.0 — 2026-10-25
 
 ### Novedades

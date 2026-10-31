@@ -9,7 +9,7 @@
 | `feature/HU-XX-descripcion` | `develop` | `develop` (PR) | Una historia de usuario. El nombre lleva el ID de la HU (y, si se quiere, su clave de Jira `AS2-NN`) para la trazabilidad. |
 | `release/X.Y.Z` | `develop` | `main` (PR) y luego `develop` | Cierre de sprint: versión y fecha en el CHANGELOG. |
 | `hotfix/X.Y.Z` | `main` | `main` y `develop` | Corrección urgente de una versión liberada. |
-| `chore/…`, `docs/…`, `fix/…` | `develop` | `develop` (PR) | Tareas menores sin HU. |
+| `chore/AS2-NN-…`, `docs/…`, `fix/AS2-NN-…` | `develop` | `develop` (PR) | Tareas menores sin HU, con su clave de Jira. |
 
 Reglas:
 
@@ -17,23 +17,28 @@ Reglas:
   de ramas en GitHub): todo entra por Pull Request con el CI en verde.
 * Los PR se integran con **merge commit** (sin *squash*), para conservar en la historia los commits
   de cada HU.
-* Cada historia de usuario es un *issue* titulado `HU-XX: …` con su historia y criterios de
-  aceptación. El título del PR lleva la HU (`HU-01: Fundación del monorepo y CI`) y la descripción
-  la cierra (`Closes #N`) y marca la Definición de Terminado.
+* Cada historia de usuario vive en Jira con su historia, criterios de aceptación y subtareas
+  (HU-XX = AS2-XX; en los sprints 0 y 1 fue un *issue* de GitHub). El título del PR lleva la HU y su
+  clave (`HU-11 Gestión de certificados X.509 (AS2-11)`) y la descripción marca la Definición de
+  Terminado. Las tareas que no son historias (`chore/AS2-NN-…`, `fix/AS2-NN-…`) llevan su clave.
 * Cada sprint cierra con una `release/X.Y.Z` → `main`, un *tag* y una *release* de GitHub que lista
   las HU terminadas. Mientras no haya versión 1.0, la versión es `0.<sprint + 1>.0` (Sprint 0 → `0.1.0`).
 
 ## Commits — Conventional Commits
 
 Formato `tipo(ámbito): resumen` en imperativo y en español; el cuerpo termina con la referencia a
-la HU (`Refs: HU-01`) para poder rastrear cada cambio hasta su historia. Tipos: `feat`, `fix`, `chore`, `docs`,
-`test`, `refactor`, `ci`, `build`, `perf`.
+la HU o a la tarea de Jira (`Refs: HU-11` o `Refs: AS2-75`) para poder rastrear cada cambio hasta su
+historia. Tipos: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`, `build`, `perf`.
 
 ```
-feat(auth): login con JWT RS256 y cookies HttpOnly
-fix(frontend): renovar la sesión antes de reintentar la petición
-ci: ejecutar solo los módulos que cambian
+feat(partners): carga de certificados X.509
+
+Refs: HU-11 (AS2-64)
 ```
+
+La referencia es obligatoria: el *hook* `commit-msg` rechaza el commit sin `HU-XX` ni `AS2-NN`, y el
+CI aplica la misma regla a los commits de cada PR (`.github/scripts/check_commit_refs.sh`). No se
+exige en los commits de fusión ni en las ramas `release/*` y `hotfix/*`.
 
 ## Trazabilidad con Jira y SonarQube Cloud
 
@@ -48,7 +53,7 @@ ci: ejecutar solo los módulos que cambian
 ## Primer uso del repositorio
 
 ```bash
-git config core.hooksPath .githooks      # activa los hooks pre-commit y pre-push
+git config core.hooksPath .githooks      # activa los hooks pre-commit, commit-msg y pre-push
 winget install Gitleaks.Gitleaks         # (Windows) escaneo de secretos en el pre-commit
 cp .gitleaks.local.toml.example .gitleaks.local.toml   # y poner los terminos privados reales
 docker compose up -d db                  # PostgreSQL con las 4 bases

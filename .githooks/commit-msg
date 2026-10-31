@@ -1,0 +1,34 @@
+#!/bin/sh
+# Cada commit identifica su historia o tarea de Jira: HU-XX o AS2-NN en el resumen o en el cuerpo,
+# normalmente como ultima linea (`Refs: HU-11` o `Refs: AS2-75`). Asi cada cambio se rastrea hasta
+# su historia y el app GitHub for Jira lo muestra en ella.
+#
+# No se exige en los commits de fusion ni en las ramas release/* y hotfix/* (commits de version).
+# El CI aplica la misma regla a los commits de cada pull request (.github/scripts/check_commit_refs.sh).
+#
+# Activar en tu clon (una sola vez):   git config core.hooksPath .githooks
+# Excepcion puntual:                   git commit --no-verify
+
+msg_file="$1"
+git_dir=$(git rev-parse --git-dir)
+
+[ -f "$git_dir/MERGE_HEAD" ] && exit 0
+branch=$(git symbolic-ref --quiet --short HEAD 2>/dev/null)
+case "$branch" in
+    release/* | hotfix/*) exit 0 ;;
+esac
+
+# Las lineas de comentario (#) no cuentan: git las quita del mensaje.
+if grep -v '^#' "$msg_file" | grep -Eq '(HU|AS2)-[0-9]+'; then
+    exit 0
+fi
+
+echo "-----------------------------------------------------------"
+echo "commit-msg: el mensaje no indica su historia ni su tarea."
+echo "Agrega al final del cuerpo la referencia, por ejemplo:"
+echo ""
+echo "    feat(partners): carga de certificados X.509"
+echo ""
+echo "    Refs: HU-11 (AS2-64)"
+echo "-----------------------------------------------------------"
+exit 1
