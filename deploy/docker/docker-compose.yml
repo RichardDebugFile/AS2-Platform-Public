@@ -27,6 +27,10 @@ x-java-health: &java-health
   retries: 12
   start_period: 40s
 
+# Origen de la consola para CORS. El navegador omite el puerto por defecto (Origin: https://localhost),
+# asi que se admite con y sin puerto: con solo ":443" el login respondia "Invalid CORS request".
+x-cors-origins: &cors-origins https://${SERVER_NAME:-localhost},https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+
 services:
   db:
     image: postgres:16-alpine
@@ -64,7 +68,7 @@ services:
       AUTH_JWT_PRIVATE_KEY_PEM: ${AUTH_JWT_PRIVATE_KEY_PEM:?Ejecute init-env.sh}
       AUTH_JWT_PUBLIC_KEY_PEM: ${AUTH_JWT_PUBLIC_KEY_PEM:?Ejecute init-env.sh}
       AUTH_MFA_SECRET_KEY: ${AUTH_MFA_SECRET_KEY:?Ejecute init-env.sh}
-      AUTH_CORS_ALLOWED_ORIGINS: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+      AUTH_CORS_ALLOWED_ORIGINS: *cors-origins
       ADMIN_USER: ${ADMIN_USER:-admin}
       ADMIN_PASSWORD: ${ADMIN_PASSWORD:?Ejecute init-env.sh}
       ADMIN_EMAIL: ${ADMIN_EMAIL:-admin@example.com}
@@ -112,7 +116,7 @@ services:
       ALERTS_SERVICE_URL: http://alerts-service:8082
       DOCUMENTS_SERVICE_URL: http://documents-service:8084
       AS2_ADAPTER_URL: http://as2-adapter:8085
-      APP_CORS_ALLOWED_ORIGINS: https://${SERVER_NAME:-localhost}:${HTTPS_PORT:-443}
+      APP_CORS_ALLOWED_ORIGINS: *cors-origins
     depends_on:
       auth-service: { condition: service_healthy }
       partners-service: { condition: service_healthy }
