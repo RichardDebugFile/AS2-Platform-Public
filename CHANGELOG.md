@@ -7,11 +7,21 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 ## Sin publicar
 
 ### Novedades
+- Certificados X.509 de cada socio con doble compuerta: desde la pestaña Certificados se carga el
+  certificado (PEM o DER) de cifrado, firma o TLS y se ven su huella y su vigencia, con aviso de
+  vencimiento. Al cargar el reemplazo, el nuevo queda como preferente y el anterior sigue activo como
+  respaldo, de modo que el intercambio no se corta si el socio cambia su clave antes o después de lo
+  anunciado. Cada día se retiran los caducados que ya tienen reemplazo; el único activo nunca se retira.
+  Se rechazan los certificados caducados, los de una autoridad de certificación para cifrar y cualquier
+  archivo con una clave privada. Solo un administrador elimina certificados, y cada operación queda en
+  la bitácora (HU-11).
 - Cada cambio del código queda vinculado con su historia: un commit sin la clave de su historia o
   tarea (`HU-XX` o `AS2-NN`) se rechaza en el equipo del desarrollador y en la verificación de cada
   pull request (AS2-75).
 
 ### Correcciones
+- Dependencias de desarrollo de la consola actualizadas por alertas de seguridad (vite, vitest,
+  undici y zod); no forman parte de la consola publicada (AS2-76).
 - La plataforma vuelve a levantarse en Windows con `start.sh`: la preparación de secretos terminaba
   sin mensaje en Git Bash, y la comprobación automática fallaba en el enlace con la carpeta
   compartida y en el respaldo. Si falta el archivo de secretos pero quedan datos de una instalación
