@@ -89,7 +89,6 @@ export default function AuditPage() {
 
     return (
         <>
-            <Typography.Title level={3}>{t("title")}</Typography.Title>
             <Form<FilterForm>
                 form={form}
                 layout="inline"

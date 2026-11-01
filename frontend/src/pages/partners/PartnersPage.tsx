@@ -138,10 +138,7 @@ export default function PartnersPage() {
 
     return (
         <>
-            <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }} wrap>
-                <Typography.Title level={3} style={{ margin: 0 }}>
-                    {t("title")}
-                </Typography.Title>
+            <div className="page-toolbar">
                 <Space wrap>
                     <Segmented
                         value={showInactive ? "inactive" : "active"}
@@ -156,15 +153,16 @@ export default function PartnersPage() {
                         placeholder={t("list.search")}
                         onChange={(e) => setQuery(e.target.value)}
                         onSearch={setQuery}
-                        style={{ width: 280 }}
+                        style={{ width: 320 }}
                     />
-                    {canEdit && (
-                        <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawer({ partner: null })}>
-                            {t("list.new")}
-                        </Button>
-                    )}
                 </Space>
-            </Space>
+                <div className="page-toolbar-spacer" />
+                {canEdit && (
+                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setDrawer({ partner: null })}>
+                        {t("list.new")}
+                    </Button>
+                )}
+            </div>
             {error && <Typography.Text type="danger">{error}</Typography.Text>}
             <Table<Partner>
                 rowKey="id"

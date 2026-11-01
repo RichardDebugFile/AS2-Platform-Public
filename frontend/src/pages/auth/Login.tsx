@@ -57,18 +57,16 @@ export default function Login() {
     return (
         <div className="login">
             <aside className="login-brand">
-                <img src={logo} alt="" width={64} height={64} />
-                <Title level={2} style={{ color: "#fff", margin: "16px 0 8px" }}>
-                    {t("app.name", { ns: "common" })}
-                </Title>
-                <Text style={{ color: "#ccfbf1" }}>{t("app.subtitle", { ns: "common" })}</Text>
+                <img src={logo} alt="" width={56} height={56} />
+                <Title level={2}>{t("app.name", { ns: "common" })}</Title>
+                <Text className="login-brand-sub">{t("app.subtitle", { ns: "common" })}</Text>
             </aside>
             <main className="login-panel">
                 <div className="login-lang">
                     <LanguageSelector variant="segmented" />
                 </div>
                 <div className="login-form">
-                    <Title level={2} style={{ marginBottom: 4 }}>
+                    <Title level={3} style={{ marginBottom: 4 }}>
                         {mfaToken ? t("mfa.title") : t("welcome")}
                     </Title>
                     <Text type="secondary">{mfaToken ? t("mfa.subtitle") : t("subtitle")}</Text>
@@ -79,7 +77,7 @@ export default function Login() {
                     {errorText && <Alert type="error" showIcon message={errorText} style={{ margin: "24px 0 0" }} />}
 
                     {mfaToken ? (
-                        <Form<MfaForm> layout="vertical" onFinish={onMfa} requiredMark={false} size="large" style={{ marginTop: 24 }}>
+                        <Form<MfaForm> layout="vertical" onFinish={onMfa} requiredMark={false} style={{ marginTop: 24 }}>
                             <Form.Item
                                 label={t("mfa.code.label")}
                                 name="code"
@@ -102,7 +100,7 @@ export default function Login() {
                             </Button>
                         </Form>
                     ) : (
-                        <Form<LoginForm> layout="vertical" onFinish={onLogin} requiredMark={false} size="large" style={{ marginTop: 24 }}>
+                        <Form<LoginForm> layout="vertical" onFinish={onLogin} requiredMark={false} style={{ marginTop: 24 }}>
                             <Form.Item label={t("username.label")} name="username" rules={[{ required: true, message: t("username.required") }]}>
                                 <Input prefix={<UserOutlined />} placeholder={t("username.placeholder")} autoComplete="username" autoFocus />
                             </Form.Item>
