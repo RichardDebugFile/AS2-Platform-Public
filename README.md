@@ -16,7 +16,7 @@ Arquitectura de microservicios Spring Boot con una consola web React.
 | `gateway/` | Punto único de entrada: enrutamiento, seguridad en el borde ([rutas y configuración](gateway/README.md)) | 8765 |
 | `auth-service/` | Usuarios, roles, JWT, sesiones y MFA ([API y configuración](auth-service/README.md)) | 8083 |
 | `partners-service/` | Socios comerciales, configuración AS2, certificados, carpetas, auditoría | 8081 |
-| `documents-service/` | Repositorio de documentos EDI y MDN | 8084 |
+| `documents-service/` | Documentos X12 (interpretación, validación y generación) y repositorio de documentos y MDN | 8084 |
 | `alerts-service/` | Reglas de alerta y notificaciones | 8082 |
 | `as2-adapter/` | Motor AS2 (S/MIME, MDN), X12 y envío automático desde carpetas | 8085 |
 | `frontend/` | Consola web (React + TypeScript + Vite) | 5173 (dev) |
@@ -38,6 +38,9 @@ docker compose up -d db               # PostgreSQL con las bases auth, partners,
 mvn -B verify                         # compila, prueba y genera cobertura (target/site/jacoco)
 cd frontend && npm ci && npm run lint && npm test && npm run build
 ```
+
+Entorno completo en Docker (servicios, consola y proxy TLS): `deploy/docker/start.sh` (también en Git Bash)
+y `deploy/docker/smoke-test.sh` para verificarlo; `deploy/docker/stop.sh` lo detiene.
 
 Windows: `build.bat` → `start.bat` (base de datos + 6 servicios, cada uno en su ventana) → `stop.bat`.
 Salud de cada servicio: `http://localhost:<puerto>/actuator/health`.
