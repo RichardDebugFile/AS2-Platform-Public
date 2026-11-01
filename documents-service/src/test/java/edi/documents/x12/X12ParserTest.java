@@ -70,6 +70,16 @@ class X12ParserTest {
     }
 
     @Test
+    void anuncio889_enProduccion_seValidaComoCompleto() {
+        X12Document d = X12Parser.parse(Samples.promo889());
+
+        assertThat(d.typeCode()).isEqualTo("889");
+        assertThat(d.usageIndicator()).isEqualTo("P");
+        assertThat(d.complete()).isTrue();
+        assertThat(edi.documents.schema.X12ValidationServiceTest.envelope(d)).isEmpty();
+    }
+
+    @Test
     void documentoIncompleto_esUnknownSinError() {
         X12Document d = X12Parser.parse("ST*850*0001~BEG*00*SA*OC-1**20261101~");
 

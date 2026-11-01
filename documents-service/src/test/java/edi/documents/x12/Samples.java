@@ -49,4 +49,9 @@ public final class Samples {
     public static String ack997() {
         return read("997-5010.edi");
     }
+
+    /** 889 version 4010 en produccion (ISA15 = P). */
+    public static String promo889() {
+        return read("889-4010.edi");
+    }
 }
