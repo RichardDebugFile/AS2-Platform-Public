@@ -1,3 +1,102 @@
 {
-  "title": "Documentos EDI"
+  "title": "Documentos EDI",
+  "tabs": {
+    "viewer": "Visor X12",
+    "generator": "Generar documento"
+  },
+  "viewer": {
+    "intro": "Pegue un documento X12 tal como llega del socio: el sistema lee sus separadores, identifica el tipo y las partes, y lo valida contra el esquema de su tipo.",
+    "placeholder": "ISA*00*          *00*          *12*...",
+    "interpret": "Interpretar",
+    "sample": "Cargar ejemplo",
+    "clear": "Limpiar",
+    "empty": "Pegue un documento para ver su contenido",
+    "summary": "Resumen",
+    "segments": "Segmentos ({{count}})",
+    "fields": {
+      "type": "Tipo",
+      "version": "Versión",
+      "sender": "Emisor (ISA05/06)",
+      "receiver": "Receptor (ISA07/08)",
+      "controls": "Números de control",
+      "datetime": "Fecha y hora del intercambio",
+      "usage": "Uso",
+      "delimiters": "Separadores"
+    },
+    "usage": {
+      "P": "Producción",
+      "T": "Pruebas"
+    },
+    "unknown": "No se reconoce el documento: falta el sobre ISA. Se muestran los segmentos que se pudieron separar.",
+    "valid": "Válido según el esquema del {{type}}",
+    "invalid": "No cumple el esquema del {{type}}",
+    "missing": "Faltan los segmentos: {{segments}}",
+    "lineBreak": "salto de línea",
+    "columns": {
+      "index": "#",
+      "segment": "Segmento",
+      "name": "Significado",
+      "content": "Contenido"
+    }
+  },
+  "generator": {
+    "intro": "Genera documentos X12 válidos para pruebas con los socios: el ISA de ancho fijo y los conteos de cierre los calcula el sistema.",
+    "type": "Tipo de documento",
+    "types": {
+      "850": "850 · Orden de compra",
+      "997": "997 · Acuse funcional",
+      "889": "889 · Anuncio de promoción"
+    },
+    "sender": "Emisor",
+    "receiver": "Receptor",
+    "qualifier": "Calificador",
+    "id": "Identificador",
+    "version": "Versión",
+    "production": "Producción (si no, pruebas)",
+    "poNumber": "Número de orden",
+    "reference": "Referencia",
+    "deliveryDays": "Entrega en días",
+    "buyer": "Comprador",
+    "seller": "Proveedor",
+    "vendor": "Proveedor",
+    "name": "Nombre",
+    "lines": "Líneas",
+    "product": "Producto",
+    "description": "Descripción",
+    "quantity": "Cantidad",
+    "price": "Precio unitario",
+    "addLine": "Agregar línea",
+    "removeLine": "Quitar línea",
+    "promotionId": "Identificador de la promoción",
+    "days": "Duración en días",
+    "original": "Documento que se acusa",
+    "originalHelp": "Pegue el documento recibido: el 997 se arma con sus números de control y con emisor y receptor invertidos.",
+    "generate": "Generar",
+    "result": "Documento generado",
+    "copy": "Copiar",
+    "copied": "Copiado",
+    "download": "Descargar",
+    "openInViewer": "Abrir en el visor",
+    "required": "Obligatorio"
+  },
+  "segments": {
+    "ISA": "Encabezado del intercambio",
+    "GS": "Encabezado del grupo funcional",
+    "ST": "Inicio de la transacción",
+    "BEG": "Inicio de la orden de compra",
+    "REF": "Referencia",
+    "DTM": "Fecha",
+    "N1": "Nombre de una parte",
+    "PO1": "Línea de la orden",
+    "PID": "Descripción del producto",
+    "CTT": "Totales de la transacción",
+    "AK1": "Grupo que se acusa",
+    "AK2": "Transacción que se acusa",
+    "AK5": "Resultado de la transacción",
+    "AK9": "Resultado del grupo",
+    "BSC": "Inicio del anuncio",
+    "SE": "Cierre de la transacción",
+    "GE": "Cierre del grupo funcional",
+    "IEA": "Cierre del intercambio"
+  }
 }

@@ -15,6 +15,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   Se rechazan los certificados caducados, los de una autoridad de certificación para cifrar y cualquier
   archivo con una clave privada. Solo un administrador elimina certificados, y cada operación queda en
   la bitácora (HU-11).
+- Documentos X12 en la consola (Documentos EDI): el visor interpreta un documento tal como llega del
+  socio (separadores, tipo, versión, emisor y receptor con sus calificadores, números de control) y lo
+  valida contra el esquema de su tipo, indicando qué segmentos faltan o qué sobres no cierran; el
+  generador crea órdenes de compra 850, acuses 997 (con emisor y receptor invertidos) y anuncios de
+  promoción 889 con el ISA de ancho fijo y los conteos calculados. Un auditor puede usar el visor; solo
+  administradores y operadores generan (HU-12).
 - Consola rediseñada con un sistema de diseño propio, documentado en Figma: barra lateral oscura con el
   menú por rol, cabecera con la sección y el título de la pantalla, colores de estado consistentes,
   tipografía Inter incluida en la consola (sin depender de internet) y pantallas de inicio de sesión,

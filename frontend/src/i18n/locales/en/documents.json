@@ -1,3 +1,102 @@
 {
-  "title": "EDI documents"
+  "title": "EDI documents",
+  "tabs": {
+    "viewer": "X12 viewer",
+    "generator": "Generate document"
+  },
+  "viewer": {
+    "intro": "Paste an X12 document as it arrives from the partner: the system reads its delimiters, identifies the type and the parties, and validates it against the schema of its type.",
+    "placeholder": "ISA*00*          *00*          *12*...",
+    "interpret": "Interpret",
+    "sample": "Load sample",
+    "clear": "Clear",
+    "empty": "Paste a document to see its content",
+    "summary": "Summary",
+    "segments": "Segments ({{count}})",
+    "fields": {
+      "type": "Type",
+      "version": "Version",
+      "sender": "Sender (ISA05/06)",
+      "receiver": "Receiver (ISA07/08)",
+      "controls": "Control numbers",
+      "datetime": "Interchange date and time",
+      "usage": "Usage",
+      "delimiters": "Delimiters"
+    },
+    "usage": {
+      "P": "Production",
+      "T": "Test"
+    },
+    "unknown": "The document is not recognized: the ISA envelope is missing. The segments that could be split are shown.",
+    "valid": "Valid against the {{type}} schema",
+    "invalid": "Does not meet the {{type}} schema",
+    "missing": "Missing segments: {{segments}}",
+    "lineBreak": "line break",
+    "columns": {
+      "index": "#",
+      "segment": "Segment",
+      "name": "Meaning",
+      "content": "Content"
+    }
+  },
+  "generator": {
+    "intro": "Generates valid X12 documents for partner testing: the system computes the fixed-width ISA and the closing counts.",
+    "type": "Document type",
+    "types": {
+      "850": "850 · Purchase order",
+      "997": "997 · Functional acknowledgment",
+      "889": "889 · Promotion announcement"
+    },
+    "sender": "Sender",
+    "receiver": "Receiver",
+    "qualifier": "Qualifier",
+    "id": "Identifier",
+    "version": "Version",
+    "production": "Production (otherwise test)",
+    "poNumber": "Order number",
+    "reference": "Reference",
+    "deliveryDays": "Delivery in days",
+    "buyer": "Buyer",
+    "seller": "Supplier",
+    "vendor": "Supplier",
+    "name": "Name",
+    "lines": "Lines",
+    "product": "Product",
+    "description": "Description",
+    "quantity": "Quantity",
+    "price": "Unit price",
+    "addLine": "Add line",
+    "removeLine": "Remove line",
+    "promotionId": "Promotion identifier",
+    "days": "Duration in days",
+    "original": "Document to acknowledge",
+    "originalHelp": "Paste the received document: the 997 uses its control numbers with sender and receiver swapped.",
+    "generate": "Generate",
+    "result": "Generated document",
+    "copy": "Copy",
+    "copied": "Copied",
+    "download": "Download",
+    "openInViewer": "Open in viewer",
+    "required": "Required"
+  },
+  "segments": {
+    "ISA": "Interchange header",
+    "GS": "Functional group header",
+    "ST": "Transaction set header",
+    "BEG": "Beginning of purchase order",
+    "REF": "Reference",
+    "DTM": "Date",
+    "N1": "Party name",
+    "PO1": "Order line",
+    "PID": "Product description",
+    "CTT": "Transaction totals",
+    "AK1": "Acknowledged group",
+    "AK2": "Acknowledged transaction",
+    "AK5": "Transaction result",
+    "AK9": "Group result",
+    "BSC": "Beginning of announcement",
+    "SE": "Transaction set trailer",
+    "GE": "Functional group trailer",
+    "IEA": "Interchange trailer"
+  }
 }

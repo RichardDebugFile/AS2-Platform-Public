@@ -162,6 +162,19 @@ body {
     white-space: nowrap;
 }
 
+/* Documentos X12: texto monoespaciado que respeta los espacios del ISA y corta las lineas largas. */
+.mono-area,
+.mono-area textarea {
+    font-family: "Roboto Mono", ui-monospace, Consolas, monospace;
+    font-size: 12px;
+}
+.mono-wrap {
+    font-family: "Roboto Mono", ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
 .nowrap {
     white-space: nowrap;
 }
