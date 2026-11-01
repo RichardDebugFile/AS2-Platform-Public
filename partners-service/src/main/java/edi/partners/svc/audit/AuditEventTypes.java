@@ -15,6 +15,17 @@ public final class AuditEventTypes {
     public static final String FOLDERS_LINKED = "FOLDERS_LINKED";
     public static final String PRODUCTION_ENABLED = "PRODUCTION_ENABLED";
     public static final String PRODUCTION_DISABLED = "PRODUCTION_DISABLED";
+    public static final String CERTIFICATE_UPLOADED = "CERTIFICATE_UPLOADED";
+    public static final String CERTIFICATE_REACTIVATED = "CERTIFICATE_REACTIVATED";
+    public static final String CERTIFICATE_PREFERRED = "CERTIFICATE_PREFERRED";
+    public static final String CERTIFICATE_ACTIVATED = "CERTIFICATE_ACTIVATED";
+    public static final String CERTIFICATE_DEACTIVATED = "CERTIFICATE_DEACTIVATED";
+    public static final String CERTIFICATE_UPDATED = "CERTIFICATE_UPDATED";
+    public static final String CERTIFICATE_DELETED = "CERTIFICATE_DELETED";
+    /** Retiro diario: un certificado caducado se desactiva porque queda otro vigente del mismo uso. */
+    public static final String CERTIFICATE_RETIRED = "CERTIFICATE_RETIRED";
+    /** Retiro diario: el unico certificado activo de un uso caduco y se conserva (advertencia). */
+    public static final String CERTIFICATE_EXPIRED = "CERTIFICATE_EXPIRED";
 
     private AuditEventTypes() {
     }

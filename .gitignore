@@ -38,6 +38,8 @@ frontend/dist/
 *.pem
 *.crt
 *.cer
+# Certificados de prueba de la coleccion Postman (solo la parte publica, datos ficticios; HU-11).
+!partners-service/postman/certificados/*.cer
 .env
 .env.*
 !.env.example

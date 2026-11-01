@@ -42,7 +42,11 @@ Consola: `https://localhost` (usuario `admin`; la contraseña la muestra `init-e
 `.env`). En local el certificado es autofirmado: el navegador pide confirmarlo una vez.
 
 `init-env.sh` no sobrescribe nada que exista y `prepare-storage.sh` se puede repetir sin riesgo.
-`.env`, `certs/`, `backups/` y `shared/` no se versionan.
+`.env`, `certs/`, `backups/` y `shared/` no se versionan. El `.env` va unido al volumen de la base:
+si se pierde, `init-env.sh` se detiene en lugar de generar contraseñas que la base no aceptaría.
+
+En Git Bash, los comandos manuales que pasan rutas del contenedor a `docker` (por ejemplo
+`/bin/sh`) llevan delante `MSYS_NO_PATHCONV=1`, para que no se conviertan en rutas de Windows.
 
 ## Comportamiento
 

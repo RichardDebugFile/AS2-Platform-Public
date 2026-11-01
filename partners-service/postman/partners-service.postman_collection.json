@@ -52,6 +52,22 @@
     {
       "key": "xsrfToken",
       "value": ""
+    },
+    {
+      "key": "as2NameCerts",
+      "value": "SOCIO-POSTMAN-CERTIFICADOS"
+    },
+    {
+      "key": "certsId",
+      "value": ""
+    },
+    {
+      "key": "cert1Id",
+      "value": ""
+    },
+    {
+      "key": "cert2Id",
+      "value": ""
     }
   ],
   "event": [
@@ -1411,6 +1427,511 @@
                 {
                   "key": "confirm",
                   "value": "{{as2NameFolders}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Certificados",
+      "description": "Certificados X.509 con doble compuerta (HU-11). Los archivos están en postman/certificados (solo la parte pública, datos ficticios). Ejecutar desde la raíz del repositorio para que Newman encuentre los archivos.",
+      "item": [
+        {
+          "name": "Alta del socio de certificados",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2NameCerts}}\",\n    \"partnerName\": \"Socio de prueba\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('certsId', pm.response.json().partner.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Carga del certificado de cifrado C1",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/upload",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "partners-service/postman/certificados/socio-postman-c1.cer"
+                },
+                {
+                  "key": "keyUsage",
+                  "value": "ENCRYPTION",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.test('nuevo y preferente', () => { pm.expect(r.outcome).to.eql('CREATED'); pm.expect(r.certificate.preferred).to.be.true; pm.expect(r.certificate.fingerprintSha256).to.match(/^[0-9a-f]{64}$/); });",
+                  "pm.collectionVariables.set('cert1Id', r.certificate.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rotación: carga de C2",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/upload",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "partners-service/postman/certificados/socio-postman-c2.cer"
+                },
+                {
+                  "key": "keyUsage",
+                  "value": "ENCRYPTION",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.test('C2 preferente', () => pm.expect(pm.response.json().certificate.preferred).to.be.true);",
+                  "pm.collectionVariables.set('cert2Id', pm.response.json().certificate.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Lista: C2 preferente y C1 de respaldo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const l = pm.response.json();",
+                  "pm.test('dos activos', () => pm.expect(l.filter(c => c.active)).to.have.length(2));",
+                  "pm.test('C2 preferente y C1 respaldo', () => { pm.expect(l[0].id).to.eql(pm.collectionVariables.get('cert2Id')); pm.expect(l[0].preferred).to.be.true; pm.expect(l[1].preferred).to.be.false; pm.expect(l[1].active).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Volver a cargar C1 (ya activo)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/upload",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "partners-service/postman/certificados/socio-postman-c1.cer"
+                },
+                {
+                  "key": "keyUsage",
+                  "value": "ENCRYPTION",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sin cambios', () => pm.expect(pm.response.json().outcome).to.eql('ALREADY_ACTIVE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rechazo: certificado de CA para cifrar",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/upload",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "upload"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "file",
+                  "type": "file",
+                  "src": "partners-service/postman/certificados/ca-postman.cer"
+                },
+                {
+                  "key": "keyUsage",
+                  "value": "ENCRYPTION",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('motivo', () => pm.expect(pm.response.json().message).to.eql('El certificado es de una CA (no entidad final)'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Marcar C1 como preferente",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/{{cert1Id}}/prefer",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "{{cert1Id}}",
+                "prefer"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('C1 preferente', () => { const l = pm.response.json().sameUsage; pm.expect(l[0].id).to.eql(pm.collectionVariables.get('cert1Id')); pm.expect(l.filter(c => c.preferred)).to.have.length(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar C2",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/{{cert2Id}}/deactivate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "{{cert2Id}}",
+                "deactivate"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sin avisos: C1 sigue activo', () => pm.expect(pm.response.json().warnings).to.have.length(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descarga del PEM de C1",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/{{cert1Id}}/pem",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "{{cert1Id}}",
+                "pem"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('PEM', () => pm.expect(pm.response.text()).to.include('-----BEGIN CERTIFICATE-----'));",
+                  "pm.test('adjunto', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Eliminar C2 (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/certificates/{{cert2Id}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "certificates",
+                "{{cert2Id}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('queda solo C1', () => pm.expect(pm.response.json().sameUsage).to.have.length(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Bitácora: cargas de certificados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?partnerId={{certsId}}&eventType=CERTIFICATE_UPLOADED",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "partnerId",
+                  "value": "{{certsId}}"
+                },
+                {
+                  "key": "eventType",
+                  "value": "CERTIFICATE_UPLOADED"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('dos cargas', () => pm.expect(pm.response.json().totalElements).to.eql(2));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: baja",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Limpieza: borrado definitivo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{certsId}}/purge?confirm={{as2NameCerts}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{certsId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "{{as2NameCerts}}"
                 }
               ]
             }

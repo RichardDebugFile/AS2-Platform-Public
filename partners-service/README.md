@@ -1,7 +1,7 @@
 # partners-service
 
 Socios comerciales y su configuración AS2: identidad, conexión, algoritmos de firma y cifrado, acuses
-(MDN), las configuraciones de salida, entrada y MDN de cada socio y sus carpetas. También guarda la **bitácora de
+(MDN), las configuraciones de salida, entrada y MDN de cada socio, sus carpetas y sus certificados X.509. También guarda la **bitácora de
 auditoría** de la plataforma. Puerto **8081**. Se llega a él a
 través del gateway, que valida la sesión y le pasa el usuario en `X-User-Name` (la cabecera que mande
 el cliente se descarta).
@@ -27,6 +27,11 @@ el cliente se descarta).
 | `POST /api/partners/{id}/folders/precheck` | ADMIN, OPERATOR | `{"sharedFolderName"}`: verificación previa del enlace, sin tocar nada |
 | `POST /api/partners/{id}/folders/link` | ADMIN | Enlaza cada subcarpeta con la carpeta compartida del ERP (repite la verificación) |
 | `POST /api/partners/{id}/production` | ADMIN | `{"enabled", "confirm": <as2Name>}`: activa o desactiva producción |
+| `GET /api/partners/{id}/certificates` · `GET …/certificates/{certId}` · `GET …/{certId}/pem` | todos los roles | Certificados del socio (la lista sin PEM; el detalle y la descarga con él) |
+| `POST /api/partners/{id}/certificates/upload` | ADMIN, OPERATOR | *Multipart*: `file` (PEM o DER), `keyUsage` (`ENCRYPTION`, `SIGNATURE`, `SSL`) y `description` opcional. 201 si es nuevo; 200 si ya estaba (`ALREADY_ACTIVE` o `REACTIVATED`) |
+| `POST …/certificates/{certId}/prefer` · `…/activate` · `…/deactivate` · `PUT …/{certId}` | ADMIN, OPERATOR | Doble compuerta: preferente, activar, desactivar; `PUT` solo cambia la descripción |
+| `DELETE /api/partners/{id}/certificates/{certId}` | ADMIN | Elimina un certificado |
+| `GET /internal/partners/{id}/certificates?usage=` · `GET /internal/certificates/{certId}` | red interna | Lectura del motor AS2 (los activos, el preferente primero, con PEM). El gateway no lo enruta |
 | `GET /api/audit-logs?partnerId=&partnerAs2Name=&eventType=&status=&actor=&messageId=&from=&to=&page=&size=` | todos los roles | Bitácora con filtros combinables y paginada (máx. 200 por página) |
 | `GET /api/audit-logs/export?…` | todos los roles | Los mismos filtros en CSV (hasta 10 000 eventos) |
 | `GET /api/audit-logs/event-types` | todos los roles | Tipos de evento registrados |
@@ -70,6 +75,27 @@ la regla incumplida) y `PARTNER_FOLDERS_FAILED` (500).
 * El enlace, la reparación y los cambios de producción quedan en la bitácora (`FOLDERS_LINKED`,
   `FOLDERS_REPAIRED`, `PRODUCTION_ENABLED`, `PRODUCTION_DISABLED`).
 
+## Certificados X.509 y doble compuerta
+
+Tabla `partner_certificate` (Flyway V5): solo la parte pública; nunca se acepta un archivo con clave
+privada (RN-14). Un socio puede tener varios certificados activos del mismo uso y, como máximo, uno
+preferente por uso (RN-12, índice único parcial).
+
+* **Carga**: lee PEM o DER con el JDK y guarda huella SHA-256, número de serie, DN, vigencia y el PEM
+  normalizado. Rechaza archivos ilegibles, con más de un certificado, caducados o con fechas
+  incoherentes; para cifrado y firma, los de una CA y los que no permiten ese uso. TLS admite la CA del
+  socio. Un certificado que todavía no empieza (reemplazo anunciado) se acepta.
+* **Doble compuerta**: el nuevo queda activo y preferente; los anteriores del mismo uso siguen activos
+  como respaldo, para que el intercambio no se corte si el socio rota su clave antes o después de lo
+  anunciado. Repetir una carga activa no cambia nada; repetir la de uno inactivo lo reactiva como
+  respaldo. Al desactivar o eliminar el preferente se promueve el activo vigente que más tarde vence;
+  desactivar el único activo se permite con un aviso. Más de 3 de cifrado activos genera aviso (RN-13).
+* **Retiro diario** (`PARTNERS_CERT_RETIRE_CRON`, 06:30 de Ecuador): desactiva los caducados que tienen
+  otro vigente del mismo uso (`CERTIFICATE_RETIRED`); el único activo caducado se conserva y queda una
+  advertencia (`CERTIFICATE_EXPIRED`).
+* Cada operación queda en la bitácora (`CERTIFICATE_UPLOADED`, `…_REACTIVATED`, `…_PREFERRED`,
+  `…_ACTIVATED`, `…_DEACTIVATED`, `…_UPDATED`, `…_DELETED`).
+
 ## Bitácora de auditoría
 
 Tabla `audit_log` (Flyway V3): un evento por cambio de configuración de un socio o por hecho del
@@ -97,6 +123,7 @@ servicio de origen, socio, Message-ID, detalle y los **datos cambiados** (`{"cam
 | `PARTNERS_SECRET_KEY` | vacío | Clave AES de 32 bytes en Base64 (`openssl rand -base64 32`). **Obligatoria en servidor**: vacía usa una clave temporal y las claves guardadas dejan de leerse al reiniciar |
 | `AS2_STORAGE_ROOT` | `/opt/as2_data/partners` | Raíz de las carpetas: `<raíz>/<as2Name>/{Archive,Certs,Error,Incoming,MDN,Outgoing}` |
 | `AS2_SHARED_ROOT` | `/mnt/erp` | Montaje del recurso compartido del ERP |
+| `PARTNERS_CERT_RETIRE_CRON` / `PARTNERS_CERT_ZONE` | `0 30 6 * * *` / `America/Guayaquil` | Retiro diario de certificados caducados |
 
 ## Pruebas
 
@@ -105,7 +132,7 @@ docker compose up -d db              # desde la raíz (solo para las pruebas de 
 mvn -pl partners-service verify
 ```
 
-Las pruebas de API recorren los criterios de aceptación de HU-08, HU-09 y HU-10 sobre H2 (las de
+Las pruebas de API recorren los criterios de aceptación de HU-08 a HU-11 sobre H2 (las de
 carpetas, sobre un disco temporal). Las del esquema
 real (índice único parcial, borrado en cascada, restricciones, bitácora de solo inserción) necesitan
 PostgreSQL: sin base local se saltan; en el CI son obligatorias.
@@ -113,9 +140,10 @@ PostgreSQL: sin base local se saltan; en el CI son obligatorias.
 Colección de Postman: [`postman/partners-service.postman_collection.json`](postman/partners-service.postman_collection.json).
 Contra el stack Docker, `host = https://localhost` y primero la carpeta "Sesión (vía gateway)".
 Contra el servicio en local, `host = http://localhost:8081` y las carpetas "Socios", "Bitácora",
-"Carpetas" y "Motor AS2 (red interna)"; "Carpetas" necesita crear antes `<montaje>/SocioPostman`. Borra los socios que crea; sus eventos quedan en la bitácora. Con Newman:
+"Carpetas", "Certificados" y "Motor AS2 (red interna)", desde la raíz del repositorio (los
+certificados de prueba están en `postman/certificados`); "Carpetas" necesita crear antes `<montaje>/SocioPostman`. Borra los socios que crea; sus eventos quedan en la bitácora. Con Newman:
 
 ```bash
 npx newman run partners-service/postman/partners-service.postman_collection.json \
-  --env-var host=http://localhost:8081 --folder Socios --folder Bitácora --folder Carpetas --folder "Motor AS2 (red interna)"
+  --env-var host=http://localhost:8081 --folder Socios --folder Bitácora --folder Carpetas --folder Certificados --folder "Motor AS2 (red interna)"
 ```

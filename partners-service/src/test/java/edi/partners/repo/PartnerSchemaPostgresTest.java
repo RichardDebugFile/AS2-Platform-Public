@@ -4,8 +4,11 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import edi.partners.domain.IncomingConfig;
+import edi.partners.domain.KeyUsage;
+import edi.partners.domain.PartnerCertificate;
 import edi.partners.domain.Partner;
 import edi.partners.testsupport.EnabledIfPostgres;
+import java.time.Instant;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.data.jpa.test.autoconfigure.DataJpaTest;
@@ -138,5 +141,67 @@ class PartnerSchemaPostgresTest {
                 INSERT INTO audit_log (id, occurred_at, event_type, status, actor, source)
                 VALUES (gen_random_uuid(), now(), 'DOCUMENT_SENT', 'QUIZAS', 'system', 'x')
                 """)).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    // ------------------------------------------------------------------ certificados (HU-11)
+
+    @Autowired
+    private PartnerCertificateRepository certificates;
+
+    private PartnerCertificate certificado(Partner p, String fingerprintChar, boolean preferred) {
+        PartnerCertificate c = new PartnerCertificate(p, KeyUsage.ENCRYPTION, new PartnerCertificate.CertificateData(
+                "socio", "socio", "CN=socio", "CN=socio", "1F", fingerprintChar.repeat(64),
+                Instant.parse("2026-01-01T00:00:00Z"), Instant.parse("2028-01-01T00:00:00Z"),
+                "-----BEGIN CERTIFICATE-----\nAA==\n-----END CERTIFICATE-----\n"));
+        c.setPreferred(preferred);
+        return c;
+    }
+
+    @Test
+    void certificados_unSoloPreferentePorSocioYUso() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-K1", true));
+        certificates.saveAndFlush(certificado(p, "a", true));
+
+        assertThatThrownBy(() -> certificates.saveAndFlush(certificado(p, "b", true)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void certificados_variosActivosDelMismoUso_sePermiten() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-K2", true));
+        certificates.saveAndFlush(certificado(p, "a", true));
+        certificates.saveAndFlush(certificado(p, "b", false));
+
+        assertThat(certificates.findAllByPartnerIdAndKeyUsageAndActiveTrue(p.getId(), KeyUsage.ENCRYPTION)).hasSize(2);
+    }
+
+    @Test
+    void certificados_huellaRepetidaParaElMismoUso_seRechaza() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-K3", true));
+        certificates.saveAndFlush(certificado(p, "a", true));
+
+        assertThatThrownBy(() -> certificates.saveAndFlush(certificado(p, "a", false)))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void certificados_preferenteInactivo_seRechaza() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-K4", true));
+        PartnerCertificate c = certificates.saveAndFlush(certificado(p, "a", false));
+
+        assertThatThrownBy(() -> jdbc.update(
+                "UPDATE partner_certificate SET active = false, preferred = true WHERE id = ?", c.getId()))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @Test
+    void certificados_seBorranConElSocio() {
+        Partner p = partners.saveAndFlush(PartnerRepositoryTest.partner("SOCIO-PG-K5", true));
+        certificates.saveAndFlush(certificado(p, "a", true));
+
+        jdbc.update("DELETE FROM partner WHERE id = ?", p.getId());
+
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM partner_certificate WHERE partner_id = ?",
+                Integer.class, p.getId())).isZero();
     }
 }

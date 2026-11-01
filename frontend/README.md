@@ -42,12 +42,15 @@ protegidas por `RequireRole`. La seguridad real está en el servidor (gateway y 
 `/partners` (`src/pages/partners/`, store `partnersStore`): lista de socios activos o dados de baja
 con búsqueda; alta en un paso (`POST /api/partners/complete`, crea también las configuraciones de
 salida, entrada y MDN por defecto) y edición en un panel con pestañas Datos, Conexión, Seguridad AS2,
-Salida, Entrada, MDN y Carpetas (cada configuración se guarda por separado). La pestaña Carpetas
+Salida, Entrada, MDN, Carpetas y Certificados (cada configuración se guarda por separado). La pestaña Carpetas
 muestra el estado del árbol del socio, verifica y enlaza la carpeta compartida del ERP (el botón
 "Enlazar" solo se habilita tras una verificación positiva) y activa o desactiva producción.
 Todos los roles consultan; `ADMIN` y `OPERATOR` registran, editan, dan de baja y reactivan; solo `ADMIN` borra definitivamente,
 escribiendo el identificador AS2 para confirmar; el enlace con el ERP y la producción también son
-solo de `ADMIN`.
+solo de `ADMIN`. La pestaña Certificados lista por uso (cifrado, firma, TLS) los certificados X.509
+con su huella, su vigencia con semáforo y las etiquetas Preferente y Respaldo; permite cargar (PEM o
+DER), marcar preferente, activar, desactivar (avisando si es el único activo) y descargar el PEM;
+solo `ADMIN` elimina.
 
 ## Bitácora
 
