@@ -39,15 +39,15 @@ class DocumentPostgresTest {
 
     @Test
     void elMessageIdEsUnico() {
-        documents.saveAndFlush(document("<PG-1@x.example>"));
+        documents.saveAndFlush(document("<PG-1@example.com>"));
 
-        assertThatThrownBy(() -> documents.saveAndFlush(document("<PG-1@x.example>")))
+        assertThatThrownBy(() -> documents.saveAndFlush(document("<PG-1@example.com>")))
                 .isInstanceOf(DataIntegrityViolationException.class);
     }
 
     @Test
     void borrarElDocumento_borraSuContenido() {
-        Document d = documents.saveAndFlush(document("<PG-2@x.example>"));
+        Document d = documents.saveAndFlush(document("<PG-2@example.com>"));
         payloads.saveAndFlush(new DocumentPayload(d.getId(), "ISA*00".getBytes()));
 
         documents.delete(d);

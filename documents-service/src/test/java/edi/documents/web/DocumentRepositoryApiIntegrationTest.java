@@ -106,7 +106,7 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Test
     void ingestaDeUnDocumentoDeEntrada() throws Exception {
-        JsonNode doc = body(ingest("SOCIO-A", Direction.INBOUND, "<M1@socio-a.example>", Samples.po850())
+        JsonNode doc = body(ingest("SOCIO-A", Direction.INBOUND, "<M1@example.com>", Samples.po850())
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.outcome").value("CREATED"))).get("document");
 
@@ -133,14 +133,14 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Test
     void reintentoDelSocio_noCreaOtroDocumento() throws Exception {
-        String first = body(ingest("SOCIO-A", Direction.INBOUND, "<M2@socio-a.example>", Samples.po850())
+        String first = body(ingest("SOCIO-A", Direction.INBOUND, "<M2@example.com>", Samples.po850())
                 .andExpect(status().isCreated())).get("document").get("id").asString();
 
-        ingest("SOCIO-A", Direction.INBOUND, "<M2@socio-a.example>", Samples.po850())
+        ingest("SOCIO-A", Direction.INBOUND, "<M2@example.com>", Samples.po850())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.outcome").value("DUPLICATE"))
                 .andExpect(jsonPath("$.document.id").value(first));
-        assertThat(documents.findAll().stream().filter(d -> d.getMessageId().equals("<M2@socio-a.example>")))
+        assertThat(documents.findAll().stream().filter(d -> d.getMessageId().equals("<M2@example.com>")))
                 .hasSize(1);
     }
 
@@ -151,15 +151,15 @@ class DocumentRepositoryApiIntegrationTest {
         Files.writeString(disk.resolve("as2_data/inbound/failed"), "no es una carpeta");
         String invalido = Samples.po850().replace("BEG*00*SA*OC-2026-001**20261101~\n", "");
 
-        ingest("SOCIO-D", Direction.INBOUND, "<M3@socio-d.example>", invalido)
+        ingest("SOCIO-D", Direction.INBOUND, "<M3@example.com>", invalido)
                 .andExpect(status().isInternalServerError())
                 .andExpect(jsonPath("$.code").value("STORAGE_ERROR"));
-        assertThat(documents.findByMessageId("<M3@socio-d.example>")).isEmpty();
+        assertThat(documents.findByMessageId("<M3@example.com>")).isEmpty();
     }
 
     @Test
     void recuperacionTrasCaidaDeLaCarpetaCompartida(CapturedOutput output) throws Exception {
-        JsonNode doc = body(ingest("SOCIO-B", Direction.INBOUND, "<M4@socio-b.example>", Samples.po850())
+        JsonNode doc = body(ingest("SOCIO-B", Direction.INBOUND, "<M4@example.com>", Samples.po850())
                 .andExpect(status().isCreated())).get("document");
         assertThat(doc.get("partnerCopyStatus").asString()).isEqualTo("PENDING");
         Path incoming = disk.resolve("as2_data/partners/SOCIO-B/Incoming");
@@ -168,7 +168,7 @@ class DocumentRepositoryApiIntegrationTest {
         assertThat(recovery.recover()).isGreaterThanOrEqualTo(1);
 
         assertThat(incoming.resolve(doc.get("fileName").asString())).exists();
-        assertThat(output).contains("Copia restaurada en la carpeta del socio: socio=SOCIO-B messageId=<M4@socio-b.example>");
+        assertThat(output).contains("Copia restaurada en la carpeta del socio: socio=SOCIO-B messageId=<M4@example.com>");
         mvc.perform(get("/api/documents/{id}", doc.get("id").asString()))
                 .andExpect(jsonPath("$.partnerCopyStatus").value("COPIED"));
     }
@@ -184,7 +184,7 @@ class DocumentRepositoryApiIntegrationTest {
             String partner = partners[i % 3];
             String type = types[(i / 3) % 3];
             boolean recent = i % 5 != 0; // uno de cada cinco, de hace un mes
-            Document d = new Document(UUID.randomUUID(), partner, Direction.INBOUND, "<B" + i + "@busq.example>",
+            Document d = new Document(UUID.randomUUID(), partner, Direction.INBOUND, "<B" + i + "@example.com>",
                     recent ? now.minus(i % 6, ChronoUnit.DAYS) : now.minus(30, ChronoUnit.DAYS));
             d.describe(type, "4010", String.format("%09d", i), String.valueOf(i), String.format("%04d", i));
             d.content(100, "0".repeat(64), null, "prueba");
@@ -216,7 +216,7 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Test
     void consistencia_reportaElArchivoBorradoAMano_yLosHuerfanos() throws Exception {
-        JsonNode doc = body(ingest("SOCIO-C", Direction.INBOUND, "<M5@socio-c.example>", Samples.po850())
+        JsonNode doc = body(ingest("SOCIO-C", Direction.INBOUND, "<M5@example.com>", Samples.po850())
                 .andExpect(status().isCreated())).get("document");
         String day = DateTimeFormatter.BASIC_ISO_DATE.format(LocalDate.now(ZONE));
         Path dir = disk.resolve("as2_data/inbound/success").resolve(day).resolve("850/SOCIO-C");
@@ -226,7 +226,7 @@ class DocumentRepositoryApiIntegrationTest {
         mvc.perform(get("/api/consistency/documents"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.consistent").value(false))
-                .andExpect(jsonPath("$.missingFiles[?(@.messageId == '<M5@socio-c.example>')]").exists())
+                .andExpect(jsonPath("$.missingFiles[?(@.messageId == '<M5@example.com>')]").exists())
                 .andExpect(jsonPath("$.orphanFiles[?(@ =~ /.*EDI_HUERFANO.edi/)]").exists());
     }
 
@@ -238,7 +238,7 @@ class DocumentRepositoryApiIntegrationTest {
         assertThat(out.get("messageId").asString()).endsWith("@as2-platform>");
         assertThat(disk.resolve("as2_data/partners/SOCIO-C/Archive").resolve(out.get("fileName").asString())).exists();
 
-        JsonNode bad = body(ingest("SOCIO-C", Direction.OUTBOUND, "<M6@socio-c.example>", "texto sin ISA")
+        JsonNode bad = body(ingest("SOCIO-C", Direction.OUTBOUND, "<M6@example.com>", "texto sin ISA")
                 .andExpect(status().isCreated())).get("document");
         assertThat(bad.get("status").asString()).isEqualTo("VALIDATION_FAILED");
         assertThat(bad.get("typeCode").asString()).isEqualTo("UNKNOWN");
@@ -247,10 +247,10 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Test
     void detalle_contenido_descarga_mdn_estadisticas_y_borrado() throws Exception {
-        String id = body(ingest("SOCIO-A", Direction.INBOUND, "<M7@socio-a.example>", Samples.po850())
+        String id = body(ingest("SOCIO-A", Direction.INBOUND, "<M7@example.com>", Samples.po850())
                 .andExpect(status().isCreated())).get("document").get("id").asString();
 
-        mvc.perform(get("/api/documents/by-message-id").param("messageId", "<M7@socio-a.example>"))
+        mvc.perform(get("/api/documents/by-message-id").param("messageId", "<M7@example.com>"))
                 .andExpect(jsonPath("$.id").value(id));
         String payload = mvc.perform(get("/api/documents/{id}/payload", id)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(StandardCharsets.ISO_8859_1);
@@ -273,11 +273,11 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Test
     void socioNoRegistrado_vacio_oDireccionInvalida_son400() throws Exception {
-        ingest("NO-EXISTE", Direction.INBOUND, "<M8@x.example>", Samples.po850())
+        ingest("NO-EXISTE", Direction.INBOUND, "<M8@example.com>", Samples.po850())
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("PARTNER_UNKNOWN"));
-        ingest("SOCIO-A", Direction.INBOUND, "<M9@x.example>", "")
+        ingest("SOCIO-A", Direction.INBOUND, "<M9@example.com>", "")
                 .andExpect(status().isBadRequest());
-        ingest("../SOCIO-A", Direction.INBOUND, "<M10@x.example>", Samples.po850())
+        ingest("../SOCIO-A", Direction.INBOUND, "<M10@example.com>", Samples.po850())
                 .andExpect(status().isBadRequest());
         mvc.perform(post("/api/documents/ingest/as2").param("partner", "SOCIO-A").param("direction", "LATERAL")
                         .contentType(MediaType.TEXT_PLAIN).content("x"))
