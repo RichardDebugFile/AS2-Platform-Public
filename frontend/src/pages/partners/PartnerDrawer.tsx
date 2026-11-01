@@ -431,7 +431,7 @@ export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onCl
         <Drawer
             open
             title={title}
-            width={760}
+            width="min(920px, 100vw)"
             onClose={onClose}
             extra={
                 <Space>

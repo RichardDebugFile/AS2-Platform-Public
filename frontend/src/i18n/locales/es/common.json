@@ -2,7 +2,8 @@
   "app": {
     "name": "Plataforma AS2/EDI",
     "subtitle": "Intercambio electrónico de documentos B2B por AS2",
-    "footer": "Plataforma AS2/EDI © {{year}}"
+    "footer": "Plataforma AS2/EDI © {{year}}",
+    "console": "Consola de operación"
   },
   "nav": {
     "operation": "Operación",

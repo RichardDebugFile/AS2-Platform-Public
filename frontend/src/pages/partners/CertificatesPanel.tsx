@@ -108,7 +108,7 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
     };
 
     const actions = (c: Certificate) => (
-        <Space wrap size={4}>
+        <Space wrap size={0}>
             <Tooltip title={t("certificates.download")}>
                 <Button
                     size="small"
@@ -118,22 +118,22 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
                 />
             </Tooltip>
             {canEdit && c.active && !c.preferred && c.validity !== "EXPIRED" && (
-                <Button size="small" disabled={busy} onClick={() => void run(() => prefer(partner.id, c.id), "certificates.preferredSet")}>
+                <Button type="link" size="small" disabled={busy} onClick={() => void run(() => prefer(partner.id, c.id), "certificates.preferredSet")}>
                     {t("certificates.makePreferred")}
                 </Button>
             )}
             {canEdit && !c.active && c.validity !== "EXPIRED" && (
-                <Button size="small" disabled={busy} onClick={() => void run(() => activate(partner.id, c.id), "certificates.activated")}>
+                <Button type="link" size="small" disabled={busy} onClick={() => void run(() => activate(partner.id, c.id), "certificates.activated")}>
                     {t("certificates.activate")}
                 </Button>
             )}
             {canEdit && c.active && (
-                <Button size="small" disabled={busy} onClick={() => setPending({ action: "deactivate", certificate: c })}>
+                <Button type="link" size="small" disabled={busy} onClick={() => setPending({ action: "deactivate", certificate: c })}>
                     {t("certificates.deactivate")}
                 </Button>
             )}
             {isAdmin && (
-                <Button size="small" danger disabled={busy} onClick={() => setPending({ action: "remove", certificate: c })}>
+                <Button type="link" size="small" danger disabled={busy} onClick={() => setPending({ action: "remove", certificate: c })}>
                     {t("certificates.remove")}
                 </Button>
             )}
@@ -145,7 +145,7 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
             title: t("certificates.columns.issuedTo"),
             key: "issuedTo",
             render: (_: unknown, c: Certificate) => (
-                <Space direction="vertical" size={0}>
+                <Space direction="vertical" size={0} style={{ minWidth: 200 }}>
                     <Typography.Text strong>{c.issuedTo}</Typography.Text>
                     <Typography.Text type="secondary">{t("certificates.issuedBy", { name: c.issuedBy })}</Typography.Text>
                     {c.description && <Typography.Text type="secondary">{c.description}</Typography.Text>}
@@ -157,7 +157,7 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
             dataIndex: "fingerprintSha256",
             render: (v: string) => (
                 <Tooltip title={formatFingerprint(v)}>
-                    <Typography.Text code>{formatFingerprint(v, true)}</Typography.Text>
+                    <span className="mono-text">{formatFingerprint(v, true)}</span>
                 </Tooltip>
             ),
         },
@@ -166,7 +166,7 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
             key: "validity",
             render: (_: unknown, c: Certificate) => (
                 <Space direction="vertical" size={0}>
-                    <span>
+                    <span className="nowrap">
                         {c.validFrom.slice(0, 10)} → {c.validTo.slice(0, 10)}
                     </span>
                     {validityTag(c)}
@@ -182,9 +182,9 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
         const { action, certificate } = pending;
         const key = action === "remove" ? "certificates.confirmRemove" : "certificates.confirmDeactivate";
         const base = t(key, { name: certificate.issuedTo });
-        return isLastActive(certificate)
-            ? `${base} ${t(`certificates.lastActive.${certificate.keyUsage}`)}`
-            : base;
+        if (!isLastActive(certificate)) return base;
+        const effect = t(`certificates.lastActive.${certificate.keyUsage}`);
+        return `${base} ${effect}`;
     };
 
     return (

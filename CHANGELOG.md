@@ -15,11 +15,17 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   Se rechazan los certificados caducados, los de una autoridad de certificación para cifrar y cualquier
   archivo con una clave privada. Solo un administrador elimina certificados, y cada operación queda en
   la bitácora (HU-11).
+- Consola rediseñada con un sistema de diseño propio, documentado en Figma: barra lateral oscura con el
+  menú por rol, cabecera con la sección y el título de la pantalla, colores de estado consistentes,
+  tipografía Inter incluida en la consola (sin depender de internet) y pantallas de inicio de sesión,
+  segundo factor, socios, certificados, bitácora y usuarios con la misma estructura (HU-24).
 - Cada cambio del código queda vinculado con su historia: un commit sin la clave de su historia o
   tarea (`HU-XX` o `AS2-NN`) se rechaza en el equipo del desarrollador y en la verificación de cada
   pull request (AS2-75).
 
 ### Correcciones
+- La bitácora muestra con su nombre los eventos de certificados (cargado, preferente, desactivado,
+  retirado y los demás) en lugar del código interno (HU-11).
 - Dependencias de desarrollo de la consola actualizadas por alertas de seguridad (vite, vitest,
   undici y zod); no forman parte de la consola publicada (AS2-76).
 - La plataforma vuelve a levantarse en Windows con `start.sh`: la preparación de secretos terminaba

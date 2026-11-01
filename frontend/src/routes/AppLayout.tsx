@@ -1,6 +1,6 @@
-import { LogoutOutlined, UserOutlined } from "@ant-design/icons";
+import { LogoutOutlined } from "@ant-design/icons";
 import type { MenuProps } from "antd";
-import { Avatar, Breadcrumb, Dropdown, Layout, Menu, Typography } from "antd";
+import { Avatar, Dropdown, Layout, Menu, Typography } from "antd";
 import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
@@ -8,11 +8,15 @@ import logo from "../assets/logo.svg";
 import LanguageSelector from "../components/LanguageSelector";
 import SessionGuard from "../session/SessionGuard";
 import { useAuthStore } from "../store/authStore";
+import { initials } from "./initials";
 import { locate, menuFor } from "./menu";
 
 const { Header, Content, Footer, Sider } = Layout;
 
-/** Marco de las pantallas con sesion: menu por rol, cabecera, migas de pan y avisos de sesion. */
+/**
+ * Marco de las pantallas con sesion (HU-24): barra lateral oscura con el menu por rol, cabecera con
+ * la seccion y el titulo de la pantalla, idioma y usuario, y el contenido sobre el fondo de la app.
+ */
 export default function AppLayout() {
     const { t } = useTranslation("common");
     const navigate = useNavigate();
@@ -29,7 +33,6 @@ export default function AppLayout() {
     }));
 
     const here = locate(location.pathname);
-    const crumbs = here ? [{ title: t(here.section.label) }, { title: t(here.entry.label) }] : [{ title: t("app.name") }];
     const roles = (user?.roles ?? []).map((r) => t(`roles.${r}`)).join(", ");
 
     const userMenu: MenuProps["items"] = [
@@ -37,12 +40,17 @@ export default function AppLayout() {
     ];
 
     return (
-        <Layout style={{ minHeight: "100vh" }}>
+        <Layout className="app-shell">
             <SessionGuard />
-            <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} width={240} theme="dark">
+            <Sider collapsible collapsed={collapsed} onCollapse={setCollapsed} width={256} className="app-sider">
                 <div className="app-brand">
-                    <img src={logo} alt="" width={32} height={32} />
-                    {!collapsed && <span>{t("app.name")}</span>}
+                    <img src={logo} alt="" width={36} height={36} />
+                    {!collapsed && (
+                        <span className="app-brand-text">
+                            <span className="app-brand-name">{t("app.name")}</span>
+                            <span className="app-brand-sub">{t("app.console")}</span>
+                        </span>
+                    )}
                 </div>
                 <Menu
                     theme="dark"
@@ -53,11 +61,15 @@ export default function AppLayout() {
                 />
             </Sider>
             <Layout>
-                <Header className="app-header" style={{ background: "#fff", padding: "0 24px" }}>
+                <Header className="app-header">
+                    <div className="app-header-title">
+                        {here && <span className="app-header-section">{t(here.section.label)}</span>}
+                        <Typography.Title level={1}>{here ? t(here.entry.label) : t("app.name")}</Typography.Title>
+                    </div>
                     <LanguageSelector />
                     <Dropdown menu={{ items: userMenu }} trigger={["click"]} placement="bottomRight">
                         <button type="button" className="app-user" aria-label={user?.username}>
-                            <Avatar icon={<UserOutlined />} style={{ backgroundColor: "#0f766e" }} />
+                            <Avatar className="app-avatar">{initials(user?.username)}</Avatar>
                             <span className="app-user-text">
                                 <Typography.Text strong>{user?.username}</Typography.Text>
                                 <Typography.Text type="secondary" style={{ fontSize: 12 }}>
@@ -67,13 +79,12 @@ export default function AppLayout() {
                         </button>
                     </Dropdown>
                 </Header>
-                <Content style={{ margin: "16px 24px 0" }}>
-                    <Breadcrumb items={crumbs} style={{ marginBottom: 16 }} />
+                <Content className="app-main">
                     <div className="app-content">
                         <Outlet />
                     </div>
                 </Content>
-                <Footer style={{ textAlign: "center" }}>{t("app.footer", { year: new Date().getFullYear() })}</Footer>
+                <Footer className="app-footer">{t("app.footer", { year: new Date().getFullYear() })}</Footer>
             </Layout>
         </Layout>
     );

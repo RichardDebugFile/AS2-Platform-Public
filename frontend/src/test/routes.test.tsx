@@ -71,7 +71,15 @@ describe("rutas y menu por rol", () => {
         renderAt("/audit");
         const menu = await screen.findByRole("menu");
         expect(within(menu).getByText("Bitácora de auditoría")).toBeInTheDocument();
-        expect(await screen.findByRole("heading", { name: "Bitácora de auditoría" })).toBeInTheDocument();
+        expect(await screen.findByRole("heading", { level: 1, name: "Bitácora de auditoría" })).toBeInTheDocument();
+    });
+
+    it("la cabecera muestra la seccion, el titulo de la pantalla y las iniciales del usuario", async () => {
+        signIn(AUDITOR);
+        renderAt("/audit");
+        const header = (await screen.findByRole("heading", { level: 1, name: "Bitácora de auditoría" })).closest("header")!;
+        expect(within(header).getByText("Auditoría")).toBeInTheDocument();
+        expect(within(header).getByText("AU")).toBeInTheDocument();
     });
 
     it("un AUDITOR que escribe la URL de Usuarios vuelve al inicio", async () => {

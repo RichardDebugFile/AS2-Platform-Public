@@ -101,7 +101,7 @@ public final class X509Reader {
                     return truncate(String.valueOf(rdn.getValue()));
                 }
             }
-        } catch (InvalidNameException e) {
+        } catch (InvalidNameException _) {
             // Nombre no interpretable: se muestra completo.
         }
         return truncate(dn);
