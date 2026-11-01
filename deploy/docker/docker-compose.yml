@@ -105,6 +105,22 @@ services:
       <<: *java-health
     networks: [backend]
 
+  # Documentos EDI (HU-12): interpretacion, validacion y generacion de X12.
+  documents-service:
+    image: as2-platform-services:local
+    command: ["java", "-jar", "/app/documents-service.jar"]
+    <<: [*restart, *logging]
+    environment:
+      DB_URL: jdbc:postgresql://db:5432/documents
+      DB_USERNAME: documents
+      DB_PASSWORD: ${DOCUMENTS_DB_PASSWORD}
+    depends_on:
+      db: { condition: service_healthy }
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8084/actuator/health | grep -q UP"]
+      <<: *java-health
+    networks: [backend]
+
   gateway:
     image: as2-platform-services:local
     command: ["java", "-jar", "/app/gateway.jar"]
@@ -120,6 +136,7 @@ services:
     depends_on:
       auth-service: { condition: service_healthy }
       partners-service: { condition: service_healthy }
+      documents-service: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8765/actuator/health | grep -q UP"]
       <<: *java-health

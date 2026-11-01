@@ -349,4 +349,13 @@ class GatewaySecurityTest {
         navegador(client.post().uri(cert + "/prefer"), AUDITOR).exchange().expectStatus().isForbidden();
         dejoPasar(client.get().uri("/api/partners/123/certificates").cookie("access_token", AUDITOR).exchange());
     }
+
+    @Test
+    void documentosX12_interpretarYValidarTodos_generarSoloQuienEdita() {
+        dejoPasar(navegador(client.post().uri("/api/documents/x12/parse"), AUDITOR).exchange());
+        dejoPasar(navegador(client.post().uri("/api/documents/x12/validate"), AUDITOR).exchange());
+        navegador(client.post().uri("/api/documents/x12/generate"), AUDITOR).exchange().expectStatus().isForbidden();
+        dejoPasar(navegador(client.post().uri("/api/documents/x12/generate"), OPERADOR).exchange());
+        client.post().uri("/api/documents/x12/parse").exchange().expectStatus().isUnauthorized();
+    }
 }
