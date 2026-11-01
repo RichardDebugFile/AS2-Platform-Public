@@ -47,9 +47,9 @@ export default function AuditPage() {
     };
 
     const columns: ColumnsType<AuditEvent> = [
-        { title: t("columns.occurredAt"), dataIndex: "occurredAt", width: 180, render: (v: string) => when(v) },
+        { title: t("columns.occurredAt"), dataIndex: "occurredAt", width: 190, render: (v: string) => <span className="nowrap">{when(v)}</span> },
         { title: t("columns.eventType"), dataIndex: "eventType", render: (v: string) => <Tag>{typeLabel(v)}</Tag> },
-        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => v ?? "—" },
+        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => <span className="nowrap">{v ?? "—"}</span> },
         { title: t("columns.actor"), dataIndex: "actor" },
         {
             title: t("columns.status"),

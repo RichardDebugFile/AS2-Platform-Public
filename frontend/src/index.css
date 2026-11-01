@@ -148,10 +148,22 @@ body {
     flex: 1;
 }
 .ant-table-wrapper .ant-table-thead > tr > th {
+    white-space: nowrap;
     font-size: 12px;
     font-weight: 500;
     letter-spacing: 0.04em;
     text-transform: uppercase;
+}
+
+/* Direcciones, huellas e identificadores tecnicos: monoespaciada, sin recuadro. */
+.mono-text {
+    font-family: "Roboto Mono", ui-monospace, Consolas, monospace;
+    font-size: 12px;
+    white-space: nowrap;
+}
+
+.nowrap {
+    white-space: nowrap;
 }
 
 /* ---- login ---- */

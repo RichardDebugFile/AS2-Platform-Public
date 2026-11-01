@@ -71,7 +71,7 @@ export default function PartnersPage() {
         {
             title: t("list.columns.endpoint"),
             dataIndex: "endpointUrl",
-            render: (v: string) => <Typography.Text code>{v}</Typography.Text>,
+            render: (v: string) => <span className="mono-text">{v}</span>,
         },
         {
             title: t("list.columns.type"),
