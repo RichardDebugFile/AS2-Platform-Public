@@ -28,6 +28,7 @@ import org.springframework.web.multipart.support.MissingServletRequestPartExcept
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    private static final String BAD_REQUEST = "BAD_REQUEST";
 
     @ExceptionHandler(PartnerNotFoundException.class)
     ResponseEntity<ApiError> onPartnerNotFound(PartnerNotFoundException e) {
@@ -46,12 +47,12 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
     ResponseEntity<ApiError> onTooLarge(MaxUploadSizeExceededException e) {
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "El archivo es demasiado grande para ser un certificado");
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "El archivo es demasiado grande para ser un certificado");
     }
 
     @ExceptionHandler(MissingServletRequestPartException.class)
     ResponseEntity<ApiError> onMissingPart(MissingServletRequestPartException e) {
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", "Falta el archivo del certificado ('" + e.getRequestPartName() + "')");
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "Falta el archivo del certificado ('" + e.getRequestPartName() + "')");
     }
 
     @ExceptionHandler(DuplicateAs2NameException.class)
@@ -85,7 +86,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ApiError> onBadRequest(IllegalArgumentException e) {
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", e.getMessage());
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -105,7 +106,7 @@ public class ApiExceptionHandler {
             root = root.getCause();
         }
         String msg = root instanceof IllegalArgumentException ? root.getMessage() : "Peticion no valida";
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", msg);
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, msg);
     }
 
     private static ResponseEntity<ApiError> error(HttpStatus status, String code, String message) {

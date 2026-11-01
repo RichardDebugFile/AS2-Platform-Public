@@ -47,6 +47,11 @@ public class PartnerCertificateService {
     /** RN-13: el motor cifra como maximo para este numero de certificados activos. */
     static final int MAX_ENCRYPTION_RECIPIENTS = 3;
 
+    /** Campos y texto comunes de los eventos de auditoria de certificados. */
+    private static final String FIELD_ACTIVE = "active";
+    private static final String FIELD_PREFERRED = "preferred";
+    private static final String CERTIFICATE_OF = "Certificado de ";
+
     /** Orden de la consola: por uso, el preferente primero y luego el que mas tarde vence. */
     private static final Comparator<PartnerCertificate> DISPLAY_ORDER =
             Comparator.comparing(PartnerCertificate::getKeyUsage)
@@ -125,8 +130,8 @@ public class PartnerCertificateService {
         changes.put("issuedTo", new Change(null, c.getIssuedTo()));
         changes.put("fingerprintSha256", new Change(null, c.getFingerprintSha256()));
         changes.put("validTo", new Change(null, c.getValidTo()));
-        changes.put("preferred", new Change(null, true));
-        publish(AuditEventTypes.CERTIFICATE_UPLOADED, p, "Certificado de " + label(usage) + " cargado como preferente: "
+        changes.put(FIELD_PREFERRED, new Change(null, true));
+        publish(AuditEventTypes.CERTIFICATE_UPLOADED, p, CERTIFICATE_OF + label(usage) + " cargado como preferente: "
                 + describe(c) + (backups.isEmpty() ? "" : "; quedan " + backups.size() + " de respaldo"), changes);
         return new CertificateUploadResponse(CertificateResponse.of(c, now, false), Outcome.CREATED,
                 warnings(partnerId, usage));
@@ -141,9 +146,9 @@ public class PartnerCertificateService {
         c.setActive(true);
         repo.saveAndFlush(c);
         ensurePreferred(p.getId(), c.getKeyUsage(), now);
-        publish(AuditEventTypes.CERTIFICATE_REACTIVATED, p, "Certificado de " + label(c.getKeyUsage())
+        publish(AuditEventTypes.CERTIFICATE_REACTIVATED, p, CERTIFICATE_OF + label(c.getKeyUsage())
                 + " cargado de nuevo, activo como " + role(c) + ": " + describe(c),
-                Map.of("active", new Change(false, true)));
+                Map.of(FIELD_ACTIVE, new Change(false, true)));
         return new CertificateUploadResponse(CertificateResponse.of(c, now, false), Outcome.REACTIVATED,
                 warnings(p.getId(), c.getKeyUsage()));
     }
@@ -188,8 +193,8 @@ public class PartnerCertificateService {
             clearPreferred(repo.findAllByPartnerIdAndKeyUsageAndActiveTrue(partnerId, c.getKeyUsage()));
             c.setPreferred(true);
             repo.saveAndFlush(c);
-            publish(AuditEventTypes.CERTIFICATE_PREFERRED, c.getPartner(), "Certificado de " + label(c.getKeyUsage())
-                    + " marcado como preferente: " + describe(c), Map.of("preferred", new Change(false, true)));
+            publish(AuditEventTypes.CERTIFICATE_PREFERRED, c.getPartner(), CERTIFICATE_OF + label(c.getKeyUsage())
+                    + " marcado como preferente: " + describe(c), Map.of(FIELD_PREFERRED, new Change(false, true)));
         }
         return sameUsage(partnerId, c.getKeyUsage(), now);
     }
@@ -205,8 +210,8 @@ public class PartnerCertificateService {
             c.setActive(true);
             repo.saveAndFlush(c);
             ensurePreferred(partnerId, c.getKeyUsage(), now);
-            publish(AuditEventTypes.CERTIFICATE_ACTIVATED, c.getPartner(), "Certificado de " + label(c.getKeyUsage())
-                    + " activado como " + role(c) + ": " + describe(c), Map.of("active", new Change(false, true)));
+            publish(AuditEventTypes.CERTIFICATE_ACTIVATED, c.getPartner(), CERTIFICATE_OF + label(c.getKeyUsage())
+                    + " activado como " + role(c) + ": " + describe(c), Map.of(FIELD_ACTIVE, new Change(false, true)));
         }
         return sameUsage(partnerId, c.getKeyUsage(), now);
     }
@@ -225,11 +230,11 @@ public class PartnerCertificateService {
             repo.saveAndFlush(c);
             Optional<PartnerCertificate> promoted = ensurePreferred(partnerId, c.getKeyUsage(), now);
             Map<String, Change> changes = new LinkedHashMap<>();
-            changes.put("active", new Change(true, false));
+            changes.put(FIELD_ACTIVE, new Change(true, false));
             if (wasPreferred) {
-                changes.put("preferred", new Change(true, false));
+                changes.put(FIELD_PREFERRED, new Change(true, false));
             }
-            publish(AuditEventTypes.CERTIFICATE_DEACTIVATED, c.getPartner(), "Certificado de " + label(c.getKeyUsage())
+            publish(AuditEventTypes.CERTIFICATE_DEACTIVATED, c.getPartner(), CERTIFICATE_OF + label(c.getKeyUsage())
                     + " desactivado: " + describe(c) + promotedText(promoted), changes);
         }
         return sameUsage(partnerId, c.getKeyUsage(), now);
@@ -246,7 +251,7 @@ public class PartnerCertificateService {
         repo.delete(c);
         repo.flush();
         Optional<PartnerCertificate> promoted = ensurePreferred(partnerId, usage, now);
-        publish(AuditEventTypes.CERTIFICATE_DELETED, p, "Certificado de " + label(usage) + " eliminado: " + what
+        publish(AuditEventTypes.CERTIFICATE_DELETED, p, CERTIFICATE_OF + label(usage) + " eliminado: " + what
                 + promotedText(promoted), changes);
         return sameUsage(partnerId, usage, now);
     }
@@ -309,16 +314,18 @@ public class PartnerCertificateService {
                 repo.saveAndFlush(c);
                 retired++;
                 Map<String, Change> changes = new LinkedHashMap<>();
-                changes.put("active", new Change(true, false));
+                changes.put(FIELD_ACTIVE, new Change(true, false));
                 if (wasPreferred) {
-                    changes.put("preferred", new Change(true, false));
+                    changes.put(FIELD_PREFERRED, new Change(true, false));
                 }
                 audit.publish(AuditEvent.of(AuditEventTypes.CERTIFICATE_RETIRED, partnerId, c.getPartner().getAs2Name(),
-                        RequestIdentity.SYSTEM, "Certificado de " + label(usage) + " caducado retirado: " + describe(c),
+                        RequestIdentity.SYSTEM, CERTIFICATE_OF + label(usage) + " caducado retirado: " + describe(c),
                         changes));
             }
-            ensurePreferred(partnerId, usage, now).ifPresent(promoted -> log.info(
-                    "Certificado {} promovido a preferente tras el retiro", promoted.getFingerprintSha256()));
+            Optional<PartnerCertificate> promoted = ensurePreferred(partnerId, usage, now);
+            if (promoted.isPresent() && log.isInfoEnabled()) {
+                log.info("Certificado {} promovido a preferente tras el retiro", promoted.get().getFingerprintSha256());
+            }
         }
         return new RetirementResult(retired, kept);
     }

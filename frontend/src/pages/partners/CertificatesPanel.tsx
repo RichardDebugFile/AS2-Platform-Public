@@ -182,9 +182,9 @@ export default function CertificatesPanel({ partner, canEdit, isAdmin }: Readonl
         const { action, certificate } = pending;
         const key = action === "remove" ? "certificates.confirmRemove" : "certificates.confirmDeactivate";
         const base = t(key, { name: certificate.issuedTo });
-        return isLastActive(certificate)
-            ? `${base} ${t(`certificates.lastActive.${certificate.keyUsage}`)}`
-            : base;
+        if (!isLastActive(certificate)) return base;
+        const effect = t(`certificates.lastActive.${certificate.keyUsage}`);
+        return `${base} ${effect}`;
     };
 
     return (
