@@ -147,11 +147,11 @@ public class DocumentQueryService {
             if (hasText(f.partner())) {
                 p.add(cb.equal(cb.upper(root.get("partnerAs2Name")), f.partner().strip().toUpperCase()));
             }
-            equal(p, cb, root, "direction", f.direction());
-            equal(p, cb, root, "status", f.status());
-            equal(p, cb, root, "typeCode", text(f.typeCode()));
-            equal(p, cb, root, "messageId", text(f.messageId()));
-            equal(p, cb, root, "isaControl", text(f.isaControl()));
+            addEqual(p, cb, root, "direction", f.direction());
+            addEqual(p, cb, root, "status", f.status());
+            addEqual(p, cb, root, "typeCode", text(f.typeCode()));
+            addEqual(p, cb, root, "messageId", text(f.messageId()));
+            addEqual(p, cb, root, "isaControl", text(f.isaControl()));
             if (f.from() != null) {
                 p.add(cb.greaterThanOrEqualTo(root.get(CREATED_AT), f.from().atStartOfDay(zone).toInstant()));
             }
@@ -163,7 +163,8 @@ public class DocumentQueryService {
     }
 
     /** Agrega {@code campo = valor} si hay valor. */
-    private static void equal(List<Predicate> p, CriteriaBuilder cb, Root<Document> root, String field, Object value) {
+    private static void addEqual(List<Predicate> p, CriteriaBuilder cb, Root<Document> root, String field,
+            Object value) {
         if (value != null) {
             p.add(cb.equal(root.get(field), value));
         }

@@ -18,8 +18,14 @@ public record IngestCommand(String partner, Direction direction, byte[] content,
     /** El contenido se compara por sus bytes, no por la referencia del arreglo. */
     @Override
     public boolean equals(Object o) {
-        return o instanceof IngestCommand c && Arrays.equals(content, c.content)
-                && Objects.equals(partner, c.partner) && direction == c.direction
+        if (this == o) {
+            return true;
+        }
+        if (o == null || getClass() != o.getClass()) {
+            return false;
+        }
+        IngestCommand c = (IngestCommand) o;
+        return Arrays.equals(content, c.content) && Objects.equals(partner, c.partner) && direction == c.direction
                 && Objects.equals(messageId, c.messageId) && Objects.equals(as2From, c.as2From)
                 && Objects.equals(as2To, c.as2To) && Objects.equals(mic, c.mic)
                 && Objects.equals(micAlgorithm, c.micAlgorithm) && Objects.equals(signingAlgorithm, c.signingAlgorithm)
