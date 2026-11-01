@@ -20,7 +20,7 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
     List<Document> findByPartnerCopyStatusAndCreatedAtAfterOrderByCreatedAtAsc(PartnerCopyStatus status,
             Instant since);
 
-    @Query("select new edi.documents.store.DocumentRepository.FileRef(d.id, d.messageId, d.partnerAs2Name, d.filePath)"
+    @Query("select new edi.documents.store.DocumentRepository$FileRef(d.id, d.messageId, d.partnerAs2Name, d.filePath)"
             + " from Document d")
     List<FileRef> fileRefs();
 
