@@ -68,6 +68,9 @@ public class GatewaySecurityConfig {
      */
     static final String[] X12_READ_ONLY = {"/api/documents/x12/parse", "/api/documents/x12/validate"};
 
+    /** Borrar un documento del repositorio o su MDN (HU-14): solo ADMIN; queda en la bitacora. */
+    static final String DOCUMENT_DELETE = "/api/documents/**";
+
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String ADMIN = "ADMIN";
     static final String[] ROLES_QUE_EDITAN = {ADMIN, "OPERATOR"};
@@ -144,6 +147,9 @@ public class GatewaySecurityConfig {
                         .hasRole(ADMIN)
                         // Enlazar carpetas con el ERP y pasar un socio a produccion: solo ADMIN.
                         .pathMatchers(HttpMethod.POST, PARTNER_ERP_CHANGES)
+                        .hasRole(ADMIN)
+                        // Borrar documentos del repositorio: solo ADMIN (HU-14).
+                        .pathMatchers(HttpMethod.DELETE, DOCUMENT_DELETE)
                         .hasRole(ADMIN)
                         .pathMatchers(HttpMethod.POST, X12_READ_ONLY)
                         .authenticated()
