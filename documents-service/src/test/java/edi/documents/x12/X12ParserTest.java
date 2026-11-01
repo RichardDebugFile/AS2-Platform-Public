@@ -96,7 +96,7 @@ class X12ParserTest {
 
     @Test
     void marcaDeOrdenDeBytesYEspaciosAlInicio_seIgnoran() {
-        X12Document d = X12Parser.parse("﻿\n  " + Samples.po850());
+        X12Document d = X12Parser.parse("\uFEFF\n  " + Samples.po850());
 
         assertThat(d.typeCode()).isEqualTo("850");
         assertThat(d.complete()).isTrue();

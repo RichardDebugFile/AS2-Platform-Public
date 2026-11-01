@@ -27,7 +27,7 @@ public final class X12Parser {
     private static final Pattern LINE_BREAK = Pattern.compile("\\r\\n|\\r|\\n");
     private static final Pattern EDGE_BREAKS = Pattern.compile("^[\\r\\n]+|[\\r\\n]+$");
     private static final Pattern SIMPLE_SPLIT = Pattern.compile("~\\s*|\\r\\n|\\r|\\n");
-    private static final char BOM = '﻿';
+    private static final char BOM = '\uFEFF';
 
     private X12Parser() {
     }
