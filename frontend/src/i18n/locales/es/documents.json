@@ -189,7 +189,7 @@
         "sha256": "SHA-256",
         "mic": "MIC",
         "algorithms": "Firma / cifrado",
-        "validation": "Validación",
+        "validation": "Estado",
         "createdBy": "Registrado por",
         "createdAt": "Registrado",
         "fileName": "Archivo"
