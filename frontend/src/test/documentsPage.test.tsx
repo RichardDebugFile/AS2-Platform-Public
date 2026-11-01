@@ -66,6 +66,7 @@ function renderAs(user: AuthUser) {
 describe("documentos X12", () => {
     it("interpreta un documento: resumen, validacion y segmentos con su nombre", async () => {
         renderAs(AUDITOR);
+        fireEvent.click(screen.getByRole("tab", { name: "Visor X12" }));
         fireEvent.click(screen.getByRole("button", { name: "Cargar ejemplo" }));
         fireEvent.click(screen.getByRole("button", { name: "Interpretar" }));
 
@@ -91,6 +92,7 @@ describe("documentos X12", () => {
             problems: ["SE01 declara 11 segmentos y la transaccion tiene 10"],
         };
         renderAs(AUDITOR);
+        fireEvent.click(screen.getByRole("tab", { name: "Visor X12" }));
         fireEvent.click(screen.getByRole("button", { name: "Cargar ejemplo" }));
         fireEvent.click(screen.getByRole("button", { name: "Interpretar" }));
 
@@ -99,8 +101,9 @@ describe("documentos X12", () => {
         expect(screen.getByText("SE01 declara 11 segmentos y la transaccion tiene 10")).toBeInTheDocument();
     });
 
-    it("un auditor solo ve el visor", () => {
+    it("un auditor ve el repositorio y el visor, no el generador", () => {
         renderAs(AUDITOR);
+        expect(screen.getByRole("tab", { name: "Repositorio", selected: true })).toBeInTheDocument();
         expect(screen.getByRole("tab", { name: "Visor X12" })).toBeInTheDocument();
         expect(screen.queryByRole("tab", { name: "Generar documento" })).not.toBeInTheDocument();
     });

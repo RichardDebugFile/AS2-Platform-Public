@@ -2,7 +2,8 @@
   "title": "EDI documents",
   "tabs": {
     "viewer": "X12 viewer",
-    "generator": "Generate document"
+    "generator": "Generate document",
+    "repository": "Repository"
   },
   "viewer": {
     "intro": "Paste an X12 document as it arrives from the partner: the system reads its delimiters, identifies the type and the parties, and validates it against the schema of its type.",
@@ -77,7 +78,8 @@
     "copied": "Copied",
     "download": "Download",
     "openInViewer": "Open in viewer",
-    "required": "Required"
+    "required": "Required",
+    "saveToRepository": "Save to repository"
   },
   "segments": {
     "ISA": "Interchange header",
@@ -98,5 +100,108 @@
     "SE": "Transaction set trailer",
     "GE": "Functional group trailer",
     "IEA": "Interchange trailer"
+  },
+  "repository": {
+    "intro": "Documents sent and received: each one is kept in the database and as a file in the repository, plus a copy in the partner folder for the ERP.",
+    "stats": {
+      "total": "Documents",
+      "lastDays": "Last 7 days",
+      "failed": "With problems",
+      "inOut": "Inbound / outbound"
+    },
+    "filters": {
+      "partner": "Partner",
+      "direction": "Direction",
+      "type": "Type",
+      "status": "Status",
+      "messageId": "Message-ID",
+      "isa": "ISA control",
+      "from": "From",
+      "to": "To",
+      "search": "Search",
+      "clear": "Clear"
+    },
+    "upload": {
+      "open": "Register document",
+      "title": "Register document in the repository",
+      "partner": "Partner",
+      "direction": "Direction",
+      "messageId": "Message-ID (optional)",
+      "messageIdHelp": "If the partner retries with the same Message-ID no new record is created.",
+      "content": "X12 document",
+      "file": "Load file",
+      "save": "Register",
+      "created": "Document registered ({{status}})",
+      "duplicate": "That Message-ID was already registered: no new document was created",
+      "required": "Required"
+    },
+    "direction": {
+      "INBOUND": "Inbound",
+      "OUTBOUND": "Outbound"
+    },
+    "status": {
+      "CREATED": "Created",
+      "RECEIVED": "Received",
+      "SENT": "Sent",
+      "SEND_FAILED": "Send failed",
+      "MDN_PENDING": "MDN pending",
+      "MDN_RECEIVED": "MDN received",
+      "MDN_FAILED": "MDN failed",
+      "VALIDATED": "Validated",
+      "VALIDATION_FAILED": "Invalid",
+      "DELIVERED": "Delivered",
+      "DELIVERY_FAILED": "Delivery failed",
+      "PROCESSING_FAILED": "Processing error",
+      "DUPLICATE": "Duplicate"
+    },
+    "copy": {
+      "COPIED": "Copied to partner",
+      "PENDING": "Copy pending"
+    },
+    "columns": {
+      "createdAt": "Date",
+      "direction": "Direction",
+      "partner": "Partner",
+      "type": "Type",
+      "isa": "ISA control",
+      "status": "Status",
+      "copy": "Partner folder",
+      "size": "Size"
+    },
+    "empty": "No documents for these filters",
+    "detail": {
+      "title": "Document {{type}} · {{partner}}",
+      "summary": "Summary",
+      "content": "Content",
+      "storage": "Storage",
+      "download": "Download",
+      "openInViewer": "Open in viewer",
+      "delete": "Delete",
+      "deleteConfirm": "Delete the document, its content and its repository file? It is recorded in the audit log.",
+      "deleted": "Document deleted",
+      "loadError": "The document could not be loaded",
+      "fields": {
+        "messageId": "Message-ID",
+        "as2": "AS2-From → AS2-To",
+        "controls": "Control numbers",
+        "version": "Version",
+        "size": "Size",
+        "sha256": "SHA-256",
+        "mic": "MIC",
+        "algorithms": "Signing / encryption",
+        "validation": "Validation",
+        "createdBy": "Registered by",
+        "createdAt": "Registered",
+        "fileName": "File"
+      },
+      "storageRows": {
+        "database": "Database record",
+        "repositoryFile": "Repository file",
+        "partnerCopy": "Copy in partner folder"
+      },
+      "present": "Present",
+      "missing": "Missing",
+      "pendingHelp": "The partner folder was unavailable: the system retries the copy every hour."
+    }
   }
 }

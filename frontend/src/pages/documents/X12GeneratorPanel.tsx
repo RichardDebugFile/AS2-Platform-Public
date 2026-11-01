@@ -7,6 +7,8 @@ import { X12_TYPES, x12Api, type GenerateRequest, type X12Type } from "../../ser
 interface Props {
     /** Lleva el documento generado al visor. */
     onOpenInViewer: (text: string) => void;
+    /** Lo registra en el repositorio como documento saliente (HU-14). */
+    onSaveToRepository?: (text: string) => void;
 }
 
 interface LineForm {
@@ -88,7 +90,7 @@ function toRequest(type: X12Type, v: FormValues): GenerateRequest {
 }
 
 /** Generador de documentos X12 (HU-12): 850, 997 y 889, con el ISA y los conteos calculados por el servicio. */
-export default function X12GeneratorPanel({ onOpenInViewer }: Readonly<Props>) {
+export default function X12GeneratorPanel({ onOpenInViewer, onSaveToRepository }: Readonly<Props>) {
     const { t } = useTranslation("documents");
     const { message } = App.useApp();
     const [form] = Form.useForm<FormValues>();
@@ -309,6 +311,11 @@ export default function X12GeneratorPanel({ onOpenInViewer }: Readonly<Props>) {
                         <Button type="primary" ghost onClick={() => onOpenInViewer(output)}>
                             {t("generator.openInViewer")}
                         </Button>
+                        {onSaveToRepository && (
+                            <Button type="primary" onClick={() => onSaveToRepository(output)}>
+                                {t("generator.saveToRepository")}
+                            </Button>
+                        )}
                     </Space>
                 </>
             )}
