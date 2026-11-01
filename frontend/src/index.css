@@ -1,35 +1,116 @@
+/*
+ * Sistema de diseño de la consola (HU-24). Mismos nombres que las variables del archivo de Figma
+ * "AS2-Platform – Consola" y que theme.ts (tema de Ant Design).
+ */
+:root {
+    --as2-color-bg-app: #f5f7fa;
+    --as2-color-bg-surface: #ffffff;
+    --as2-color-bg-subtle: #eef0f3;
+    --as2-color-bg-sidebar: #0b1726;
+    --as2-color-bg-sidebar-active: #1c2f4a;
+    --as2-color-bg-selected: #eaf1fc;
+    --as2-color-text-primary: #101828;
+    --as2-color-text-secondary: #5b6577;
+    --as2-color-text-on-dark: #ffffff;
+    --as2-color-text-on-dark-muted: #98a2b3;
+    --as2-color-text-link: #1d5fd1;
+    --as2-color-border-default: #e4e7ec;
+    --as2-color-action-primary: #1d5fd1;
+    --as2-spacing-xs: 4px;
+    --as2-spacing-sm: 8px;
+    --as2-spacing-md: 12px;
+    --as2-spacing-lg: 16px;
+    --as2-spacing-xl: 24px;
+    --as2-spacing-2xl: 32px;
+    --as2-radius-md: 6px;
+    --as2-radius-lg: 8px;
+    --as2-shadow-card: 0 1px 2px rgba(16, 24, 40, 0.06);
+}
+
 body {
     margin: 0;
-    background: #f1f5f9;
+    background: var(--as2-color-bg-app);
+    color: var(--as2-color-text-primary);
+    font-family: Inter, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
 }
 
 /* ---- marco con sesion ---- */
+.app-shell {
+    min-height: 100vh;
+}
+.app-sider {
+    position: sticky;
+    top: 0;
+    height: 100vh;
+    overflow: auto;
+}
 .app-brand {
     display: flex;
     align-items: center;
-    gap: 10px;
-    height: 64px;
-    padding: 0 20px;
-    color: #fff;
-    font-weight: 600;
+    gap: var(--as2-spacing-md);
+    height: 72px;
+    padding: 0 var(--as2-spacing-xl);
     white-space: nowrap;
     overflow: hidden;
 }
+.app-brand-text {
+    display: flex;
+    flex-direction: column;
+    line-height: 1.3;
+}
+.app-brand-name {
+    color: var(--as2-color-text-on-dark);
+    font-weight: 600;
+}
+.app-brand-sub {
+    color: var(--as2-color-text-on-dark-muted);
+    font-size: 12px;
+}
+.app-sider .ant-menu-item-group-title {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    padding-top: var(--as2-spacing-lg);
+}
 .app-header {
     display: flex;
-    justify-content: flex-end;
     align-items: center;
-    gap: 16px;
-    border-bottom: 1px solid #e2e8f0;
+    gap: var(--as2-spacing-xl);
+    border-bottom: 1px solid var(--as2-color-border-default);
+    line-height: normal;
+}
+.app-header-title {
+    display: flex;
+    flex: 1;
+    flex-direction: column;
+    min-width: 0;
+}
+.app-header-section {
+    color: var(--as2-color-text-secondary);
+    font-size: 12px;
+}
+.app-header-title h1.ant-typography {
+    margin: 0;
+    font-size: 18px;
+    font-weight: 600;
+    line-height: 1.4;
 }
 .app-user {
     display: flex;
     align-items: center;
-    gap: 10px;
+    gap: var(--as2-spacing-sm);
     background: none;
     border: 0;
     cursor: pointer;
     padding: 0;
+    font: inherit;
+}
+.app-avatar.ant-avatar {
+    background: var(--as2-color-bg-selected);
+    color: var(--as2-color-text-link);
+    font-weight: 600;
+    font-size: 12px;
 }
 .app-user-text {
     display: flex;
@@ -37,25 +118,65 @@ body {
     align-items: flex-start;
     line-height: 1.3;
 }
+.app-main {
+    padding: var(--as2-spacing-xl) var(--as2-spacing-2xl) 0;
+}
 .app-content {
-    background: #fff;
-    border-radius: 8px;
-    padding: 24px;
-    min-height: calc(100vh - 220px);
+    background: var(--as2-color-bg-surface);
+    border: 1px solid var(--as2-color-border-default);
+    border-radius: var(--as2-radius-lg);
+    box-shadow: var(--as2-shadow-card);
+    padding: var(--as2-spacing-xl);
+    min-height: calc(100vh - 200px);
+}
+.app-footer.ant-layout-footer {
+    background: transparent;
+    color: var(--as2-color-text-secondary);
+    font-size: 12px;
+    text-align: center;
+    padding: var(--as2-spacing-lg);
+}
+/* Barra de herramientas de las pantallas de lista: filtros a la izquierda, acciones a la derecha. */
+.page-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: var(--as2-spacing-md);
+    margin-bottom: var(--as2-spacing-lg);
+}
+.page-toolbar-spacer {
+    flex: 1;
+}
+.ant-table-wrapper .ant-table-thead > tr > th {
+    font-size: 12px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
 }
 
 /* ---- login ---- */
 .login {
     display: grid;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    grid-template-columns: minmax(360px, 560px) minmax(0, 1fr);
     min-height: 100vh;
+    background: var(--as2-color-bg-app);
 }
 .login-brand {
     display: flex;
     flex-direction: column;
     justify-content: center;
-    padding: 48px;
-    background: linear-gradient(160deg, #134e4a, #0f766e);
+    gap: var(--as2-spacing-lg);
+    padding: 64px;
+    background: var(--as2-color-bg-sidebar);
+}
+.login-brand h2.ant-typography {
+    color: var(--as2-color-text-on-dark);
+    margin: 0;
+}
+.login-brand-sub {
+    color: var(--as2-color-text-on-dark-muted);
+    font-size: 15px;
+    line-height: 1.6;
 }
 .login-panel {
     position: relative;
@@ -63,7 +184,6 @@ body {
     align-items: center;
     justify-content: center;
     padding: 48px 24px;
-    background: #fff;
 }
 .login-lang {
     position: absolute;
@@ -72,7 +192,13 @@ body {
 }
 .login-form {
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
+    box-sizing: border-box;
+    padding: var(--as2-spacing-2xl);
+    background: var(--as2-color-bg-surface);
+    border: 1px solid var(--as2-color-border-default);
+    border-radius: var(--as2-radius-lg);
+    box-shadow: var(--as2-shadow-card);
 }
 @media (max-width: 800px) {
     .login {
