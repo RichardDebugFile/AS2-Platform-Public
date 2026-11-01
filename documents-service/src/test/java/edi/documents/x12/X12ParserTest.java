@@ -113,6 +113,19 @@ class X12ParserTest {
     }
 
     @Test
+    void muchosSaltosDeLinea_seProcesanEnTiempoLineal() {
+        String abuso = "ISA" + "\n".repeat(200_000) + "x";
+        long inicio = System.nanoTime();
+
+        X12Document d = X12Parser.parse(Samples.po850() + abuso);
+
+        assertThat(System.nanoTime() - inicio).isLessThan(2_000_000_000L);
+        assertThat(d.typeCode()).isEqualTo("850");
+        assertThat(X12Parser.trimLineBreaks("\r\n\nISA*00\r\n")).isEqualTo("ISA*00");
+        assertThat(X12Parser.trimLineBreaks("\n\n")).isEmpty();
+    }
+
+    @Test
     void version_sinGs_saleDelIsa() {
         assertThat(X12Parser.version("", "00401")).isEqualTo("4010");
         assertThat(X12Parser.version("005010X222A1", "00401")).isEqualTo("5010");

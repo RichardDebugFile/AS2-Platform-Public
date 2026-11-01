@@ -25,7 +25,6 @@ public final class X12Parser {
     private static final int ISA_SEPARATORS = 16;
 
     private static final Pattern LINE_BREAK = Pattern.compile("\\r\\n|\\r|\\n");
-    private static final Pattern EDGE_BREAKS = Pattern.compile("^[\\r\\n]+|[\\r\\n]+$");
     private static final Pattern SIMPLE_SPLIT = Pattern.compile("~\\s*|\\r\\n|\\r|\\n");
     private static final char BOM = '\uFEFF';
 
@@ -118,12 +117,32 @@ public final class X12Parser {
                 : text.split(Pattern.quote(String.valueOf(terminator)), -1);
         List<String> out = new ArrayList<>();
         for (String p : parts) {
-            String s = EDGE_BREAKS.matcher(p).replaceAll("");
+            String s = trimLineBreaks(p);
             if (!s.isBlank()) {
                 out.add(s);
             }
         }
         return out;
+    }
+
+    /**
+     * Quita los saltos de linea de los extremos recorriendo el texto, sin expresion regular: una como
+     * {@code [\r\n]+$} tarda de forma cuadratica con muchos saltos seguidos, y el texto viene de fuera.
+     */
+    static String trimLineBreaks(String s) {
+        int start = 0;
+        int end = s.length();
+        while (start < end && isLineBreak(s.charAt(start))) {
+            start++;
+        }
+        while (end > start && isLineBreak(s.charAt(end - 1))) {
+            end--;
+        }
+        return s.substring(start, end);
+    }
+
+    private static boolean isLineBreak(char c) {
+        return c == '\r' || c == '\n';
     }
 
     private static X12Segment segment(String text, char element) {

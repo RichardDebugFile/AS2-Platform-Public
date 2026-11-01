@@ -21,7 +21,15 @@ export interface EdiDocument {
 const ISA_LENGTH = 106;
 const LINE_BREAK = /\r\n|\r|\n/;
 const SIMPLE_SPLIT = /~\s*|\r\n|\r|\n/;
-const EDGE_BREAKS = /^[\r\n]+|[\r\n]+$/g;
+
+/** Quita los saltos de linea de los extremos sin expresion regular (una como /[\r\n]+$/ es cuadratica). */
+export function trimLineBreaks(s: string): string {
+    let start = 0;
+    let end = s.length;
+    while (start < end && (s[start] === "\r" || s[start] === "\n")) start++;
+    while (end > start && (s[end - 1] === "\r" || s[end - 1] === "\n")) end--;
+    return s.slice(start, end);
+}
 
 export function splitX12(text: string): EdiDocument {
     const doc = text.replace(/^\uFEFF/, "").trimStart();
@@ -35,7 +43,7 @@ export function splitX12(text: string): EdiDocument {
     else parts = doc.split(terminator);
 
     const segments = parts
-        .map((p) => p.replace(EDGE_BREAKS, ""))
+        .map(trimLineBreaks)
         .filter((p) => p.trim() !== "")
         .map((p, i) => {
             const [id, ...elements] = p.split(element);
