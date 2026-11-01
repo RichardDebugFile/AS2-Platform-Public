@@ -1,6 +1,7 @@
 package edi.documents.storage;
 
 import edi.documents.store.Direction;
+import edi.documents.x12.X12Document;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.AtomicMoveNotSupportedException;
@@ -43,13 +44,17 @@ public class DocumentFileStorage {
         return root;
     }
 
-    /** Ruta del documento en el repositorio; todas las partes ya vienen saneadas por {@link SafeNames}. */
-    public Path pathFor(Direction direction, String bucket, Instant at, String typeCode, String version,
-            String partner, String isa, String gs, String st) {
-        String name = String.join("_", "EDI", SafeNames.part(typeCode), SafeNames.part(version), SafeNames.part(isa),
-                SafeNames.part(gs), SafeNames.part(st), STAMP.format(at.atZone(zone))) + ".edi";
-        Path p = root.resolve(direction.folder()).resolve(bucket).resolve(DAY.format(at.atZone(zone)))
-                .resolve(SafeNames.part(typeCode)).resolve(SafeNames.folder(partner)).resolve(name).normalize();
+    /**
+     * Ruta del documento en el repositorio: {@code <raiz>/<direccion>/<resultado>/AAAAMMDD/<tipo>/<socio>/}
+     * y un nombre con el tipo, la version y los numeros de control. Cada parte se sanea con {@link SafeNames}.
+     */
+    public Path pathFor(Direction direction, String bucket, Instant at, String partner, X12Document x12) {
+        String type = SafeNames.part(x12.typeCode());
+        String name = String.join("_", "EDI", type, SafeNames.part(x12.version()),
+                SafeNames.part(x12.interchangeControl()), SafeNames.part(x12.groupControl()),
+                SafeNames.part(x12.transactionControl()), STAMP.format(at.atZone(zone))) + ".edi";
+        Path p = root.resolve(direction.folder()).resolve(bucket).resolve(DAY.format(at.atZone(zone))).resolve(type)
+                .resolve(SafeNames.folder(partner)).resolve(name).normalize();
         if (!p.startsWith(root)) {
             throw new StorageException("Ruta fuera del repositorio: " + p, null);
         }

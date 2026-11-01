@@ -103,8 +103,7 @@ public class DocumentWriter {
         d.transport(c.as2From(), c.as2To(), c.mic(), c.micAlgorithm(), c.signingAlgorithm(), c.encryptionAlgorithm());
         d.content(content.length, sha256(content), limit(c.attributes(), 4000), user);
         d.status(statusFor(c.direction(), valid), detail(v));
-        Path path = storage.pathFor(c.direction(), bucket(c.direction(), valid), now, x12.typeCode(), x12.version(),
-                partner, x12.interchangeControl(), x12.groupControl(), x12.transactionControl());
+        Path path = storage.pathFor(c.direction(), bucket(c.direction(), valid), now, partner, x12);
         d.storedAt(path.toString());
 
         documents.saveAndFlush(d);
@@ -118,7 +117,7 @@ public class DocumentWriter {
     @Transactional
     public Document copyToPartner(UUID id) {
         Document d = find(id);
-        byte[] content = content(d);
+        byte[] content = readContent(d);
         boolean valid = d.getStatus() != DocumentStatus.VALIDATION_FAILED;
         String fileName = Path.of(d.getFilePath()).getFileName().toString();
         Optional<Path> copy = folders.copy(d.getPartnerAs2Name(), PartnerFolders.subfolder(d.getDirection(), valid),
@@ -155,6 +154,11 @@ public class DocumentWriter {
     /** Contenido desde la base; si faltara, desde el archivo del repositorio. */
     @Transactional(readOnly = true)
     public byte[] content(Document d) {
+        return readContent(d);
+    }
+
+    /** Sin pasar por el proxy transaccional: lo usan los metodos de esta clase dentro de su transaccion. */
+    private byte[] readContent(Document d) {
         return payloads.findById(d.getId()).map(DocumentPayload::getContent).orElseGet(() -> readFile(d));
     }
 
@@ -165,7 +169,7 @@ public class DocumentWriter {
     private static byte[] readFile(Document d) {
         try {
             return Files.readAllBytes(Path.of(d.getFilePath()));
-        } catch (java.io.IOException e) {
+        } catch (java.io.IOException _) {
             throw new DocumentNotFoundException("El contenido del documento " + d.getId() + " no esta disponible");
         }
     }

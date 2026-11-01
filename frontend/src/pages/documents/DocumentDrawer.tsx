@@ -16,7 +16,7 @@ interface Props {
 
 /** Descarga el documento con sus bytes originales (el servidor lo entrega como ISO-8859-1). */
 function download(text: string, fileName: string) {
-    const bytes = Uint8Array.from(text, (c) => c.charCodeAt(0) & 0xff);
+    const bytes = Uint8Array.from(text, (c) => (c.codePointAt(0) ?? 0) & 0xff);
     const url = URL.createObjectURL(new Blob([bytes], { type: "application/edi-x12" }));
     const a = document.createElement("a");
     a.href = url;
@@ -69,7 +69,10 @@ export default function DocumentDrawer({ doc, canDelete, onClose, onDeleted, onO
 
     const remove = async () => {
         const r = await documentsApi.remove(doc.id);
-        if (!r.ok) return void message.error(r.error.message);
+        if (!r.ok) {
+            message.error(r.error.message);
+            return;
+        }
         message.success(t("repository.detail.deleted"));
         onDeleted();
     };

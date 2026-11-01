@@ -84,7 +84,10 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
     const apply = useCallback((r: Fetched) => {
         setLoading(false);
         if (r.stats) setStats(r.stats);
-        if (!r.page.ok) return void setError(r.page.error.message);
+        if (!r.page.ok) {
+            setError(r.page.error.message);
+            return;
+        }
         setError(null);
         setRows(r.page.data.content);
         setPage({ current: r.current, pageSize: r.pageSize, total: r.page.data.totalElements });

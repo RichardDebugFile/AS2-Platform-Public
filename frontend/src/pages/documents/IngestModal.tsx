@@ -49,7 +49,10 @@ export default function IngestModal({ open, initial, onClose, onSaved }: Readonl
             messageId: v.messageId?.trim() || undefined,
         });
         setBusy(false);
-        if (!r.ok) return void message.error(r.error.message);
+        if (!r.ok) {
+            message.error(r.error.message);
+            return;
+        }
         if (r.data.outcome === "DUPLICATE") {
             message.warning(t("repository.upload.duplicate"));
         } else {

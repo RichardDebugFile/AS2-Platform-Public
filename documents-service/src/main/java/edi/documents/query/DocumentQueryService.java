@@ -10,7 +10,9 @@ import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentRepository;
 import edi.documents.store.DocumentStatus;
 import edi.documents.store.PartnerCopyStatus;
+import jakarta.persistence.criteria.CriteriaBuilder;
 import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
@@ -35,6 +37,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class DocumentQueryService {
 
     public static final int MAX_PAGE_SIZE = 100;
+    private static final String CREATED_AT = "createdAt";
     static final int STATS_DAYS = 7;
 
     /** Filtros de busqueda; todos opcionales. Las fechas son dias completos en la zona del negocio. */
@@ -81,14 +84,14 @@ public class DocumentQueryService {
     public PageView<DocumentView> search(Filter f, int page, int size) {
         int s = Math.clamp(size, 1, MAX_PAGE_SIZE);
         Page<Document> result = documents.findAll(spec(f),
-                PageRequest.of(Math.max(page, 0), s, Sort.by(Sort.Direction.DESC, "createdAt")));
+                PageRequest.of(Math.max(page, 0), s, Sort.by(Sort.Direction.DESC, CREATED_AT)));
         return new PageView<>(result.map(DocumentView::of).getContent(), result.getNumber(), result.getSize(),
                 result.getTotalElements(), result.getTotalPages());
     }
 
     public List<DocumentView> recent(int limit) {
         return documents.findAll(PageRequest.of(0, Math.clamp(limit, 1, MAX_PAGE_SIZE),
-                Sort.by(Sort.Direction.DESC, "createdAt"))).map(DocumentView::of).getContent();
+                Sort.by(Sort.Direction.DESC, CREATED_AT))).map(DocumentView::of).getContent();
     }
 
     public Document get(UUID id) {
@@ -144,29 +147,30 @@ public class DocumentQueryService {
             if (hasText(f.partner())) {
                 p.add(cb.equal(cb.upper(root.get("partnerAs2Name")), f.partner().strip().toUpperCase()));
             }
-            if (f.direction() != null) {
-                p.add(cb.equal(root.get("direction"), f.direction()));
-            }
-            if (hasText(f.typeCode())) {
-                p.add(cb.equal(root.get("typeCode"), f.typeCode().strip()));
-            }
-            if (f.status() != null) {
-                p.add(cb.equal(root.get("status"), f.status()));
-            }
+            equal(p, cb, root, "direction", f.direction());
+            equal(p, cb, root, "status", f.status());
+            equal(p, cb, root, "typeCode", text(f.typeCode()));
+            equal(p, cb, root, "messageId", text(f.messageId()));
+            equal(p, cb, root, "isaControl", text(f.isaControl()));
             if (f.from() != null) {
-                p.add(cb.greaterThanOrEqualTo(root.get("createdAt"), f.from().atStartOfDay(zone).toInstant()));
+                p.add(cb.greaterThanOrEqualTo(root.get(CREATED_AT), f.from().atStartOfDay(zone).toInstant()));
             }
             if (f.to() != null) {
-                p.add(cb.lessThan(root.get("createdAt"), f.to().plusDays(1).atStartOfDay(zone).toInstant()));
-            }
-            if (hasText(f.messageId())) {
-                p.add(cb.equal(root.get("messageId"), f.messageId().strip()));
-            }
-            if (hasText(f.isaControl())) {
-                p.add(cb.equal(root.get("isaControl"), f.isaControl().strip()));
+                p.add(cb.lessThan(root.get(CREATED_AT), f.to().plusDays(1).atStartOfDay(zone).toInstant()));
             }
             return cb.and(p.toArray(Predicate[]::new));
         };
+    }
+
+    /** Agrega {@code campo = valor} si hay valor. */
+    private static void equal(List<Predicate> p, CriteriaBuilder cb, Root<Document> root, String field, Object value) {
+        if (value != null) {
+            p.add(cb.equal(root.get(field), value));
+        }
+    }
+
+    private static String text(String s) {
+        return hasText(s) ? s.strip() : null;
     }
 
     private static boolean hasText(String s) {
