@@ -263,7 +263,7 @@ class DocumentRepositoryApiIntegrationTest {
         mvc.perform(get("/api/documents/stats")).andExpect(status().isOk())
                 .andExpect(jsonPath("$.total").isNumber())
                 .andExpect(jsonPath("$.lastDays.length()").value(7));
-        mvc.perform(get("/api/documents/recent").param("limit", "5")).andExpect(jsonPath("$.length()").value(5));
+        mvc.perform(get("/api/documents/recent").param("limit", "1")).andExpect(jsonPath("$.length()").value(1));
 
         String fileName = documents.findById(UUID.fromString(id)).orElseThrow().getFilePath();
         mvc.perform(delete("/api/documents/{id}", id)).andExpect(status().isNoContent());

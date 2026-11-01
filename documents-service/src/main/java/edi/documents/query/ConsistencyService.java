@@ -21,12 +21,8 @@ public class ConsistencyService {
 
     static final int MAX_LISTED = 500;
 
-    public record Report(Instant checkedAt, int documents, int files, List<FileRef> missingFiles,
-            List<String> orphanFiles) {
-
-        public boolean consistent() {
-            return missingFiles.isEmpty() && orphanFiles.isEmpty();
-        }
+    public record Report(Instant checkedAt, boolean consistent, int documents, int files,
+            List<FileRef> missingFiles, List<String> orphanFiles) {
     }
 
     private final DocumentRepository documents;
@@ -51,6 +47,7 @@ public class ConsistencyService {
         List<String> orphans = files.stream().map(p -> p.toAbsolutePath().normalize())
                 .filter(p -> !known.contains(p)).map(p -> storage.root().relativize(p).toString()).limit(MAX_LISTED)
                 .toList();
-        return new Report(clock.instant(), refs.size(), files.size(), missing, orphans);
+        return new Report(clock.instant(), missing.isEmpty() && orphans.isEmpty(), refs.size(), files.size(), missing,
+                orphans);
     }
 }
