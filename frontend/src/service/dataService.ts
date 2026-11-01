@@ -179,6 +179,9 @@ export const dataService = {
     patch: <T = unknown>(endpoint: string, body?: unknown) =>
         request<T>(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
     delete: <T = unknown>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
+    /** Texto plano en el cuerpo, p. ej. un documento X12 tal como se intercambia. */
+    postText: <T = unknown>(endpoint: string, text: string) =>
+        request<T>(endpoint, { method: "POST", body: text, headers: { "Content-Type": "text/plain;charset=UTF-8" } }),
     /** Envio de archivos (multipart/form-data), p. ej. un certificado X.509. */
     upload: <T = unknown>(endpoint: string, form: FormData) => request<T>(endpoint, { method: "POST", body: form }),
 };

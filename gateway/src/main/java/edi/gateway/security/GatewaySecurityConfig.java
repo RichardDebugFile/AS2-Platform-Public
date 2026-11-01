@@ -62,6 +62,12 @@ public class GatewaySecurityConfig {
     /** Eliminar un certificado de un socio (HU-11): solo ADMIN; desactivarlo lo puede hacer OPERATOR. */
     static final String PARTNER_CERTIFICATE = "/api/partners/*/certificates/*";
 
+    /**
+     * Interpretar y validar un documento X12 (HU-12) es una consulta aunque vaya por POST (el
+     * documento viaja en el cuerpo): cualquier usuario con sesion, AUDITOR incluido. Generar no.
+     */
+    static final String[] X12_READ_ONLY = {"/api/documents/x12/parse", "/api/documents/x12/validate"};
+
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String ADMIN = "ADMIN";
     static final String[] ROLES_QUE_EDITAN = {ADMIN, "OPERATOR"};
@@ -139,6 +145,8 @@ public class GatewaySecurityConfig {
                         // Enlazar carpetas con el ERP y pasar un socio a produccion: solo ADMIN.
                         .pathMatchers(HttpMethod.POST, PARTNER_ERP_CHANGES)
                         .hasRole(ADMIN)
+                        .pathMatchers(HttpMethod.POST, X12_READ_ONLY)
+                        .authenticated()
                         .pathMatchers(HttpMethod.POST, "/api/**")
                         .hasAnyRole(ROLES_QUE_EDITAN)
                         .pathMatchers(HttpMethod.PUT, "/api/**")
