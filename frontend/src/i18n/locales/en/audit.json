@@ -60,6 +60,11 @@
     "CERTIFICATE_UPDATED": "Certificate updated",
     "CERTIFICATE_DELETED": "Certificate deleted",
     "CERTIFICATE_RETIRED": "Certificate retired",
-    "CERTIFICATE_EXPIRED": "Certificate expired"
+    "CERTIFICATE_EXPIRED": "Certificate expired",
+    "DOCUMENT_CREATED": "Document created",
+    "DOCUMENT_DUPLICATE": "Duplicate document (retry)",
+    "DOCUMENT_DELETED": "Document deleted",
+    "DOCUMENT_COPY_PENDING": "Partner copy pending",
+    "DOCUMENT_COPY_RESTORED": "Partner copy restored"
   }
 }

@@ -358,4 +358,20 @@ class GatewaySecurityTest {
         dejoPasar(navegador(client.post().uri("/api/documents/x12/generate"), OPERADOR).exchange());
         client.post().uri("/api/documents/x12/parse").exchange().expectStatus().isUnauthorized();
     }
+
+    @Test
+    void repositorioDeDocumentos_borrarSoloAdmin_subirQuienEdita_consultarTodos() {
+        navegador(client.delete().uri("/api/documents/" + UUID_EJEMPLO), OPERADOR).exchange().expectStatus().isForbidden();
+        navegador(client.delete().uri("/api/documents/" + UUID_EJEMPLO + "/mdn"), OPERADOR).exchange()
+                .expectStatus().isForbidden();
+        dejoPasar(navegador(client.delete().uri("/api/documents/" + UUID_EJEMPLO), ADMIN).exchange());
+        navegador(client.post().uri("/api/documents/ingest/as2?partner=SOCIO-A&direction=INBOUND"), AUDITOR).exchange()
+                .expectStatus().isForbidden();
+        dejoPasar(navegador(client.post().uri("/api/documents/ingest/as2?partner=SOCIO-A&direction=INBOUND"), OPERADOR)
+                .exchange());
+        dejoPasar(navegador(client.get().uri("/api/documents/search"), AUDITOR).exchange());
+        dejoPasar(navegador(client.get().uri("/api/consistency/documents"), AUDITOR).exchange());
+    }
+
+    private static final String UUID_EJEMPLO = "00000000-0000-0000-0000-000000000001";
 }

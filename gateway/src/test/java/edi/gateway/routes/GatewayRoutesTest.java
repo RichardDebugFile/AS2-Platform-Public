@@ -40,6 +40,7 @@ class GatewayRoutesTest {
         assertThat(r.get("auth").getUri()).hasPort(8083);
         assertThat(paths(r.get("auth"))).contains("/auth/**", "/users/**", "/.well-known/**");
         assertThat(r.get("documents").getUri()).hasPort(8084);
+        assertThat(paths(r.get("documents"))).contains("/api/documents/**", "/api/consistency/**");
         assertThat(r.get("as2-adapter").getUri()).hasPort(8085);
         assertThat(paths(r.get("as2-adapter"))).contains("/api/as2/**", "/api/mdn/**", "/as2/receive");
     }

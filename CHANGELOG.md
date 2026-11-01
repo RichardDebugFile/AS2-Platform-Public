@@ -21,6 +21,15 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   generador crea órdenes de compra 850, acuses 997 (con emisor y receptor invertidos) y anuncios de
   promoción 889 con el ISA de ancho fijo y los conteos calculados. Un auditor puede usar el visor; solo
   administradores y operadores generan (HU-12).
+- Repositorio de documentos (Documentos EDI → Repositorio): cada documento enviado o recibido queda
+  registrado en la base de datos y guardado como archivo, ordenado por dirección, resultado, fecha,
+  tipo y socio, con un nombre que incluye sus números de control. Una copia va a la carpeta del socio
+  (Incoming los recibidos, Archive los enviados, Error los no válidos) para el ERP; si esa carpeta no
+  está disponible, el documento no se pierde y la copia se reintenta cada hora. Si el socio reenvía un
+  documento con el mismo Message-ID no se crea otro registro. La consola busca por socio, dirección,
+  tipo, estado, fechas, Message-ID o control ISA, muestra el contenido segmento a segmento y dónde está
+  guardado, y permite registrar documentos o guardar los generados; solo un administrador los elimina.
+  Un control de consistencia avisa de archivos borrados a mano o sin registro (HU-14).
 - Consola rediseñada con un sistema de diseño propio, documentado en Figma: barra lateral oscura con el
   menú por rol, cabecera con la sección y el título de la pantalla, colores de estado consistentes,
   tipografía Inter incluida en la consola (sin depender de internet) y pantallas de inicio de sesión,
@@ -31,7 +40,8 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ### Correcciones
 - La bitácora muestra con su nombre los eventos de certificados (cargado, preferente, desactivado,
-  retirado y los demás) en lugar del código interno (HU-11).
+  retirado y los demás) en lugar del código interno (HU-11), y los del repositorio de documentos
+  (creado, repetido, eliminado, copia pendiente y copia restaurada) (HU-14).
 - Dependencias de desarrollo de la consola actualizadas por alertas de seguridad (vite, vitest,
   undici y zod); no forman parte de la consola publicada (AS2-76).
 - La plataforma vuelve a levantarse en Windows con `start.sh`: la preparación de secretos terminaba

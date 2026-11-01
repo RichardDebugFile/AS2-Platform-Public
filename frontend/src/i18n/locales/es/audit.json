@@ -60,6 +60,11 @@
     "CERTIFICATE_UPDATED": "Certificado modificado",
     "CERTIFICATE_DELETED": "Certificado eliminado",
     "CERTIFICATE_RETIRED": "Certificado retirado",
-    "CERTIFICATE_EXPIRED": "Certificado caducado"
+    "CERTIFICATE_EXPIRED": "Certificado caducado",
+    "DOCUMENT_CREATED": "Documento creado",
+    "DOCUMENT_DUPLICATE": "Documento repetido (reintento)",
+    "DOCUMENT_DELETED": "Documento eliminado",
+    "DOCUMENT_COPY_PENDING": "Copia al socio pendiente",
+    "DOCUMENT_COPY_RESTORED": "Copia al socio restaurada"
   }
 }

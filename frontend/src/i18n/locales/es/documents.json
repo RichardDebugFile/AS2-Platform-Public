@@ -2,7 +2,8 @@
   "title": "Documentos EDI",
   "tabs": {
     "viewer": "Visor X12",
-    "generator": "Generar documento"
+    "generator": "Generar documento",
+    "repository": "Repositorio"
   },
   "viewer": {
     "intro": "Pegue un documento X12 tal como llega del socio: el sistema lee sus separadores, identifica el tipo y las partes, y lo valida contra el esquema de su tipo.",
@@ -77,7 +78,8 @@
     "copied": "Copiado",
     "download": "Descargar",
     "openInViewer": "Abrir en el visor",
-    "required": "Obligatorio"
+    "required": "Obligatorio",
+    "saveToRepository": "Guardar en el repositorio"
   },
   "segments": {
     "ISA": "Encabezado del intercambio",
@@ -98,5 +100,108 @@
     "SE": "Cierre de la transacción",
     "GE": "Cierre del grupo funcional",
     "IEA": "Cierre del intercambio"
+  },
+  "repository": {
+    "intro": "Documentos enviados y recibidos: cada uno queda en la base de datos y como archivo en el repositorio, y una copia en la carpeta del socio para el ERP.",
+    "stats": {
+      "total": "Documentos",
+      "lastDays": "Últimos 7 días",
+      "failed": "Con problemas",
+      "inOut": "Entrantes / salientes"
+    },
+    "filters": {
+      "partner": "Socio",
+      "direction": "Dirección",
+      "type": "Tipo",
+      "status": "Estado",
+      "messageId": "Message-ID",
+      "isa": "Control ISA",
+      "from": "Desde",
+      "to": "Hasta",
+      "search": "Buscar",
+      "clear": "Limpiar"
+    },
+    "upload": {
+      "open": "Registrar documento",
+      "title": "Registrar documento en el repositorio",
+      "partner": "Socio",
+      "direction": "Dirección",
+      "messageId": "Message-ID (opcional)",
+      "messageIdHelp": "Si el socio reintenta con el mismo Message-ID no se crea otro registro.",
+      "content": "Documento X12",
+      "file": "Cargar archivo",
+      "save": "Registrar",
+      "created": "Documento registrado ({{status}})",
+      "duplicate": "Ese Message-ID ya estaba registrado: no se creó otro documento",
+      "required": "Requerido"
+    },
+    "direction": {
+      "INBOUND": "Entrante",
+      "OUTBOUND": "Saliente"
+    },
+    "status": {
+      "CREATED": "Creado",
+      "RECEIVED": "Recibido",
+      "SENT": "Enviado",
+      "SEND_FAILED": "Envío fallido",
+      "MDN_PENDING": "MDN pendiente",
+      "MDN_RECEIVED": "MDN recibido",
+      "MDN_FAILED": "MDN fallido",
+      "VALIDATED": "Validado",
+      "VALIDATION_FAILED": "No válido",
+      "DELIVERED": "Entregado",
+      "DELIVERY_FAILED": "Entrega fallida",
+      "PROCESSING_FAILED": "Error al procesar",
+      "DUPLICATE": "Repetido"
+    },
+    "copy": {
+      "COPIED": "Copiado al socio",
+      "PENDING": "Copia pendiente"
+    },
+    "columns": {
+      "createdAt": "Fecha",
+      "direction": "Dirección",
+      "partner": "Socio",
+      "type": "Tipo",
+      "isa": "Control ISA",
+      "status": "Estado",
+      "copy": "Carpeta del socio",
+      "size": "Tamaño"
+    },
+    "empty": "No hay documentos para estos filtros",
+    "detail": {
+      "title": "Documento {{type}} · {{partner}}",
+      "summary": "Resumen",
+      "content": "Contenido",
+      "storage": "Almacenamiento",
+      "download": "Descargar",
+      "openInViewer": "Abrir en el visor",
+      "delete": "Eliminar",
+      "deleteConfirm": "¿Eliminar el documento, su contenido y su archivo del repositorio? Queda registrado en la bitácora.",
+      "deleted": "Documento eliminado",
+      "loadError": "No se pudo cargar el documento",
+      "fields": {
+        "messageId": "Message-ID",
+        "as2": "AS2-From → AS2-To",
+        "controls": "Números de control",
+        "version": "Versión",
+        "size": "Tamaño",
+        "sha256": "SHA-256",
+        "mic": "MIC",
+        "algorithms": "Firma / cifrado",
+        "validation": "Estado",
+        "createdBy": "Registrado por",
+        "createdAt": "Registrado",
+        "fileName": "Archivo"
+      },
+      "storageRows": {
+        "database": "Registro en la base de datos",
+        "repositoryFile": "Archivo en el repositorio",
+        "partnerCopy": "Copia en la carpeta del socio"
+      },
+      "present": "Presente",
+      "missing": "No está",
+      "pendingHelp": "La carpeta del socio no estaba disponible: el sistema reintenta la copia cada hora."
+    }
   }
 }

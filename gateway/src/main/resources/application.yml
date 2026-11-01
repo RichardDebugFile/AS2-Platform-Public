@@ -33,7 +33,7 @@ spring:
             - id: documents
               uri: ${DOCUMENTS_SERVICE_URL:http://localhost:8084}
               predicates:
-                - Path=/api/documents/**
+                - Path=/api/documents/**,/api/consistency/**
             - id: as2-adapter
               uri: ${AS2_ADAPTER_URL:http://localhost:8085}
               predicates:

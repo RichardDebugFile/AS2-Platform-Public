@@ -25,3 +25,20 @@ management:
     health:
       probes:
         enabled: true
+
+documents:
+  zone: ${DOCUMENTS_ZONE:America/Guayaquil}
+  # Tamano maximo de un documento recibido por la ingesta (10 MB).
+  max-size-bytes: ${DOCUMENTS_MAX_SIZE_BYTES:10485760}
+  storage:
+    # Repositorio en disco: <raiz>/{inbound|outbound}/{resultado}/AAAAMMDD/{tipo}/{socio}/EDI_...edi (HU-14).
+    root: ${AS2_DATA_ROOT:/opt/as2_data}
+  partners:
+    # Carpetas de los socios que crea partners-service: <raiz>/<as2Name>/{Incoming,Archive,Error,...}.
+    root: ${AS2_STORAGE_ROOT:/opt/as2_data/partners}
+  recovery:
+    # Restauracion de copias pendientes en la carpeta del socio (cada hora, ultimos 30 dias).
+    cron: ${DOCUMENTS_RECOVERY_CRON:0 0 * * * *}
+  audit:
+    # Bitacora de partners-service (HU-10).
+    url: ${PARTNERS_SERVICE_URL:http://localhost:8081}
