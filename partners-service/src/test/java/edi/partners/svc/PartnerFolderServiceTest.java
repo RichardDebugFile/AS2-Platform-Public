@@ -1,5 +1,6 @@
 package edi.partners.svc;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -20,6 +21,7 @@ import edi.partners.svc.audit.AuditEvent;
 import edi.partners.svc.audit.AuditEventTypes;
 import edi.partners.svc.audit.AuditLogPublisher;
 import edi.partners.svc.folders.FilesystemPartnerFolderProvisioner;
+import edi.partners.testsupport.Symlinks;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -155,6 +157,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void enlace_cadaSubcarpetaEsUnEnlace_ningunArchivoSePierde_yQuedaEnLaBitacora() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA/Incoming"));
         Files.writeString(mount.resolve("SocioA/Incoming/del-erp.edi"), "ERP");
         Files.writeString(local("Outgoing/pedido.edi"), "ISA*01");
@@ -192,6 +195,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void enlace_esReanudable_lasSubcarpetasYaEnlazadasSeSaltan() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Path remoteIncoming = Files.createDirectories(mount.resolve("SocioA/Incoming"));
         Files.delete(local("Incoming"));
         Files.createSymbolicLink(local("Incoming"), remoteIncoming);
@@ -205,6 +209,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void conElSocioEnlazado_unNuevoPrecheckLoAdvierte() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
 
@@ -215,6 +220,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void montajeCaido_elSocioApareceConError_sinQueElServicioFalle() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
         Files.move(mount.resolve("SocioA"), tmp.resolve("desmontado"));
@@ -240,6 +246,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void produccion_reversible_creaLaColaYAlDesactivarLaConserva() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
 
@@ -265,6 +272,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void produccion_conCarpetasConProblemas_rechazada() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
         Files.delete(mount.resolve("SocioA/Error"));
@@ -275,6 +283,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void precheck_enlacesAOtraCarpeta_oNombresOcupadosPorArchivos_impidenEnlazar() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         Files.writeString(mount.resolve("SocioA/MDN"), "un archivo con el nombre de la carpeta");
         Files.delete(local("Certs"));
@@ -292,6 +301,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void socioEnlazado_conUnaSubcarpetaQueYaNoEsEnlace_apareceConError() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
         Files.delete(local("Archive"));
@@ -305,6 +315,7 @@ class PartnerFolderServiceTest {
 
     @Test
     void produccion_conUnaCarpetaLocalIncomingQueueQueNoEsEnlace_rechazada() throws IOException {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         Files.createDirectories(mount.resolve("SocioA"));
         service.link(socio.getId(), "SocioA");
         Files.createDirectories(local("Incoming_queue"));

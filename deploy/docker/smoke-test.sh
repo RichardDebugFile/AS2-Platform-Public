@@ -100,10 +100,13 @@ for _ in $(seq 1 60); do
 done
 if [ -n "$sano" ]; then ok "El gateway se reinicio solo y volvio a UP en $(( $(date +%s) - inicio )) s"; else fail "El gateway no volvio a UP tras el fallo"; fi
 
-# 7. Respaldo: existe el dump del dia y se restaura en una base de prueba
-hoy="$(date -u +%F)"
-for _ in $(seq 1 15); do [ -f "backups/$hoy/auth.dump" ] && break; sleep 2; done
-if [ -f "backups/$hoy/auth.dump" ]; then ok "Respaldo del dia presente (backups/$hoy)"; else fail "No hay respaldo del dia"; fi
+# 7. Respaldo: hay un dump de las ultimas 24 h y se restaura en una base de prueba. Se mira la antiguedad
+# del archivo y no la fecha de la carpeta: el ciclo de 24 h empieza al arrancar el contenedor de respaldo,
+# asi que pasada la medianoche (UTC) la carpeta del dia puede no existir aun aunque el respaldo este al dia.
+reciente() { find backups -mindepth 2 -maxdepth 2 -name auth.dump -mmin -1500 2>/dev/null | sort | tail -n 1; }
+for _ in $(seq 1 15); do [ -n "$(reciente)" ] && break; sleep 2; done
+ultimo="$(reciente)"
+if [ -n "$ultimo" ]; then ok "Respaldo de las ultimas 24 h presente (${ultimo%/auth.dump})"; else fail "No hay respaldo de las ultimas 24 h"; fi
 # Respaldo nuevo antes de restaurar: el del arranque puede ser anterior a las migraciones de los
 # servicios (la base aun sin tablas).
 if ! salida="$(docker compose exec -T backup /bin/sh /usr/local/bin/backup.sh --once 2>&1)"; then

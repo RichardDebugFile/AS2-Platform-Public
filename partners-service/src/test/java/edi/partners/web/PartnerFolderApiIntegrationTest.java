@@ -1,5 +1,6 @@
 package edi.partners.web;
 
+import static org.junit.jupiter.api.Assumptions.assumeTrue;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasItem;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.jayway.jsonpath.JsonPath;
 import edi.partners.config.RequestIdentity;
+import edi.partners.testsupport.Symlinks;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import org.junit.jupiter.api.Test;
@@ -83,6 +85,7 @@ class PartnerFolderApiIntegrationTest {
 
     @Test
     void precheckNegativo_luegoEnlaceYProduccion_conBitacora() throws Exception {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         String id = create("SOCIO-F3");
         Files.writeString(disk.resolve("partners/SOCIO-F3/Outgoing/pedido.edi"), "ISA*00");
 
@@ -121,6 +124,7 @@ class PartnerFolderApiIntegrationTest {
 
     @Test
     void montajeCaido_folderStatusesMuestraError_yElMotorDejaDeVigilarlo() throws Exception {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         String id = create("SOCIO-F4");
         Files.createDirectories(disk.resolve("erp/SocioF4"));
         postJson("/api/partners/" + id + "/folders/link", "{\"sharedFolderName\": \"SocioF4\"}").andExpect(status().isOk());
@@ -136,6 +140,7 @@ class PartnerFolderApiIntegrationTest {
 
     @Test
     void conElSocioEnlazado_noSeCambiaSuCarpetaCompartidaPorLaEdicion() throws Exception {
+        assumeTrue(Symlinks.SUPPORTED, Symlinks.WHY);
         String id = create("SOCIO-F5");
         Files.createDirectories(disk.resolve("erp/SocioF5"));
         postJson("/api/partners/" + id + "/folders/link", "{\"sharedFolderName\": \"SocioF5\"}").andExpect(status().isOk());
