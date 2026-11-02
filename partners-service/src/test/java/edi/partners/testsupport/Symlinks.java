@@ -24,7 +24,7 @@ public final class Symlinks {
             dir = Files.createTempDirectory("symlink-probe");
             Files.createSymbolicLink(dir.resolve("enlace"), dir.resolve("destino"));
             return true;
-        } catch (IOException | UnsupportedOperationException | SecurityException e) {
+        } catch (IOException | UnsupportedOperationException | SecurityException _) {
             return false;
         } finally {
             deleteQuietly(dir);
@@ -38,7 +38,7 @@ public final class Symlinks {
         try {
             Files.deleteIfExists(dir.resolve("enlace"));
             Files.deleteIfExists(dir);
-        } catch (IOException ignored) {
+        } catch (IOException _) {
             // carpeta temporal: el sistema la limpia
         }
     }

@@ -4,6 +4,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Novedades
+- La primera línea de cada commit lleva la clave de la tarea de Jira (`tipo(ámbito): AS2-NN resumen`)
+  y el cuerpo termina con su historia (`Refs: HU-XX (AS2-NN)`), de modo que cada cambio se identifica
+  también en el historial resumido y en la lista de commits de GitHub; el equipo del desarrollador y la
+  verificación de cada pull request rechazan los que no cumplen el formato (AS2-92).
+
 ## 0.5.0 — 2026-11-01
 
 ### Novedades
