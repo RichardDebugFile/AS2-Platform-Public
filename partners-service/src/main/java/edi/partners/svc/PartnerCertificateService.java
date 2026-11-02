@@ -299,8 +299,10 @@ public class PartnerCertificateService {
             if (!anotherValid) {
                 for (PartnerCertificate c : expired) {
                     kept++;
-                    log.warn("Certificado de {} del socio {} caducado y sin reemplazo vigente: se conserva activo",
-                            label(usage), c.getPartner().getAs2Name());
+                    if (log.isWarnEnabled()) {
+                        log.warn("Certificado de {} del socio {} caducado y sin reemplazo vigente: se conserva activo",
+                                label(usage), c.getPartner().getAs2Name());
+                    }
                     audit.publish(new AuditEvent(AuditEventTypes.CERTIFICATE_EXPIRED, partnerId,
                             c.getPartner().getAs2Name(), null, RequestIdentity.SYSTEM, false,
                             "Unico certificado activo de " + label(usage) + " caducado; se conserva hasta cargar otro: "

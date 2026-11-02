@@ -2,6 +2,7 @@ package edi.documents.x12;
 
 import edi.documents.x12.X12Document.Party;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.regex.Pattern;
 
@@ -147,10 +148,7 @@ public final class X12Parser {
 
     private static X12Segment segment(String text, char element) {
         String[] parts = text.split(Pattern.quote(String.valueOf(element)), -1);
-        List<String> elements = new ArrayList<>(parts.length);
-        for (int i = 1; i < parts.length; i++) {
-            elements.add(parts[i]);
-        }
+        List<String> elements = new ArrayList<>(Arrays.asList(parts).subList(1, parts.length));
         return new X12Segment(parts[0].strip(), elements);
     }
 
