@@ -2,6 +2,7 @@ import { Alert, App, Button, Col, Drawer, Form, Input, InputNumber, Row, Select,
 import type { TabsProps } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import CertificatesPanel from "./CertificatesPanel";
 import FoldersPanel from "./FoldersPanel";
 import { FIELD_TAB, NEW_PARTNER, editableFields, endpointPreview } from "./partnerForm";
 import {
@@ -414,6 +415,11 @@ export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onCl
                   label: t("drawer.tabs.folders"),
                   children: <FoldersPanel partner={partner} canEdit={!readOnly} isAdmin={isAdmin && !readOnly} />,
               },
+              {
+                  key: "certificates",
+                  label: t("drawer.tabs.certificates"),
+                  children: <CertificatesPanel partner={partner} canEdit={!readOnly} isAdmin={isAdmin && !readOnly} />,
+              },
           ]
         : [];
 
@@ -425,7 +431,7 @@ export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onCl
         <Drawer
             open
             title={title}
-            width={760}
+            width="min(920px, 100vw)"
             onClose={onClose}
             extra={
                 <Space>

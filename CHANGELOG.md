@@ -4,6 +4,58 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## 0.5.0 — 2026-11-01
+
+### Novedades
+- Certificados X.509 de cada socio con doble compuerta: desde la pestaña Certificados se carga el
+  certificado (PEM o DER) de cifrado, firma o TLS y se ven su huella y su vigencia, con aviso de
+  vencimiento. Al cargar el reemplazo, el nuevo queda como preferente y el anterior sigue activo como
+  respaldo, de modo que el intercambio no se corta si el socio cambia su clave antes o después de lo
+  anunciado. Cada día se retiran los caducados que ya tienen reemplazo; el único activo nunca se retira.
+  Se rechazan los certificados caducados, los de una autoridad de certificación para cifrar y cualquier
+  archivo con una clave privada. Solo un administrador elimina certificados, y cada operación queda en
+  la bitácora (HU-11).
+- Documentos X12 en la consola (Documentos EDI): el visor interpreta un documento tal como llega del
+  socio (separadores, tipo, versión, emisor y receptor con sus calificadores, números de control) y lo
+  valida contra el esquema de su tipo, indicando qué segmentos faltan o qué sobres no cierran; el
+  generador crea órdenes de compra 850, acuses 997 (con emisor y receptor invertidos) y anuncios de
+  promoción 889 con el ISA de ancho fijo y los conteos calculados. Un auditor puede usar el visor; solo
+  administradores y operadores generan (HU-12).
+- Repositorio de documentos (Documentos EDI → Repositorio): cada documento enviado o recibido queda
+  registrado en la base de datos y guardado como archivo, ordenado por dirección, resultado, fecha,
+  tipo y socio, con un nombre que incluye sus números de control. Una copia va a la carpeta del socio
+  (Incoming los recibidos, Archive los enviados, Error los no válidos) para el ERP; si esa carpeta no
+  está disponible, el documento no se pierde y la copia se reintenta cada hora. Si el socio reenvía un
+  documento con el mismo Message-ID no se crea otro registro. La consola busca por socio, dirección,
+  tipo, estado, fechas, Message-ID o control ISA, muestra el contenido segmento a segmento y dónde está
+  guardado, y permite registrar documentos o guardar los generados; solo un administrador los elimina.
+  Un control de consistencia avisa de archivos borrados a mano o sin registro (HU-14).
+- Consola rediseñada con un sistema de diseño propio, documentado en Figma: barra lateral oscura con el
+  menú por rol, cabecera con la sección y el título de la pantalla, colores de estado consistentes,
+  tipografía Inter incluida en la consola (sin depender de internet) y pantallas de inicio de sesión,
+  segundo factor, socios, certificados, bitácora y usuarios con la misma estructura (HU-24).
+- Cada cambio del código queda vinculado con su historia: un commit sin la clave de su historia o
+  tarea (`HU-XX` o `AS2-NN`) se rechaza en el equipo del desarrollador y en la verificación de cada
+  pull request (AS2-75).
+
+### Correcciones
+- La bitácora muestra con su nombre los eventos de certificados (cargado, preferente, desactivado,
+  retirado y los demás) en lugar del código interno (HU-11), y los del repositorio de documentos
+  (creado, repetido, eliminado, copia pendiente y copia restaurada) (HU-14).
+- Dependencias de desarrollo de la consola actualizadas por alertas de seguridad (vite, vitest,
+  undici y zod); no forman parte de la consola publicada (AS2-76).
+- La plataforma vuelve a levantarse en Windows con `start.sh`: la preparación de secretos terminaba
+  sin mensaje en Git Bash, y la comprobación automática fallaba en el enlace con la carpeta
+  compartida y en el respaldo. Si falta el archivo de secretos pero quedan datos de una instalación
+  anterior, el arranque se detiene y explica cómo seguir, en lugar de dejar los servicios sin poder
+  conectarse a la base (HU-07).
+- El inicio de sesión en la consola desplegada con Docker en el puerto 443 respondía "Invalid CORS
+  request": el navegador omite ese puerto al indicar el origen y solo se admitía con él. Ahora se
+  admiten ambas formas, y la comprobación automática envía el origen como lo hace el navegador
+  (HU-07).
+
+---
+
 ## 0.4.0 — 2026-10-25
 
 ### Novedades

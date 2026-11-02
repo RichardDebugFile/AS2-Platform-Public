@@ -3,15 +3,16 @@ import enUS from "antd/locale/en_US";
 import esES from "antd/locale/es_ES";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
+import { antdTheme } from "./theme";
 
-/** Idioma y tema de Ant Design acordes al idioma activo de la consola. */
+/** Idioma de Ant Design acorde al idioma activo y tema del sistema de diseño (theme.ts). */
 export default function AppProviders({ children }: Readonly<{ children: ReactNode }>) {
     const { i18n } = useTranslation();
     const locale = i18n.language?.startsWith("en") ? enUS : esES;
     return (
         <ConfigProvider
             locale={locale}
-            theme={{ token: { colorPrimary: "#0f766e", borderRadius: 8, fontFamily: "system-ui, -apple-system, 'Segoe UI', sans-serif" } }}
+            theme={antdTheme}
         >
             <AntApp>{children}</AntApp>
         </ConfigProvider>

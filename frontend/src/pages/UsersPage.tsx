@@ -91,23 +91,21 @@ export default function UsersPage() {
 
     return (
         <>
-            <Space style={{ width: "100%", justifyContent: "space-between", marginBottom: 16 }} wrap>
-                <Typography.Title level={3} style={{ margin: 0 }}>
-                    {t("users.title")}
-                </Typography.Title>
+            <div className="page-toolbar">
                 <Space wrap>
                     <Input.Search
                         allowClear
                         placeholder={t("users.search")}
                         defaultValue={query}
                         onSearch={(q) => void fetchUsers(0, pagination.pageSize, q)}
-                        style={{ width: 280 }}
+                        style={{ width: 320 }}
                     />
-                    <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
-                        {t("users.new")}
-                    </Button>
                 </Space>
-            </Space>
+                <div className="page-toolbar-spacer" />
+                <Button type="primary" icon={<PlusOutlined />} onClick={() => setCreating(true)}>
+                    {t("users.new")}
+                </Button>
+            </div>
             {error && <Typography.Text type="danger">{error}</Typography.Text>}
             <Table<User>
                 rowKey="id"

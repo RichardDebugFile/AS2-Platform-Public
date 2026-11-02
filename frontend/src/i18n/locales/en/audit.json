@@ -51,6 +51,20 @@
     "FOLDERS_REPAIRED": "Folders recreated",
     "FOLDERS_LINKED": "Folders linked to the ERP",
     "PRODUCTION_ENABLED": "Production enabled",
-    "PRODUCTION_DISABLED": "Production disabled"
+    "PRODUCTION_DISABLED": "Production disabled",
+    "CERTIFICATE_UPLOADED": "Certificate uploaded",
+    "CERTIFICATE_REACTIVATED": "Certificate reactivated",
+    "CERTIFICATE_PREFERRED": "Certificate preferred",
+    "CERTIFICATE_ACTIVATED": "Certificate activated",
+    "CERTIFICATE_DEACTIVATED": "Certificate deactivated",
+    "CERTIFICATE_UPDATED": "Certificate updated",
+    "CERTIFICATE_DELETED": "Certificate deleted",
+    "CERTIFICATE_RETIRED": "Certificate retired",
+    "CERTIFICATE_EXPIRED": "Certificate expired",
+    "DOCUMENT_CREATED": "Document created",
+    "DOCUMENT_DUPLICATE": "Duplicate document (retry)",
+    "DOCUMENT_DELETED": "Document deleted",
+    "DOCUMENT_COPY_PENDING": "Partner copy pending",
+    "DOCUMENT_COPY_RESTORED": "Partner copy restored"
   }
 }

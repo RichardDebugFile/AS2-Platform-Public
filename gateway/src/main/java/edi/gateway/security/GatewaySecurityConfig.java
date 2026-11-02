@@ -59,6 +59,18 @@ public class GatewaySecurityConfig {
     /** Enlace con la carpeta compartida y activacion de produccion: cambian lo que ve el ERP (HU-09). */
     static final String[] PARTNER_ERP_CHANGES = {"/api/partners/*/folders/link", "/api/partners/*/production"};
 
+    /** Eliminar un certificado de un socio (HU-11): solo ADMIN; desactivarlo lo puede hacer OPERATOR. */
+    static final String PARTNER_CERTIFICATE = "/api/partners/*/certificates/*";
+
+    /**
+     * Interpretar y validar un documento X12 (HU-12) es una consulta aunque vaya por POST (el
+     * documento viaja en el cuerpo): cualquier usuario con sesion, AUDITOR incluido. Generar no.
+     */
+    static final String[] X12_READ_ONLY = {"/api/documents/x12/parse", "/api/documents/x12/validate"};
+
+    /** Borrar un documento del repositorio o su MDN (HU-14): solo ADMIN; queda en la bitacora. */
+    static final String DOCUMENT_DELETE = "/api/documents/**";
+
     /** Roles que pueden modificar datos. AUDITOR es de solo lectura. */
     static final String ADMIN = "ADMIN";
     static final String[] ROLES_QUE_EDITAN = {ADMIN, "OPERATOR"};
@@ -130,9 +142,17 @@ public class GatewaySecurityConfig {
                         // Borrado definitivo de un socio (y sus configuraciones): solo ADMIN.
                         .pathMatchers(HttpMethod.DELETE, PARTNER_PURGE)
                         .hasRole(ADMIN)
+                        // Eliminar un certificado de un socio: solo ADMIN (HU-11).
+                        .pathMatchers(HttpMethod.DELETE, PARTNER_CERTIFICATE)
+                        .hasRole(ADMIN)
                         // Enlazar carpetas con el ERP y pasar un socio a produccion: solo ADMIN.
                         .pathMatchers(HttpMethod.POST, PARTNER_ERP_CHANGES)
                         .hasRole(ADMIN)
+                        // Borrar documentos del repositorio: solo ADMIN (HU-14).
+                        .pathMatchers(HttpMethod.DELETE, DOCUMENT_DELETE)
+                        .hasRole(ADMIN)
+                        .pathMatchers(HttpMethod.POST, X12_READ_ONLY)
+                        .authenticated()
                         .pathMatchers(HttpMethod.POST, "/api/**")
                         .hasAnyRole(ROLES_QUE_EDITAN)
                         .pathMatchers(HttpMethod.PUT, "/api/**")

@@ -6,9 +6,14 @@
 set -uo pipefail
 cd "$(dirname "$0")"
 set -a; . ./.env; set +a
+# Git Bash: no convertir en rutas de Windows las rutas de los contenedores que se pasan a docker.
+# (MSYS_NO_PATHCONV no sirve aqui: curl.exe necesita la conversion de la ruta de mktemp.)
+export MSYS2_ARG_CONV_EXCL="/bin/;/mnt/;/opt/;/usr/local/"
 HTTP_PORT="${HTTP_PORT:-80}"; HTTPS_PORT="${HTTPS_PORT:-443}"
 BASE="https://localhost:$HTTPS_PORT"
-CURL=(curl -sS --max-time 15 --cacert certs/tls.crt)
+# Origin como lo envia el navegador desde la consola: sin el puerto cuando es el 443.
+ORIGIN="https://${SERVER_NAME:-localhost}"; [ "$HTTPS_PORT" = "443" ] || ORIGIN="$ORIGIN:$HTTPS_PORT"
+CURL=(curl -sS --max-time 15 --cacert certs/tls.crt -H "Origin: $ORIGIN")
 fallos=0
 
 ok()   { echo "OK    $1"; [ -n "${GITHUB_ACTIONS:-}" ] && echo "::notice title=HU-07 OK::$1"; return 0; }
@@ -25,7 +30,8 @@ hsts="$("${CURL[@]}" -o /dev/null -D - "$BASE/" | tr -d '\r' | grep -i '^strict-
 
 # 3. Solo se publican los puertos del proxy
 # Publishers incluye tambien los puertos solo expuestos (EXPOSE) con PublishedPort 0: no cuentan.
-publicados="$(docker compose ps --format json | jq -rs 'flatten | .[] | select([.Publishers[]? | select(.PublishedPort > 0)] | length > 0) | .Service' | sort -u | tr '\n' ' ')"
+publicados="$(docker compose ps --format '{{.Service}}{{range .Publishers}}{{if gt .PublishedPort 0}} {{.PublishedPort}}{{end}}{{end}}' \
+    | awk 'NF > 1 {print $1}' | sort -u | tr '\n' ' ')"
 [ "$publicados" = "proxy " ] && ok "Solo el proxy publica puertos" || fail "Servicios con puertos publicados: $publicados"
 for p in 5432 8083 8765; do
     if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then fail "El puerto $p es alcanzable desde fuera"; else ok "Puerto $p cerrado desde fuera"; fi

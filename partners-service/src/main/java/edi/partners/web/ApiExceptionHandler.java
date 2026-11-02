@@ -1,6 +1,7 @@
 package edi.partners.web;
 
 import edi.partners.dto.ApiError;
+import edi.partners.error.CertificateNotFoundException;
 import edi.partners.error.ConfigNotFoundException;
 import edi.partners.error.DuplicateAs2NameException;
 import edi.partners.error.PartnerNotFoundException;
@@ -19,12 +20,15 @@ import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.multipart.MaxUploadSizeExceededException;
+import org.springframework.web.multipart.support.MissingServletRequestPartException;
 
 /** Errores con cuerpo {@code {status, code, message}} para que la consola explique el motivo. */
 @RestControllerAdvice
 public class ApiExceptionHandler {
 
     private static final Logger log = LoggerFactory.getLogger(ApiExceptionHandler.class);
+    private static final String BAD_REQUEST = "BAD_REQUEST";
 
     @ExceptionHandler(PartnerNotFoundException.class)
     ResponseEntity<ApiError> onPartnerNotFound(PartnerNotFoundException e) {
@@ -34,6 +38,21 @@ public class ApiExceptionHandler {
     @ExceptionHandler(ConfigNotFoundException.class)
     ResponseEntity<ApiError> onConfigNotFound(ConfigNotFoundException e) {
         return error(HttpStatus.NOT_FOUND, "CONFIG_NOT_FOUND", e.getMessage());
+    }
+
+    @ExceptionHandler(CertificateNotFoundException.class)
+    ResponseEntity<ApiError> onCertificateNotFound(CertificateNotFoundException e) {
+        return error(HttpStatus.NOT_FOUND, "CERTIFICATE_NOT_FOUND", e.getMessage());
+    }
+
+    @ExceptionHandler(MaxUploadSizeExceededException.class)
+    ResponseEntity<ApiError> onTooLarge(MaxUploadSizeExceededException e) {
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "El archivo es demasiado grande para ser un certificado");
+    }
+
+    @ExceptionHandler(MissingServletRequestPartException.class)
+    ResponseEntity<ApiError> onMissingPart(MissingServletRequestPartException e) {
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "Falta el archivo del certificado ('" + e.getRequestPartName() + "')");
     }
 
     @ExceptionHandler(DuplicateAs2NameException.class)
@@ -67,7 +86,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
     ResponseEntity<ApiError> onBadRequest(IllegalArgumentException e) {
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", e.getMessage());
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, e.getMessage());
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -87,7 +106,7 @@ public class ApiExceptionHandler {
             root = root.getCause();
         }
         String msg = root instanceof IllegalArgumentException ? root.getMessage() : "Peticion no valida";
-        return error(HttpStatus.BAD_REQUEST, "BAD_REQUEST", msg);
+        return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, msg);
     }
 
     private static ResponseEntity<ApiError> error(HttpStatus status, String code, String message) {

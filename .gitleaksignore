@@ -1,0 +1,22 @@
+# Hallazgos aceptados de gitleaks (huella commit:archivo:regla:linea).
+# db61ab0 (HU-14): Message-ID de prueba con el dominio reservado .example (RFC 2606), no son
+# correos reales; el commit e69506d los cambio a example.com. El historial publicado no se reescribe.
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/store/DocumentPostgresTest.java:correo-real:42
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/store/DocumentPostgresTest.java:correo-real:44
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/store/DocumentPostgresTest.java:correo-real:50
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:109
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:136
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:139
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:143
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:154
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:157
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:162
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:171
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:219
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:229
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:241
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:250
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:253
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:276
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:278
+db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:280

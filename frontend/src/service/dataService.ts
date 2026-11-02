@@ -143,10 +143,12 @@ async function send<T>(endpoint: string, init: RequestInit): Promise<ApiResponse
     try {
         const method = (init.method ?? "GET").toUpperCase();
         const token = SAFE_METHODS.has(method) ? undefined : (xsrfToken() ?? (await fetchXsrfToken()));
+        // Con FormData el navegador pone el Content-Type multipart con su boundary.
+        const isForm = typeof FormData !== "undefined" && init.body instanceof FormData;
         const res = await fetch(`${base}${endpoint}`, {
             ...init,
             headers: {
-                "Content-Type": "application/json",
+                ...(isForm ? {} : { "Content-Type": "application/json" }),
                 ...(token ? { "X-XSRF-TOKEN": token } : {}),
                 ...init.headers,
             },
@@ -177,4 +179,13 @@ export const dataService = {
     patch: <T = unknown>(endpoint: string, body?: unknown) =>
         request<T>(endpoint, { method: "PATCH", body: JSON.stringify(body) }),
     delete: <T = unknown>(endpoint: string) => request<T>(endpoint, { method: "DELETE" }),
+    /** Texto plano en el cuerpo, p. ej. un documento X12 tal como se intercambia. */
+    postText: <T = unknown>(endpoint: string, text: string, headers: Record<string, string> = {}) =>
+        request<T>(endpoint, {
+            method: "POST",
+            body: text,
+            headers: { "Content-Type": "text/plain;charset=UTF-8", ...headers },
+        }),
+    /** Envio de archivos (multipart/form-data), p. ej. un certificado X.509. */
+    upload: <T = unknown>(endpoint: string, form: FormData) => request<T>(endpoint, { method: "POST", body: form }),
 };
