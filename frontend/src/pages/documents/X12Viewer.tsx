@@ -100,7 +100,7 @@ export default function X12Viewer({ text, onTextChange }: Readonly<Props>) {
 
             {result.error && <Alert type="error" showIcon message={result.error} />}
 
-            {s && s.typeCode === "UNKNOWN" && <Alert type="warning" showIcon message={t("viewer.unknown")} />}
+            {s?.typeCode === "UNKNOWN" && <Alert type="warning" showIcon message={t("viewer.unknown")} />}
 
             {v && s && s.typeCode !== "UNKNOWN" && (
                 <Alert
