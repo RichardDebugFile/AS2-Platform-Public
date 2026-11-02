@@ -296,40 +296,50 @@ public class PartnerCertificateService {
             KeyUsage usage = first.getKeyUsage();
             boolean anotherValid = repo.findAllByPartnerIdAndKeyUsageAndActiveTrue(partnerId, usage).stream()
                     .anyMatch(c -> !c.isExpired(now));
-            if (!anotherValid) {
-                for (PartnerCertificate c : expired) {
-                    kept++;
-                    if (log.isWarnEnabled()) {
-                        log.warn("Certificado de {} del socio {} caducado y sin reemplazo vigente: se conserva activo",
-                                label(usage), c.getPartner().getAs2Name());
-                    }
-                    audit.publish(new AuditEvent(AuditEventTypes.CERTIFICATE_EXPIRED, partnerId,
-                            c.getPartner().getAs2Name(), null, RequestIdentity.SYSTEM, false,
-                            "Unico certificado activo de " + label(usage) + " caducado; se conserva hasta cargar otro: "
-                                    + describe(c), Map.of(), AuditEvent.THIS_SERVICE));
-                }
-                continue;
-            }
-            for (PartnerCertificate c : expired) {
-                boolean wasPreferred = c.isPreferred();
-                c.setActive(false);
-                repo.saveAndFlush(c);
-                retired++;
-                Map<String, Change> changes = new LinkedHashMap<>();
-                changes.put(FIELD_ACTIVE, new Change(true, false));
-                if (wasPreferred) {
-                    changes.put(FIELD_PREFERRED, new Change(true, false));
-                }
-                audit.publish(AuditEvent.of(AuditEventTypes.CERTIFICATE_RETIRED, partnerId, c.getPartner().getAs2Name(),
-                        RequestIdentity.SYSTEM, CERTIFICATE_OF + label(usage) + " caducado retirado: " + describe(c),
-                        changes));
-            }
-            Optional<PartnerCertificate> promoted = ensurePreferred(partnerId, usage, now);
-            if (promoted.isPresent() && log.isInfoEnabled()) {
-                log.info("Certificado {} promovido a preferente tras el retiro", promoted.get().getFingerprintSha256());
+            if (anotherValid) {
+                retired += retire(partnerId, usage, expired, now);
+            } else {
+                kept += keepOnlyActive(partnerId, usage, expired);
             }
         }
         return new RetirementResult(retired, kept);
+    }
+
+    /** Desactiva los caducados de un uso que ya tiene otro vigente y promueve el preferente. */
+    private int retire(UUID partnerId, KeyUsage usage, List<PartnerCertificate> expired, Instant now) {
+        String kind = label(usage);
+        for (PartnerCertificate c : expired) {
+            boolean wasPreferred = c.isPreferred();
+            c.setActive(false);
+            repo.saveAndFlush(c);
+            Map<String, Change> changes = new LinkedHashMap<>();
+            changes.put(FIELD_ACTIVE, new Change(true, false));
+            if (wasPreferred) {
+                changes.put(FIELD_PREFERRED, new Change(true, false));
+            }
+            audit.publish(AuditEvent.of(AuditEventTypes.CERTIFICATE_RETIRED, partnerId, c.getPartner().getAs2Name(),
+                    RequestIdentity.SYSTEM, CERTIFICATE_OF + kind + " caducado retirado: " + describe(c), changes));
+        }
+        Optional<PartnerCertificate> promoted = ensurePreferred(partnerId, usage, now);
+        if (promoted.isPresent() && log.isInfoEnabled()) {
+            log.info("Certificado {} promovido a preferente tras el retiro", promoted.get().getFingerprintSha256());
+        }
+        return expired.size();
+    }
+
+    /** El unico activo de un uso se conserva aunque haya caducado, con una advertencia en el log y la bitacora. */
+    private int keepOnlyActive(UUID partnerId, KeyUsage usage, List<PartnerCertificate> expired) {
+        String kind = label(usage);
+        for (PartnerCertificate c : expired) {
+            String as2Name = c.getPartner().getAs2Name();
+            log.warn("Certificado de {} del socio {} caducado y sin reemplazo vigente: se conserva activo", kind,
+                    as2Name);
+            audit.publish(new AuditEvent(AuditEventTypes.CERTIFICATE_EXPIRED, partnerId, as2Name, null,
+                    RequestIdentity.SYSTEM, false,
+                    "Unico certificado activo de " + kind + " caducado; se conserva hasta cargar otro: " + describe(c),
+                    Map.of(), AuditEvent.THIS_SERVICE));
+        }
+        return expired.size();
     }
 
     // ------------------------------------------------------------------ motor AS2 (red interna)
