@@ -66,7 +66,8 @@ public class UsersController {
 
     @PatchMapping("/{id}/active")
     @PreAuthorize("hasRole('ADMIN')")
-    public UserResponse updateActive(@PathVariable UUID id, @RequestBody @Valid UpdateActiveRequest req) {
-        return users.updateActive(id, req.active());
+    public UserResponse updateActive(@PathVariable UUID id, @RequestBody @Valid UpdateActiveRequest req,
+                                     Authentication auth) {
+        return users.updateActive(id, req.active(), auth.getName());
     }
 }

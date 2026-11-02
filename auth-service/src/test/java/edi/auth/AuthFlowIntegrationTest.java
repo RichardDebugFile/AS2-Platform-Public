@@ -289,6 +289,19 @@ class AuthFlowIntegrationTest {
     }
 
     @Test
+    void unAdministradorNoPuedeDesactivarseASiMismo() throws Exception {
+        Session admin = admin();
+        String id = json.readTree(mvc.perform(get("/users/me").cookie(admin.access()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString()).get("id").asString();
+
+        mvc.perform(patch("/users/" + id + "/active").cookie(admin.access()).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"active\":false}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.code").value("SELF_DEACTIVATION"));
+        mvc.perform(post("/auth/refresh").cookie(admin.refresh())).andExpect(status().isOk());
+    }
+
+    @Test
     void mfa_altaYLoginConSegundoFactor() throws Exception {
         Session admin = admin();
         String nombre = unique("mfa");

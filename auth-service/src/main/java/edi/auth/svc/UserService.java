@@ -5,6 +5,7 @@ import edi.auth.domain.UserAccount;
 import edi.auth.dto.CreateUserRequest;
 import edi.auth.dto.UserResponse;
 import edi.auth.error.AuthException;
+import edi.auth.error.SelfDeactivationException;
 import edi.auth.error.UserNotFoundException;
 import edi.auth.error.UsernameTakenException;
 import edi.auth.repo.UserAccountRepository;
@@ -84,10 +85,14 @@ public class UserService {
     /**
      * Activa o desactiva. Al desactivar se revocan sus sesiones: la renovacion se corta ya y el
      * access token vigente deja de servir como maximo al caducar ({@code auth.access-ttl-min}).
+     * Nadie puede desactivar su propia cuenta ({@code actor} es quien hace el cambio).
      */
     @Transactional
-    public UserResponse updateActive(UUID id, boolean active) {
+    public UserResponse updateActive(UUID id, boolean active, String actor) {
         UserAccount ua = repo.findById(id).orElseThrow(() -> new UserNotFoundException(id));
+        if (!active && ua.getUsername().equalsIgnoreCase(actor)) {
+            throw new SelfDeactivationException();
+        }
         ua.setActive(active);
         if (!active) {
             int cortadas = refreshTokens.revokeAllForUser(id);
