@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 import edi.documents.web.GenerateRequest.Company;
 import edi.documents.web.GenerateRequest.Line;
+import edi.documents.web.GenerateRequest.Party;
 import edi.documents.web.GenerateRequest.PurchaseOrder;
 import edi.documents.web.GenerateRequest.Promotion;
 import java.math.BigDecimal;
@@ -22,16 +23,18 @@ class X12RequestMapperTest {
 
     private static final Company BUYER = new Company("Comprador Ejemplo", "COMP-01");
     private static final Company SELLER = new Company("Proveedor Ejemplo", "PROV-01");
+    private static final Party SENDER = new Party("12", "ID-SOCIO");
+    private static final Party RECEIVER = new Party("08", "ID-EMPRESA");
     private static final List<Line> LINES = List.of(new Line(BigDecimal.ONE, null, BigDecimal.TEN, "ROSA-60", null));
 
     private String po(LocalDate deliveryDate, Integer deliveryDays) {
-        return mapper.generate(new GenerateRequest("850", null, null, 1L, null, null,
+        return mapper.generate(new GenerateRequest("850", null, null, 1L, SENDER, RECEIVER,
                 new PurchaseOrder("OC-1", null, null, null, null, deliveryDate, deliveryDays, BUYER, SELLER, LINES),
                 null, null));
     }
 
     private String promo(LocalDate end, Integer days) {
-        return mapper.generate(new GenerateRequest("889", null, null, 1L, null, null, null,
+        return mapper.generate(new GenerateRequest("889", null, null, 1L, SENDER, RECEIVER, null,
                 new Promotion("PROMO-1", null, end, days, SELLER), null));
     }
 
