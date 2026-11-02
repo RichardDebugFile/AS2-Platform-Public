@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.5.0 — 2026-11-01
 
 ### Novedades
 - Certificados X.509 de cada socio con doble compuerta: desde la pestaña Certificados se carga el
