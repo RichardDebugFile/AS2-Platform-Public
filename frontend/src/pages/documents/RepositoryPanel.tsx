@@ -18,6 +18,7 @@ import {
 } from "../../service/documentsApi";
 import type { ApiResponse } from "../../service/dataService";
 import { X12_TYPES } from "../../service/x12Api";
+import { formatDateTime } from "../../utils/dateTime";
 import DocumentDrawer from "./DocumentDrawer";
 import { DirectionTag, StatusTag } from "./documentTags";
 import IngestModal from "./IngestModal";
@@ -103,11 +104,10 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
     }, [apply]);
 
     const reload = () => load(filter, page.current, page.pageSize);
-    const when = (iso: string) =>
-        new Intl.DateTimeFormat(i18n.language, { dateStyle: "short", timeStyle: "medium" }).format(new Date(iso));
+    const when = (iso: string) => formatDateTime(iso, i18n.language);
 
     const columns: ColumnsType<EdiDocument> = [
-        { title: t("repository.columns.createdAt"), dataIndex: "createdAt", width: 170, render: (v: string) => <span className="nowrap">{when(v)}</span> },
+        { title: t("repository.columns.createdAt"), dataIndex: "createdAt", width: 190, render: (v: string) => <span className="nowrap">{when(v)}</span> },
         { title: t("repository.columns.direction"), dataIndex: "direction", render: (v: Direction) => <DirectionTag direction={v} /> },
         { title: t("repository.columns.partner"), dataIndex: "partnerAs2Name", render: (v: string) => <span className="nowrap">{v}</span> },
         { title: t("repository.columns.type"), dataIndex: "typeCode", render: (v: string) => <Tag className="mono-text">{v}</Tag> },

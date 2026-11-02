@@ -4,6 +4,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuditStore, type AuditEvent } from "../../store/auditStore";
+import { formatDateTime } from "../../utils/dateTime";
 import { toFilters, type FilterForm } from "./auditFilters";
 
 /** Texto de un valor anterior o nuevo en la tabla de cambios. */
@@ -37,8 +38,7 @@ export default function AuditPage() {
     }, [fetchEvents, fetchEventTypes]);
 
     const typeLabel = (type: string) => t(`types.${type}`, { defaultValue: type });
-    const when = (iso: string) =>
-        new Intl.DateTimeFormat(i18n.language, { dateStyle: "short", timeStyle: "medium" }).format(new Date(iso));
+    const when = (iso: string) => formatDateTime(iso, i18n.language);
 
     const onExport = async () => {
         const csv = await exportCsv();
@@ -56,7 +56,13 @@ export default function AuditPage() {
             dataIndex: "status",
             render: (v: AuditEvent["status"]) => <Tag color={v === "SUCCESS" ? "green" : "red"}>{t(`status.${v}`)}</Tag>,
         },
-        { title: t("columns.detail"), dataIndex: "detail", ellipsis: true, render: (v?: string | null) => v ?? "" },
+        // Sin "ellipsis": con el ancho automatico de la tabla no recorta y empuja las demas columnas fuera
+        // de la vista. El detalle se parte en varias lineas.
+        {
+            title: t("columns.detail"),
+            dataIndex: "detail",
+            render: (v?: string | null) => <span className="cell-wrap">{v ?? ""}</span>,
+        },
     ];
 
     const expanded = (e: AuditEvent) => {

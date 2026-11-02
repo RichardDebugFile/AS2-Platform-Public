@@ -35,7 +35,8 @@
   "home": {
     "welcome": "Hello, {{name}}",
     "intro": "Use the menu to open the sections your role allows.",
-    "role": "Role: {{roles}}"
+    "role": "Role: {{roles}}",
+    "denied": "Your role cannot open {{path}}. You were taken to the home page."
   },
   "placeholder": {
     "title": "Section under construction",

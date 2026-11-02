@@ -12,6 +12,7 @@
     "sample": "Load sample",
     "clear": "Clear",
     "empty": "Paste a document to see its content",
+    "stale": "The text changed: press “Interpret” to see the result for this document.",
     "summary": "Summary",
     "segments": "Segments ({{count}})",
     "fields": {

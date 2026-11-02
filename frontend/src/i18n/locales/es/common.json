@@ -35,7 +35,8 @@
   "home": {
     "welcome": "Hola, {{name}}",
     "intro": "Desde el menú accede a las secciones que permite su rol.",
-    "role": "Rol: {{roles}}"
+    "role": "Rol: {{roles}}",
+    "denied": "Su rol no tiene acceso a {{path}}. Se le trajo al inicio."
   },
   "placeholder": {
     "title": "Sección en construcción",

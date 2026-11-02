@@ -1,6 +1,8 @@
 import { App as AntApp, ConfigProvider } from "antd";
-import enUS from "antd/locale/en_US";
-import esES from "antd/locale/es_ES";
+// Rutas ESM: las de "antd/locale/*" son CommonJS y Vite las entrega envueltas en { default }, con lo
+// que ConfigProvider no reconoce el idioma y los componentes quedan en ingles.
+import enUS from "antd/es/locale/en_US";
+import esES from "antd/es/locale/es_ES";
 import type { ReactNode } from "react";
 import { useTranslation } from "react-i18next";
 import { antdTheme } from "./theme";

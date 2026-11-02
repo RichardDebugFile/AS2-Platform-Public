@@ -179,6 +179,14 @@ body {
     white-space: nowrap;
 }
 
+/* Texto libre en una celda (detalle de la bitacora): se parte en lineas en vez de ensanchar la tabla. */
+.cell-wrap {
+    display: block;
+    min-width: 240px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
 /* ---- login ---- */
 .login {
     display: grid;
