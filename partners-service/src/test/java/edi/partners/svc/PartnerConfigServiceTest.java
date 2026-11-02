@@ -66,7 +66,7 @@ class PartnerConfigServiceTest {
     }
 
     private String folder(String sub) {
-        return Path.of("/data/partners", "SOCIO-A", sub).toString();
+        return Path.of("/data/partners", "SOCIO-A", sub).toAbsolutePath().normalize().toString();
     }
 
     @Test
