@@ -19,8 +19,10 @@ Todo es de prueba:
 
 ## Requisitos
 
-Docker Desktop con acceso a internet. La primera vez se compila OpenAS2 desde su repositorio
-(versión fija `v4.15.0`) y la plataforma desde este; tarda varios minutos.
+Docker Desktop con acceso a Docker Hub, GitHub y Maven Central. La primera vez se compila OpenAS2
+desde su repositorio (versión fija `v4.15.0`) y la plataforma desde este; tarda varios minutos. La
+imagen de OpenAS2 se arma con un Dockerfile propio (en `docker-compose.yml`) que no usa `apt-get`,
+para no depender de los repositorios de Ubuntu.
 
 ## Uso
 

@@ -12,9 +12,31 @@ services:
       - certs:/certs
 
   openas2:
-    # Imagen oficial de OpenAS2 compilada desde su repositorio, en una version fija.
+    # OpenAS2 compilado desde su repositorio, en una version fija. Es el Dockerfile del proyecto sin
+    # apt-get: el zip de la distribucion se extrae con la herramienta jar del JDK, y la imagen solo
+    # necesita Docker Hub, GitHub y Maven Central.
     build:
       context: https://github.com/OpenAS2/OpenAs2App.git#v4.15.0
+      dockerfile_inline: |
+        FROM eclipse-temurin:21-jdk-jammy AS builder
+        WORKDIR /usr/src/openas2
+        COPY . .
+        RUN rm -f Server/dist/* Remote/dist/* Bundle/dist/* && ./mvnw -B -q clean package -DskipTests
+        RUN mkdir Runtime && cd Runtime && jar xf ../Server/dist/OpenAS2Server-*.zip
+        RUN cp start-container.sh Runtime/bin/ && chmod 755 Runtime/bin/*.sh && mv Runtime/config Runtime/config_template
+
+        FROM eclipse-temurin:21-jre-jammy
+        ENV OPENAS2_BASE=/opt/openas2 OPENAS2_HOME=/opt/openas2 OPENAS2_TMPDIR=/opt/openas2/temp
+        COPY --from=builder /usr/src/openas2/Runtime/bin /opt/openas2/bin
+        COPY --from=builder /usr/src/openas2/Runtime/lib /opt/openas2/lib
+        COPY --from=builder /usr/src/openas2/Runtime/resources /opt/openas2/resources
+        COPY --from=builder /usr/src/openas2/Runtime/config_template /opt/openas2/config_template
+        RUN useradd --uid 1000 --gid 0 --home-dir /opt/openas2 --no-create-home --shell /usr/sbin/nologin openas2 \
+            && mkdir -p /opt/openas2/config /opt/openas2/data /opt/openas2/logs /opt/openas2/temp \
+            && chown -R 1000:0 /opt/openas2 && chmod -R g=u /opt/openas2
+        USER 1000
+        WORKDIR /opt/openas2
+        ENTRYPOINT ["/opt/openas2/bin/start-container.sh"]
     entrypoint: ["sh", "/interop/start.sh"]
     tty: true
     depends_on:
