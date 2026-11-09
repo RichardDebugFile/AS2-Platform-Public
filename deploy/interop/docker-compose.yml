@@ -1,0 +1,68 @@
+# Prueba de interoperabilidad AS2 (AS2-94): la plataforma (as2-adapter) envia un 850 a OpenAS2, un
+# servidor AS2 de codigo abierto que hace de socio, y lee su MDN firmado. Ver README.md.
+# Independiente de la plataforma de deploy/docker: no usa su base de datos ni sus volumenes.
+name: as2-interop
+
+services:
+  certs:
+    image: eclipse-temurin:25-jre
+    command: ["sh", "/interop/gen-certs.sh"]
+    volumes:
+      - ./gen-certs.sh:/interop/gen-certs.sh:ro
+      - certs:/certs
+
+  openas2:
+    # Imagen oficial de OpenAS2 compilada desde su repositorio, en una version fija.
+    build:
+      context: https://github.com/OpenAS2/OpenAs2App.git#v4.15.0
+    entrypoint: ["sh", "/interop/start.sh"]
+    tty: true
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    volumes:
+      - ./openas2:/interop:ro
+      - certs:/certs:ro
+      # Lo que OpenAS2 recibe queda a la vista en esta carpeta.
+      - ./salida/openas2:/opt/openas2/data
+    ports:
+      - "127.0.0.1:4080:10080"
+    healthcheck:
+      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/10080"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  as2-adapter:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    command: ["java", "-jar", "/app/as2-adapter.jar"]
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+      openas2:
+        condition: service_healthy
+    environment:
+      AS2_SPIKE_ENABLED: "true"
+      AS2_SPIKE_URL: http://openas2:10080
+      AS2_SPIKE_FROM: PLATAFORMA
+      AS2_SPIKE_TO: OPENAS2
+      AS2_SPIKE_MDN_TO: edi.plataforma@example.com
+      AS2_SPIKE_KEYSTORE: /certs/plataforma/plataforma.p12
+      AS2_SPIKE_KEY_ALIAS: plataforma
+      AS2_SPIKE_PARTNER_CERTIFICATE: /certs/plataforma/openas2.cer
+      # La clave del almacen se lee de un archivo del volumen, no de una variable.
+      SPRING_CONFIG_IMPORT: "configtree:/certs/secrets/plataforma/"
+    volumes:
+      - certs:/certs:ro
+    ports:
+      - "127.0.0.1:8085:8085"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  certs:

@@ -11,6 +11,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   y el cuerpo termina con su historia (`Refs: HU-XX (AS2-NN)`), de modo que cada cambio se identifica
   también en el historial resumido y en la lista de commits de GitHub; el equipo del desarrollador y la
   verificación de cada pull request rechazan los que no cumplen el formato (AS2-92).
+- Prueba de concepto del motor AS2 (AS2-94). El as2-adapter arma un mensaje AS2 1.2: firma el documento
+  con SHA-256, lo cifra con AES-256 para el socio y pide un MDN firmado síncrono. Al recibir el MDN,
+  verifica su firma y comprueba que el MIC coincide con el enviado. En `deploy/interop` hay un entorno
+  con OpenAS2, un servidor AS2 de código abierto, que hace de socio, con certificados de prueba
+  generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; todavía no se
+  integra con la consola.
 
 ## 0.5.0 — 2026-11-01
 
