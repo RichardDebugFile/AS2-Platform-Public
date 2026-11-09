@@ -127,6 +127,19 @@ describe("repositorio de documentos", () => {
         );
     });
 
+    it("abrir en el visor cierra el detalle y lleva el documento al visor", async () => {
+        renderAs(AUDITOR);
+        fireEvent.click(await screen.findByText("SOCIO-A"));
+        const drawer = await screen.findByRole("dialog");
+        const open = within(drawer).getByRole("button", { name: "Abrir en el visor" });
+        await waitFor(() => expect(open).toBeEnabled());
+
+        fireEvent.click(open);
+
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+        expect((screen.getByRole("textbox", { name: "Visor X12" }) as HTMLTextAreaElement).value).toBe(SAMPLE_850);
+    });
+
     it("el detalle muestra los segmentos y donde esta guardado; un auditor no puede borrar", async () => {
         renderAs(AUDITOR);
         fireEvent.click(await screen.findByText("SOCIO-A"));

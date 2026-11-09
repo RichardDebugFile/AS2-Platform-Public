@@ -48,9 +48,11 @@ export default function AuditPage() {
 
     const columns: ColumnsType<AuditEvent> = [
         { title: t("columns.occurredAt"), dataIndex: "occurredAt", width: 190, render: (v: string) => <span className="nowrap">{when(v)}</span> },
-        { title: t("columns.eventType"), dataIndex: "eventType", render: (v: string) => <Tag>{typeLabel(v)}</Tag> },
-        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => <span className="nowrap">{v ?? "—"}</span> },
-        { title: t("columns.actor"), dataIndex: "actor" },
+        // Tipo, socio y actor tambien se parten: un nombre largo (p. ej. un socio de pruebas) no debe
+        // ensanchar la tabla mas alla de la pantalla.
+        { title: t("columns.eventType"), dataIndex: "eventType", render: (v: string) => <Tag className="tag-wrap">{typeLabel(v)}</Tag> },
+        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => <span className="cell-break">{v ?? "—"}</span> },
+        { title: t("columns.actor"), dataIndex: "actor", render: (v: string) => <span className="cell-break">{v}</span> },
         {
             title: t("columns.status"),
             dataIndex: "status",

@@ -253,7 +253,11 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
                 doc={selected}
                 canDelete={canDelete}
                 onClose={() => setSelected(null)}
-                onOpenInViewer={onOpenInViewer}
+                onOpenInViewer={(text) => {
+                    // El detalle se cierra: si no, queda encima del visor.
+                    setSelected(null);
+                    onOpenInViewer(text);
+                }}
                 onDeleted={() => {
                     setSelected(null);
                     reload();
