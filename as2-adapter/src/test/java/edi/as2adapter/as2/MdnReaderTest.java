@@ -58,9 +58,16 @@ class MdnReaderTest {
 
     @Test
     void leeUnMdnSinFirmaConCamposEnLineasLf() {
-        String body = "--R\r\nContent-Type: message/disposition-notification\r\n\r\n"
-                + "Original-Message-ID: <m2@plataforma>\nDisposition: automatic-action/MDN-sent-automatically; processed\n"
-                + "Received-Content-MIC: QUJD\r\n--R--\r\n";
+        // Los campos del reporte terminan en LF; el resto, en CRLF (\r al final de la linea).
+        String body = """
+                --R\r
+                Content-Type: message/disposition-notification\r
+                \r
+                Original-Message-ID: <m2@plataforma>
+                Disposition: automatic-action/MDN-sent-automatically; processed
+                Received-Content-MIC: QUJD\r
+                --R--\r
+                """;
 
         Mdn r = MdnReader.read("multipart/report; report-type=disposition-notification; boundary=R", b(body),
                 SOCIO.certificate());

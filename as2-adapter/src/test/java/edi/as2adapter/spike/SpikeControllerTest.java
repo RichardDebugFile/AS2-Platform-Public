@@ -1,5 +1,6 @@
 package edi.as2adapter.spike;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,7 +66,7 @@ class SpikeControllerTest {
                 .andExpect(jsonPath("$.micMatches").value(true))
                 .andExpect(jsonPath("$.micAlgorithm").value("sha-256"))
                 .andExpect(jsonPath("$.disposition").value("automatic-action/MDN-sent-automatically; processed"));
-        org.assertj.core.api.Assertions.assertThat(received.get()).isEqualTo("ISA*00~ST*850*0001~SE*2*0001~");
+        assertThat(received.get()).isEqualTo("ISA*00~ST*850*0001~SE*2*0001~");
     }
 
     @Test
@@ -74,6 +75,16 @@ class SpikeControllerTest {
         mvc(props("plataforma")).perform(post("/spike/send").content("x".getBytes(StandardCharsets.US_ASCII)))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.error").value("El socio respondio HTTP 500 sin MDN"));
+    }
+
+    @Test
+    void elNombreDelArchivoSeLimpiaAntesDeUsarloEnCabeceras() {
+        assertThat(SpikeController.safeFileName("orden-850.edi")).isEqualTo("orden-850.edi");
+        assertThat(SpikeController.safeFileName("a\r\nX-Falsa: 1.edi"))
+                .isEqualTo("a__X-Falsa__1.edi");
+        assertThat(SpikeController.safeFileName("..")).isEqualTo("documento.edi");
+        assertThat(SpikeController.safeFileName(null)).isEqualTo("documento.edi");
+        assertThat(SpikeController.safeFileName("x".repeat(300))).hasSize(100);
     }
 
     @Test

@@ -62,9 +62,11 @@ public class SpikeController {
     @PostMapping("/spike/send")
     public Map<String, Object> send(@RequestBody byte[] document,
                                     @RequestParam(defaultValue = "documento.edi") String fileName) {
+        String name = safeFileName(fileName);
         OutboundMessage msg = builder.build(new MessageBuilder.Request(props.from(), props.to(), props.mdnTo(), document,
-                "application/edi-x12", fileName, identity, partner));
-        log.info("Enviando {} ({} bytes) a {} como {}", fileName, document.length, props.url(), msg.messageId());
+                "application/edi-x12", name, identity, partner));
+        // El nombre lo elige el cliente: no se registra (el Message-ID lo genera la plataforma).
+        log.info("Enviando {} bytes a {} como {}", document.length, props.url(), msg.messageId());
         SendResult r = client.send(props.url(), msg, partner);
         log.info("MDN de {}: {} (firma {}, MIC {})", msg.messageId(), r.mdn().disposition(),
                 r.mdn().signatureValid() ? "valida" : "NO valida", r.micMatches() ? "coincide" : "NO coincide");
@@ -84,6 +86,16 @@ public class SpikeController {
         out.put("originalMessageId", r.mdn().originalMessageId());
         out.put("text", r.mdn().text());
         return out;
+    }
+
+    /**
+     * El nombre llega del cliente y va al registro y a la cabecera Content-Disposition del mensaje:
+     * solo letras, digitos, punto, guion y guion bajo, para que no pueda inyectar lineas ni cabeceras.
+     */
+    static String safeFileName(String fileName) {
+        String s = fileName == null ? "" : fileName.replaceAll("[^A-Za-z0-9._-]", "_");
+        if (s.length() > 100) s = s.substring(0, 100);
+        return s.isBlank() || s.chars().allMatch(c -> c == '.') ? "documento.edi" : s;
     }
 
     @ExceptionHandler(As2Exception.class)

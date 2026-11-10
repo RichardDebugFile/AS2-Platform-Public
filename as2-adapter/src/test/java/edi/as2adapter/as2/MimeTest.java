@@ -65,6 +65,9 @@ class MimeTest {
         assertThat(Mime.param(ct, "micalg")).isEqualTo("sha-256");
         assertThat(Mime.param(ct, "nada")).isNull();
         assertThat(Mime.param(null, "boundary")).isNull();
+        assertThat(Mime.param("text/plain", "charset")).isNull();
+        assertThat(Mime.param("a/b; name=\"dice \\\"hola\\\"; si\"; x", "name")).isEqualTo("dice \"hola\"; si");
+        assertThat(Mime.param("a/b; sin-valor; x=1", "x")).isEqualTo("1");
         assertThat(Mime.mediaType(" Multipart/Signed ; x=1")).isEqualTo("multipart/signed");
         assertThat(Mime.mediaType(null)).isEmpty();
     }

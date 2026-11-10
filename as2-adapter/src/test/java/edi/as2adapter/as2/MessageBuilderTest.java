@@ -1,6 +1,7 @@
 package edi.as2adapter.as2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -45,7 +46,7 @@ class MessageBuilderTest {
         OutboundMessage msg = builder.build(request("PLATAFORMA"));
         As2Identity otro = TestPki.identity("otro.example");
 
-        org.assertj.core.api.Assertions.assertThatThrownBy(() -> new FakePartner(otro).receive(msg.body(), PLATAFORMA.certificate()))
+        assertThatThrownBy(() -> new FakePartner(otro).receive(msg.body(), PLATAFORMA.certificate()))
                 .isInstanceOf(As2Exception.class);
         assertThat(new FakePartner(SOCIO).receive(msg.body(), otro.certificate()).signatureValid()).isFalse();
     }
@@ -64,6 +65,23 @@ class MessageBuilderTest {
                 .isEqualTo("signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha-256");
         assertThat(msg.messageId()).startsWith("<20261108120000-").endsWith("@plataforma>");
         assertThat(builder.build(request("PLATAFORMA")).messageId()).isNotEqualTo(msg.messageId());
+    }
+
+    @Test
+    void losRegistrosComparanElContenidoDeSusArreglosYNoLoMuestran() {
+        MessageBuilder.Request a = request("PLATAFORMA");
+        MessageBuilder.Request b = request("PLATAFORMA");
+        assertThat(a).isEqualTo(b).hasSameHashCodeAs(b).isNotEqualTo(request("OTRA")).isNotEqualTo("x");
+        assertThat(a.toString()).contains("orden-850.edi").doesNotContain("ISA*");
+
+        OutboundMessage m = builder.build(a);
+        OutboundMessage copia = new OutboundMessage(m.messageId(), m.httpHeaders(), m.body().clone(), m.mic(),
+                m.micAlgorithm());
+        assertThat(m).isEqualTo(copia).hasSameHashCodeAs(copia).isNotEqualTo(builder.build(a));
+        assertThat(m.toString()).contains(m.messageId()).contains(m.body().length + " bytes");
+        assertThat(new OutboundMessage(null, null, null, null, null).toString()).contains("0 bytes");
+        assertThat(new MessageBuilder.Request(null, null, null, null, null, null, null, null).toString())
+                .contains("0 bytes");
     }
 
     @Test

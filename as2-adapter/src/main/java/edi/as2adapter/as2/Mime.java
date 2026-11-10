@@ -4,14 +4,13 @@ import java.io.ByteArrayOutputStream;
 import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.HexFormat;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * Lo minimo de MIME (RFC 2045/2046) que necesita AS2: armar una parte con sus cabeceras, partir un
@@ -22,8 +21,6 @@ public final class Mime {
 
     static final byte[] CRLF = {'\r', '\n'};
     private static final SecureRandom RANDOM = new SecureRandom();
-    private static final Pattern PARAM = Pattern.compile(
-            ";\\s*([A-Za-z0-9_.-]+)\\s*=\\s*(\"((?:[^\"\\\\]|\\\\.)*)\"|[^;\\s]+)");
 
     private Mime() {
     }
@@ -87,29 +84,65 @@ public final class Mime {
         Map<String, String> map = new LinkedHashMap<>();
         String last = null;
         for (String line : new String(entity, 0, end, StandardCharsets.ISO_8859_1).split("\r\n")) {
-            if (line.isEmpty()) continue;
-            if ((line.charAt(0) == ' ' || line.charAt(0) == '\t') && last != null) {
-                map.put(last, map.get(last) + " " + line.strip());
-                continue;
-            }
-            int colon = line.indexOf(':');
-            if (colon <= 0) continue;
-            last = line.substring(0, colon).strip().toLowerCase(Locale.ROOT);
-            map.put(last, line.substring(colon + 1).strip());
+            last = addHeaderLine(map, line, last);
         }
         return new Headers(map, bodyStart);
+    }
+
+    /** Agrega una linea de cabecera, o la continuacion plegada de la anterior; devuelve la cabecera en curso. */
+    private static String addHeaderLine(Map<String, String> map, String line, String last) {
+        if (line.isEmpty()) return last;
+        if (line.charAt(0) == ' ' || line.charAt(0) == '\t') {
+            if (last != null) map.put(last, map.get(last) + " " + line.strip());
+            return last;
+        }
+        int colon = line.indexOf(':');
+        if (colon <= 0) return last;
+        String name = line.substring(0, colon).strip().toLowerCase(Locale.ROOT);
+        map.put(name, line.substring(colon + 1).strip());
+        return name;
     }
 
     /** Valor de un parametro de cabecera ({@code boundary}, {@code micalg}...), sin comillas. */
     public static String param(String headerValue, String name) {
         if (headerValue == null) return null;
-        Matcher m = PARAM.matcher(headerValue);
-        while (m.find()) {
-            if (m.group(1).equalsIgnoreCase(name)) {
-                return m.group(3) != null ? m.group(3).replace("\\\"", "\"") : m.group(2);
-            }
+        for (String p : parameters(headerValue)) {
+            int eq = p.indexOf('=');
+            if (eq > 0 && p.substring(0, eq).strip().equalsIgnoreCase(name)) return unquote(p.substring(eq + 1).strip());
         }
         return null;
+    }
+
+    /**
+     * Parametros de una cabecera: lo separado por ';' fuera de comillas, sin el primer trozo (el tipo
+     * de medio). Se recorre caracter a caracter, sin expresiones regulares.
+     */
+    private static List<String> parameters(String value) {
+        List<String> out = new ArrayList<>();
+        StringBuilder cur = new StringBuilder();
+        boolean quoted = false;
+        boolean escaped = false;
+        for (char c : value.toCharArray()) {
+            if (escaped) {
+                escaped = false;
+                cur.append(c);
+            } else if (c == ';' && !quoted) {
+                out.add(cur.toString());
+                cur.setLength(0);
+            } else {
+                escaped = quoted && c == '\\';
+                if (c == '"') quoted = !quoted;
+                cur.append(c);
+            }
+        }
+        out.add(cur.toString());
+        return out.subList(1, out.size());
+    }
+
+    private static String unquote(String v) {
+        return v.length() >= 2 && v.startsWith("\"") && v.endsWith("\"")
+                ? v.substring(1, v.length() - 1).replace("\\\"", "\"")
+                : v;
     }
 
     /** Tipo de medio sin parametros y en minusculas: {@code multipart/signed}. */
@@ -155,12 +188,8 @@ public final class Mime {
     }
 
     static int indexOf(byte[] data, byte[] pattern, int from) {
-        outer:
         for (int i = Math.max(0, from); i <= data.length - pattern.length; i++) {
-            for (int j = 0; j < pattern.length; j++) {
-                if (data[i + j] != pattern[j]) continue outer;
-            }
-            return i;
+            if (Arrays.equals(data, i, i + pattern.length, pattern, 0, pattern.length)) return i;
         }
         return -1;
     }

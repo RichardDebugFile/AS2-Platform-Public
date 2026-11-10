@@ -1,6 +1,8 @@
 package edi.as2adapter.as2;
 
 import java.io.ByteArrayOutputStream;
+import java.util.Arrays;
+import java.util.Objects;
 import java.time.Clock;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
@@ -16,6 +18,9 @@ import java.security.cert.X509Certificate;
 public final class MessageBuilder {
 
     public static final String MIC_ALGORITHM = "sha-256";
+    private static final String CONTENT_TYPE = "Content-Type";
+    private static final String CONTENT_TRANSFER_ENCODING = "Content-Transfer-Encoding";
+    private static final String CONTENT_DISPOSITION = "Content-Disposition";
     private static final DateTimeFormatter ID_TIME = DateTimeFormatter.ofPattern("yyyyMMddHHmmss");
 
     private final Clock clock;
@@ -38,13 +43,34 @@ public final class MessageBuilder {
      */
     public record Request(String from, String to, String mdnTo, byte[] payload, String contentType, String fileName,
                           As2Identity signer, X509Certificate recipient) {
+
+        // Un record compara los arreglos por referencia: se comparan por contenido.
+        @Override
+        public boolean equals(Object o) {
+            return o instanceof Request r && Objects.equals(from, r.from) && Objects.equals(to, r.to)
+                    && Objects.equals(mdnTo, r.mdnTo) && Arrays.equals(payload, r.payload)
+                    && Objects.equals(contentType, r.contentType) && Objects.equals(fileName, r.fileName)
+                    && Objects.equals(signer, r.signer) && Objects.equals(recipient, r.recipient);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Objects.hash(from, to, mdnTo, contentType, fileName, signer, recipient) + Arrays.hashCode(payload);
+        }
+
+        /** Sin el contenido del documento ni las claves. */
+        @Override
+        public String toString() {
+            return "Request[from=" + from + ", to=" + to + ", fileName=" + fileName + ", "
+                    + (payload == null ? 0 : payload.length) + " bytes]";
+        }
     }
 
     public OutboundMessage build(Request r) {
         Map<String, String> contentHeaders = new LinkedHashMap<>();
-        contentHeaders.put("Content-Type", r.contentType());
-        contentHeaders.put("Content-Transfer-Encoding", "binary");
-        contentHeaders.put("Content-Disposition", "attachment; filename=\"" + r.fileName() + "\"");
+        contentHeaders.put(CONTENT_TYPE, r.contentType());
+        contentHeaders.put(CONTENT_TRANSFER_ENCODING, "binary");
+        contentHeaders.put(CONTENT_DISPOSITION, "attachment; filename=\"" + r.fileName() + "\"");
         byte[] content = Mime.part(contentHeaders, r.payload());
 
         String mic = Cms.mic(content, MIC_ALGORITHM);
@@ -60,9 +86,9 @@ public final class MessageBuilder {
         http.put("Message-ID", messageId);
         http.put("Subject", "Documento " + r.fileName());
         http.put("Mime-Version", "1.0");
-        http.put("Content-Type", "application/pkcs7-mime; smime-type=enveloped-data; name=\"smime.p7m\"");
-        http.put("Content-Disposition", "attachment; filename=\"smime.p7m\"");
-        http.put("Content-Transfer-Encoding", "binary");
+        http.put(CONTENT_TYPE, "application/pkcs7-mime; smime-type=enveloped-data; name=\"smime.p7m\"");
+        http.put(CONTENT_DISPOSITION, "attachment; filename=\"smime.p7m\"");
+        http.put(CONTENT_TRANSFER_ENCODING, "binary");
         http.put("Disposition-Notification-To", r.mdnTo());
         http.put("Disposition-Notification-Options",
                 "signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, " + MIC_ALGORITHM);
@@ -73,9 +99,9 @@ public final class MessageBuilder {
     private static byte[] signedEntity(byte[] content, byte[] signature) {
         String b = Mime.boundary();
         Map<String, String> sigHeaders = new LinkedHashMap<>();
-        sigHeaders.put("Content-Type", "application/pkcs7-signature; name=\"smime.p7s\"");
-        sigHeaders.put("Content-Transfer-Encoding", "base64");
-        sigHeaders.put("Content-Disposition", "attachment; filename=\"smime.p7s\"");
+        sigHeaders.put(CONTENT_TYPE, "application/pkcs7-signature; name=\"smime.p7s\"");
+        sigHeaders.put(CONTENT_TRANSFER_ENCODING, "base64");
+        sigHeaders.put(CONTENT_DISPOSITION, "attachment; filename=\"smime.p7s\"");
 
         ByteArrayOutputStream body = new ByteArrayOutputStream(content.length + 4096);
         body.writeBytes(Mime.ascii("--" + b + "\r\n"));
@@ -85,7 +111,7 @@ public final class MessageBuilder {
         body.writeBytes(Mime.ascii("\r\n--" + b + "--\r\n"));
 
         Map<String, String> headers = new LinkedHashMap<>();
-        headers.put("Content-Type", "multipart/signed; protocol=\"application/pkcs7-signature\"; micalg="
+        headers.put(CONTENT_TYPE, "multipart/signed; protocol=\"application/pkcs7-signature\"; micalg="
                 + MIC_ALGORITHM + "; boundary=\"" + b + "\"");
         return Mime.part(headers, body.toByteArray());
     }

@@ -63,7 +63,7 @@ public final class Cms {
                 if (!si.verify(new JcaSimpleSignerInfoVerifierBuilder().setProvider(BC).build(signer))) return false;
             }
             return true;
-        } catch (CMSException | OperatorCreationException e) {
+        } catch (CMSException | OperatorCreationException _) {
             return false;
         }
     }

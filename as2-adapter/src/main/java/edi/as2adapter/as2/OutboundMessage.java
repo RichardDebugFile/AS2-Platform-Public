@@ -1,6 +1,8 @@
 package edi.as2adapter.as2;
 
+import java.util.Arrays;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Mensaje AS2 listo para enviar: cabeceras HTTP, cuerpo cifrado y el MIC esperado en el MDN.
@@ -13,4 +15,24 @@ import java.util.Map;
  */
 public record OutboundMessage(String messageId, Map<String, String> httpHeaders, byte[] body, String mic,
                               String micAlgorithm) {
+
+    // Un record compara los arreglos por referencia: el cuerpo se compara por contenido.
+    @Override
+    public boolean equals(Object o) {
+        return o instanceof OutboundMessage m && Objects.equals(messageId, m.messageId)
+                && Objects.equals(httpHeaders, m.httpHeaders) && Arrays.equals(body, m.body)
+                && Objects.equals(mic, m.mic) && Objects.equals(micAlgorithm, m.micAlgorithm);
+    }
+
+    @Override
+    public int hashCode() {
+        return 31 * Objects.hash(messageId, httpHeaders, mic, micAlgorithm) + Arrays.hashCode(body);
+    }
+
+    /** Sin el cuerpo cifrado. */
+    @Override
+    public String toString() {
+        return "OutboundMessage[messageId=" + messageId + ", mic=" + mic + " (" + micAlgorithm + "), "
+                + (body == null ? 0 : body.length) + " bytes]";
+    }
 }
