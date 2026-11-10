@@ -12,6 +12,7 @@
     "sample": "Cargar ejemplo",
     "clear": "Limpiar",
     "empty": "Pegue un documento para ver su contenido",
+    "stale": "El texto cambió: pulse “Interpretar” para ver el resultado de este documento.",
     "summary": "Resumen",
     "segments": "Segmentos ({{count}})",
     "fields": {

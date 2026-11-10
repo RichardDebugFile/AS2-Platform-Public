@@ -14,6 +14,7 @@ import edi.auth.domain.UserAccount;
 import edi.auth.dto.CreateUserRequest;
 import edi.auth.dto.UserResponse;
 import edi.auth.error.AuthException;
+import edi.auth.error.SelfDeactivationException;
 import edi.auth.error.UserNotFoundException;
 import edi.auth.error.UsernameTakenException;
 import edi.auth.repo.UserAccountRepository;
@@ -113,12 +114,25 @@ class UserServiceTest {
     void desactivar_revocaSesiones_activarNo() {
         UserAccount ua = existing(Role.OPERATOR);
 
-        service.updateActive(ua.getId(), true);
+        service.updateActive(ua.getId(), true, "admin");
         verify(refreshTokens, never()).revokeAllForUser(any());
 
-        UserResponse r = service.updateActive(ua.getId(), false);
+        UserResponse r = service.updateActive(ua.getId(), false, "admin");
         assertThat(r.active()).isFalse();
         verify(refreshTokens).revokeAllForUser(ua.getId());
+    }
+
+    @Test
+    void desactivarseASiMismo_seRechazaSinTocarLaCuenta() {
+        UserAccount ua = existing(Role.ADMIN);
+
+        assertThatThrownBy(() -> service.updateActive(ua.getId(), false, "OPERADOR1"))
+                .isInstanceOf(SelfDeactivationException.class);
+        assertThat(ua.isActive()).isTrue();
+        verify(refreshTokens, never()).revokeAllForUser(any());
+
+        // Activarse no tiene riesgo: la regla solo frena la desactivacion.
+        assertThat(service.updateActive(ua.getId(), true, "operador1").active()).isTrue();
     }
 
     @Test

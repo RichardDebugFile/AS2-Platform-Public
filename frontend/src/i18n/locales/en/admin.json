@@ -19,6 +19,7 @@
     "activate": "Activate",
     "deactivate": "Deactivate",
     "confirmDeactivate": "Deactivate {{username}}? Their session will be closed.",
+    "selfDeactivate": "You cannot deactivate your own account.",
     "saved": "Changes saved",
     "created": "User created",
     "form": {

@@ -3,6 +3,7 @@ package edi.auth.web;
 import edi.auth.dto.ApiError;
 import edi.auth.error.AuthException;
 import edi.auth.error.MfaAlreadyEnabledException;
+import edi.auth.error.SelfDeactivationException;
 import edi.auth.error.UserNotFoundException;
 import edi.auth.error.UsernameTakenException;
 import java.util.stream.Collectors;
@@ -33,6 +34,11 @@ public class ApiExceptionHandler {
     @ExceptionHandler(MfaAlreadyEnabledException.class)
     ResponseEntity<ApiError> onMfaEnabled(MfaAlreadyEnabledException e) {
         return error(HttpStatus.CONFLICT, "MFA_ALREADY_ENABLED", e.getMessage());
+    }
+
+    @ExceptionHandler(SelfDeactivationException.class)
+    ResponseEntity<ApiError> onSelfDeactivation(SelfDeactivationException e) {
+        return error(HttpStatus.CONFLICT, "SELF_DEACTIVATION", e.getMessage());
     }
 
     @ExceptionHandler(UserNotFoundException.class)

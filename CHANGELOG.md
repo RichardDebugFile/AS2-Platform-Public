@@ -18,6 +18,22 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; todavía no se
   integra con la consola.
 
+### Correcciones
+- "Abrir en el visor", desde el generador o desde el detalle de un documento, interpreta el documento
+  recibido; antes seguía mostrando el resultado del documento interpretado anteriormente. Si se cambia
+  el texto del visor, el resultado anterior se oculta hasta volver a pulsar "Interpretar". Desde el
+  detalle, el panel se cierra para dejar a la vista el visor (AS2-93).
+- La paginación, los calendarios y los diálogos de confirmación salen en el idioma de la consola; en el
+  navegador quedaban en inglés (AS2-93).
+- Un administrador ya no puede desactivar su propia cuenta: el servidor lo rechaza y la consola no
+  ofrece la acción en su fila (AS2-93).
+- En la bitácora, el detalle, el tipo de evento, el socio y el usuario largos se parten en varias
+  líneas en vez de ensanchar la tabla más allá de la pantalla (AS2-93).
+- Las fechas tienen el mismo formato en la lista y en el detalle del repositorio y en la bitácora,
+  tanto con el idioma detectado del navegador como con el elegido en el selector (AS2-93).
+- Quien abre por la URL una pantalla que su rol no permite vuelve al inicio con un aviso que lo explica
+  (AS2-93).
+
 ## 0.5.0 — 2026-11-01
 
 ### Novedades
