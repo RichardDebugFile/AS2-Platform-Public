@@ -14,6 +14,7 @@ import java.util.LinkedHashMap;
 import java.util.Map;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.HttpStatus;
@@ -42,6 +43,8 @@ public class SpikeController {
     private final MessageBuilder builder;
     private final As2Client client;
 
+    /** El que usa Spring; el otro es para las pruebas. Con dos constructores hay que indicarlo. */
+    @Autowired
     public SpikeController(SpikeProperties props) {
         this(props, Clock.systemDefaultZone(),
                 new As2Client(HttpClient.newBuilder().connectTimeout(Duration.ofSeconds(10)).build(), Duration.ofSeconds(60)));

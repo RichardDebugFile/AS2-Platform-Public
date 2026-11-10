@@ -50,7 +50,9 @@ services:
     ports:
       - "127.0.0.1:4080:10080"
     healthcheck:
-      test: ["CMD", "bash", "-c", "echo > /dev/tcp/localhost/10080"]
+      # Mira si el puerto 10080 (0x2760) esta escuchando sin conectarse: una conexion vacia deja un
+      # error "Invalid HTTP Request" en el registro de OpenAS2 en cada comprobacion.
+      test: ["CMD", "sh", "-c", "grep -Eqi ':2760 [0-9a-f]+:[0-9a-f]{4} 0a' /proc/net/tcp /proc/net/tcp6"]
       interval: 5s
       timeout: 3s
       retries: 30
