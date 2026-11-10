@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { documentsApi, type EdiDocument, type StorageStatus } from "../../service/documentsApi";
 import { describeElements, splitX12, type EdiSegment } from "../../utils/ediParser";
+import { formatDateTime } from "../../utils/dateTime";
 import { StatusTag } from "./documentTags";
 
 interface Props {
@@ -63,8 +64,7 @@ export default function DocumentDrawer({ doc, canDelete, onClose, onDeleted, onO
     if (!doc) return null;
 
     const f = (k: string) => t(`repository.detail.fields.${k}`);
-    const when = (iso: string) =>
-        new Intl.DateTimeFormat(i18n.language, { dateStyle: "medium", timeStyle: "medium" }).format(new Date(iso));
+    const when = (iso: string) => formatDateTime(iso, i18n.language);
     const segments = content === null ? [] : splitX12(content).segments;
 
     const remove = async () => {

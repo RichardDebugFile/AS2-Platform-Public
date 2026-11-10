@@ -7,6 +7,8 @@ import { SAMPLE_850 } from "../pages/documents/sample850";
 import { searchParams } from "../service/documentsApi";
 import { useAuthStore, type AuthUser } from "../store/authStore";
 import { usePartnersStore } from "../store/partnersStore";
+import i18n from "../i18n";
+import { formatDateTime } from "../utils/dateTime";
 import { ADMIN, AUDITOR, json, resetAuth, stubFetch } from "./helpers";
 
 const OPERATOR: AuthUser = { username: "operador1", email: "operador1@example.com", roles: ["OPERATOR"] };
@@ -125,6 +127,19 @@ describe("repositorio de documentos", () => {
         );
     });
 
+    it("abrir en el visor cierra el detalle y lleva el documento al visor", async () => {
+        renderAs(AUDITOR);
+        fireEvent.click(await screen.findByText("SOCIO-A"));
+        const drawer = await screen.findByRole("dialog");
+        const open = within(drawer).getByRole("button", { name: "Abrir en el visor" });
+        await waitFor(() => expect(open).toBeEnabled());
+
+        fireEvent.click(open);
+
+        await waitFor(() => expect(screen.queryByRole("dialog")).not.toBeInTheDocument());
+        expect((screen.getByRole("textbox", { name: "Visor X12" }) as HTMLTextAreaElement).value).toBe(SAMPLE_850);
+    });
+
     it("el detalle muestra los segmentos y donde esta guardado; un auditor no puede borrar", async () => {
         renderAs(AUDITOR);
         fireEvent.click(await screen.findByText("SOCIO-A"));
@@ -133,6 +148,11 @@ describe("repositorio de documentos", () => {
         expect(within(drawer).getByText("Documento 850 · SOCIO-A")).toBeInTheDocument();
         expect(within(drawer).getByText("<m1@example.com>")).toBeInTheDocument();
         expect(within(drawer).queryByRole("button", { name: "Eliminar" })).not.toBeInTheDocument();
+        // La lista y el detalle muestran la fecha con el mismo formato, con el mes en letras.
+        const fecha = formatDateTime(doc.createdAt, i18n.language);
+        expect(fecha).toMatch(/nov/);
+        expect(within(drawer).getByText(fecha)).toBeInTheDocument();
+        expect(screen.getAllByText(fecha).length).toBeGreaterThanOrEqual(2);
 
         fireEvent.click(within(drawer).getByRole("tab", { name: "Contenido" }));
         expect(await within(drawer).findByText("Inicio de la orden de compra")).toBeInTheDocument();

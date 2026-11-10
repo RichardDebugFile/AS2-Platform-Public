@@ -179,6 +179,25 @@ body {
     white-space: nowrap;
 }
 
+/* Texto libre en una celda (detalle de la bitacora): se parte en lineas en vez de ensanchar la tabla. */
+.cell-wrap {
+    display: block;
+    min-width: 200px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Nombres sin espacios (socios, usuarios): los cortos caben enteros y los largos se cortan. */
+.cell-break {
+    display: block;
+    min-width: 8em;
+    overflow-wrap: anywhere;
+}
+
+.ant-tag.tag-wrap {
+    white-space: normal;
+}
+
 /* ---- login ---- */
 .login {
     display: grid;

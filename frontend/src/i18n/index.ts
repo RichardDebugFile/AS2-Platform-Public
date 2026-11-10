@@ -1,3 +1,5 @@
+import dayjs from "dayjs";
+import "dayjs/locale/es";
 import i18n from "i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
 import { initReactI18next } from "react-i18next";
@@ -27,6 +29,15 @@ export const resources = {
 
 /** Clave de localStorage donde el navegador recuerda el idioma elegido. */
 export const LANGUAGE_KEY = "as2.lang";
+
+/** Los calendarios de antd toman los nombres de meses y dias de dayjs: sigue al idioma activo. */
+export function dayjsLocaleFor(language: string | undefined): "en" | "es" {
+    return language?.startsWith("en") ? "en" : "es";
+}
+
+i18n.on("languageChanged", (lng) => {
+    dayjs.locale(dayjsLocaleFor(lng));
+});
 
 void i18n
     .use(LanguageDetector)

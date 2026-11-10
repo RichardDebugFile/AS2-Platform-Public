@@ -18,10 +18,13 @@ export default function DocumentsPage() {
     const canDelete = hasAnyRole(user, ["ADMIN"]);
     const [tab, setTab] = useState("repository");
     const [text, setText] = useState("");
+    // Cada "Abrir en el visor" monta un visor nuevo que interpreta el texto recibido.
+    const [opened, setOpened] = useState(0);
     const [pending, setPending] = useState<{ content: string; direction: Direction } | null>(null);
 
     const openInViewer = (content: string) => {
         setText(content);
+        setOpened((n) => n + 1);
         setTab("viewer");
     };
 
@@ -39,7 +42,11 @@ export default function DocumentsPage() {
                 />
             ),
         },
-        { key: "viewer", label: t("tabs.viewer"), children: <X12Viewer text={text} onTextChange={setText} /> },
+        {
+            key: "viewer",
+            label: t("tabs.viewer"),
+            children: <X12Viewer key={opened} text={text} onTextChange={setText} interpretOnMount={opened > 0} />,
+        },
         ...(canEdit
             ? [
                   {

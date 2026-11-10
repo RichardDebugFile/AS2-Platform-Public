@@ -4,6 +4,7 @@ import type { ColumnsType } from "antd/es/table";
 import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuditStore, type AuditEvent } from "../../store/auditStore";
+import { formatDateTime } from "../../utils/dateTime";
 import { toFilters, type FilterForm } from "./auditFilters";
 
 /** Texto de un valor anterior o nuevo en la tabla de cambios. */
@@ -37,8 +38,7 @@ export default function AuditPage() {
     }, [fetchEvents, fetchEventTypes]);
 
     const typeLabel = (type: string) => t(`types.${type}`, { defaultValue: type });
-    const when = (iso: string) =>
-        new Intl.DateTimeFormat(i18n.language, { dateStyle: "short", timeStyle: "medium" }).format(new Date(iso));
+    const when = (iso: string) => formatDateTime(iso, i18n.language);
 
     const onExport = async () => {
         const csv = await exportCsv();
@@ -48,15 +48,23 @@ export default function AuditPage() {
 
     const columns: ColumnsType<AuditEvent> = [
         { title: t("columns.occurredAt"), dataIndex: "occurredAt", width: 190, render: (v: string) => <span className="nowrap">{when(v)}</span> },
-        { title: t("columns.eventType"), dataIndex: "eventType", render: (v: string) => <Tag>{typeLabel(v)}</Tag> },
-        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => <span className="nowrap">{v ?? "—"}</span> },
-        { title: t("columns.actor"), dataIndex: "actor" },
+        // Tipo, socio y actor tambien se parten: un nombre largo (p. ej. un socio de pruebas) no debe
+        // ensanchar la tabla mas alla de la pantalla.
+        { title: t("columns.eventType"), dataIndex: "eventType", render: (v: string) => <Tag className="tag-wrap">{typeLabel(v)}</Tag> },
+        { title: t("columns.partner"), dataIndex: "partnerAs2Name", render: (v?: string | null) => <span className="cell-break">{v ?? "—"}</span> },
+        { title: t("columns.actor"), dataIndex: "actor", render: (v: string) => <span className="cell-break">{v}</span> },
         {
             title: t("columns.status"),
             dataIndex: "status",
             render: (v: AuditEvent["status"]) => <Tag color={v === "SUCCESS" ? "green" : "red"}>{t(`status.${v}`)}</Tag>,
         },
-        { title: t("columns.detail"), dataIndex: "detail", ellipsis: true, render: (v?: string | null) => v ?? "" },
+        // Sin "ellipsis": con el ancho automatico de la tabla no recorta y empuja las demas columnas fuera
+        // de la vista. El detalle se parte en varias lineas.
+        {
+            title: t("columns.detail"),
+            dataIndex: "detail",
+            render: (v?: string | null) => <span className="cell-wrap">{v ?? ""}</span>,
+        },
     ];
 
     const expanded = (e: AuditEvent) => {
