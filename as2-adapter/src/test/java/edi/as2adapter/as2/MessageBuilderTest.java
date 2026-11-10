@@ -46,8 +46,13 @@ class MessageBuilderTest {
         OutboundMessage msg = builder.build(request("PLATAFORMA"));
         As2Identity otro = TestPki.identity("otro.example");
 
-        assertThatThrownBy(() -> new FakePartner(otro).receive(msg.body(), PLATAFORMA.certificate()))
-                .isInstanceOf(As2Exception.class);
+        // Con una clave equivocada el descifrado falla de dos formas segun el valor cifrado: se prueba
+        // con varias claves para cubrir las dos (antes una de ellas escapaba sin envolver).
+        for (int i = 0; i < 8; i++) {
+            As2Identity ajena = TestPki.identity("ajena" + i + ".example");
+            assertThatThrownBy(() -> new FakePartner(ajena).receive(msg.body(), PLATAFORMA.certificate()))
+                    .isInstanceOf(As2Exception.class);
+        }
         assertThat(new FakePartner(SOCIO).receive(msg.body(), otro.certificate()).signatureValid()).isFalse();
     }
 

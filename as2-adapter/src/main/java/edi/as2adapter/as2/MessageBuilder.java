@@ -47,10 +47,10 @@ public final class MessageBuilder {
         // Un record compara los arreglos por referencia: se comparan por contenido.
         @Override
         public boolean equals(Object o) {
-            return o instanceof Request r && Objects.equals(from, r.from) && Objects.equals(to, r.to)
-                    && Objects.equals(mdnTo, r.mdnTo) && Arrays.equals(payload, r.payload)
-                    && Objects.equals(contentType, r.contentType) && Objects.equals(fileName, r.fileName)
-                    && Objects.equals(signer, r.signer) && Objects.equals(recipient, r.recipient);
+            return o instanceof Request(var f, var t, var m, var p, var ct, var fn, var s, var rc)
+                    && Objects.equals(from, f) && Objects.equals(to, t) && Objects.equals(mdnTo, m)
+                    && Arrays.equals(payload, p) && Objects.equals(contentType, ct) && Objects.equals(fileName, fn)
+                    && Objects.equals(signer, s) && Objects.equals(recipient, rc);
         }
 
         @Override

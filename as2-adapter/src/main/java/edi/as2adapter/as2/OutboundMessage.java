@@ -19,9 +19,9 @@ public record OutboundMessage(String messageId, Map<String, String> httpHeaders,
     // Un record compara los arreglos por referencia: el cuerpo se compara por contenido.
     @Override
     public boolean equals(Object o) {
-        return o instanceof OutboundMessage m && Objects.equals(messageId, m.messageId)
-                && Objects.equals(httpHeaders, m.httpHeaders) && Arrays.equals(body, m.body)
-                && Objects.equals(mic, m.mic) && Objects.equals(micAlgorithm, m.micAlgorithm);
+        return o instanceof OutboundMessage(var id, var headers, var b, var m, var alg)
+                && Objects.equals(messageId, id) && Objects.equals(httpHeaders, headers) && Arrays.equals(body, b)
+                && Objects.equals(mic, m) && Objects.equals(micAlgorithm, alg);
     }
 
     @Override

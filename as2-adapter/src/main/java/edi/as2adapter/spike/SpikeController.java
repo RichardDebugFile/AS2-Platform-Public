@@ -12,8 +12,6 @@ import java.time.Clock;
 import java.time.Duration;
 import java.util.LinkedHashMap;
 import java.util.Map;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -34,8 +32,6 @@ import org.springframework.web.bind.annotation.RestController;
 @ConditionalOnProperty(name = "as2.spike.enabled", havingValue = "true")
 @EnableConfigurationProperties(SpikeProperties.class)
 public class SpikeController {
-
-    private static final Logger log = LoggerFactory.getLogger(SpikeController.class);
 
     private final SpikeProperties props;
     private final As2Identity identity;
@@ -65,11 +61,9 @@ public class SpikeController {
         String name = safeFileName(fileName);
         OutboundMessage msg = builder.build(new MessageBuilder.Request(props.from(), props.to(), props.mdnTo(), document,
                 "application/edi-x12", name, identity, partner));
-        // El nombre lo elige el cliente: no se registra (el Message-ID lo genera la plataforma).
-        log.info("Enviando {} bytes a {} como {}", document.length, props.url(), msg.messageId());
+        // Sin registro: todo lo del envio depende de lo que manda el cliente y la respuesta lleva el
+        // resultado completo. El registro con identificadores saneados llega con HU-15.
         SendResult r = client.send(props.url(), msg, partner);
-        log.info("MDN de {}: {} (firma {}, MIC {})", msg.messageId(), r.mdn().disposition(),
-                r.mdn().signatureValid() ? "valida" : "NO valida", r.micMatches() ? "coincide" : "NO coincide");
 
         Map<String, Object> out = new LinkedHashMap<>();
         out.put("delivered", r.delivered());
@@ -100,7 +94,6 @@ public class SpikeController {
 
     @ExceptionHandler(As2Exception.class)
     ResponseEntity<Map<String, String>> failed(As2Exception e) {
-        log.warn("Envio de prueba fallido: {}", e.getMessage());
         return ResponseEntity.status(HttpStatus.BAD_GATEWAY).body(Map.of("error", e.getMessage()));
     }
 }

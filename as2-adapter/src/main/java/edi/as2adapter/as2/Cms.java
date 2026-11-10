@@ -26,6 +26,7 @@ import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
+import org.bouncycastle.crypto.RuntimeCryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
 import org.bouncycastle.operator.OperatorCreationException;
 
@@ -91,7 +92,9 @@ public final class Cms {
             Collection<RecipientInformation> recipients = env.getRecipientInfos().getRecipients();
             if (recipients.isEmpty()) throw new As2Exception("El mensaje cifrado no tiene destinatarios");
             return recipients.iterator().next().getContent(new JceKeyTransEnvelopedRecipient(key).setProvider(BC));
-        } catch (CMSException | IllegalArgumentException e) {
+        } catch (CMSException | IllegalArgumentException | RuntimeCryptoException e) {
+            // Con una clave equivocada, segun el valor cifrado, falla como CMSException o como
+            // DataLengthException ("input too large for RSA cipher"): las dos son "no se pudo descifrar".
             throw new As2Exception("No se pudo descifrar el mensaje: " + e.getMessage(), e);
         }
     }
