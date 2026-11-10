@@ -50,7 +50,7 @@ export default function UsersPage() {
     };
 
     /** La propia cuenta no se puede desactivar (el servidor tambien lo impide): se perderia el acceso. */
-    const isSelf = (u: User) => me !== undefined && u.username.toLowerCase() === me.toLowerCase();
+    const isSelf = (u: User) => u.username.toLowerCase() === me?.toLowerCase();
 
     const columns: ColumnsType<User> = [
         { title: t("users.columns.username"), dataIndex: "username" },
