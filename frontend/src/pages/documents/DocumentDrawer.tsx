@@ -5,10 +5,13 @@ import { useTranslation } from "react-i18next";
 import { documentsApi, type EdiDocument, type StorageStatus } from "../../service/documentsApi";
 import { describeElements, splitX12, type EdiSegment } from "../../utils/ediParser";
 import { formatDateTime } from "../../utils/dateTime";
+import As2TestSend from "./As2TestSend";
 import { StatusTag } from "./documentTags";
 
 interface Props {
     doc: EdiDocument | null;
+    /** ADMIN u OPERATOR: puede hacer el envio AS2 de prueba. */
+    canSend: boolean;
     canDelete: boolean;
     onClose: () => void;
     onDeleted: () => void;
@@ -39,7 +42,7 @@ function Presence({ ok, yes, no }: Readonly<{ ok: boolean; yes: string; no: stri
 }
 
 /** Detalle de un documento del repositorio: resumen, contenido por segmentos y donde esta guardado. */
-export default function DocumentDrawer({ doc, canDelete, onClose, onDeleted, onOpenInViewer }: Readonly<Props>) {
+export default function DocumentDrawer({ doc, canSend, canDelete, onClose, onDeleted, onOpenInViewer }: Readonly<Props>) {
     const { t, i18n } = useTranslation("documents");
     const { message } = App.useApp();
     const [content, setContent] = useState<string | null>(null);
@@ -186,6 +189,7 @@ export default function DocumentDrawer({ doc, canDelete, onClose, onDeleted, onO
                     <Button disabled={content === null} onClick={() => content !== null && onOpenInViewer(content)}>
                         {t("repository.detail.openInViewer")}
                     </Button>
+                    {canSend && <As2TestSend content={content} fileName={doc.fileName ?? "documento.edi"} />}
                     {canDelete && (
                         <Popconfirm title={t("repository.detail.deleteConfirm")} onConfirm={() => void remove()}>
                             <Button danger>{t("repository.detail.delete")}</Button>

@@ -22,6 +22,10 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   por día, el reparto de resultados, el tráfico por socio y el estado de cada servicio con su latencia.
   Se filtra por fechas, dirección y socio. Lo sirven `GET /api/documents/dashboard` y
   `GET /api/system/status` (el gateway consulta la salud de cada servicio).
+- Envío AS2 de prueba desde la consola (AS2-100). Está en el generador X12 y en el detalle de cada
+  documento, para ADMIN y OPERATOR. Manda el documento al socio de prueba firmado y cifrado, y muestra
+  el MDN: disposición, validez de la firma, coincidencia del MIC, Message-ID y tiempo de ida y vuelta.
+  Si el motor AS2 o el socio no responden, lo indica con el motivo.
 
 ### Correcciones
 - `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con

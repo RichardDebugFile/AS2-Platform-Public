@@ -204,5 +204,29 @@
       "missing": "Missing",
       "pendingHelp": "The partner folder was unavailable: the system retries the copy every hour."
     }
+  },
+  "as2Test": {
+    "send": "Send via AS2 (test)",
+    "title": "AS2 test send",
+    "help": "The document is sent to the test partner signed (SHA-256), encrypted (AES-256) and with a signed MDN receipt. It is not stored in the repository.",
+    "delivered": "Delivered: the partner confirmed receipt with a valid MDN.",
+    "notDelivered": "Not delivered: the partner answered, but the receipt does not confirm it.",
+    "unavailable": "The AS2 engine or the test partner did not respond, or the send failed.",
+    "forbidden": "Your role is not allowed to send documents.",
+    "close": "Close",
+    "signatureOk": "MDN signature valid",
+    "signatureBad": "MDN signature not valid",
+    "unsigned": "Unsigned MDN",
+    "micOk": "The MDN MIC matches the one sent",
+    "micBad": "The MDN MIC does not match",
+    "elapsed": "{{ms}} ms round trip",
+    "fields": {
+      "disposition": "MDN disposition",
+      "signature": "Signature",
+      "mic": "MIC",
+      "messageId": "Message-ID",
+      "http": "HTTP response",
+      "file": "File"
+    }
   }
 }
