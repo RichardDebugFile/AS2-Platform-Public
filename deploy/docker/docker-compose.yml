@@ -129,6 +129,84 @@ services:
       <<: *java-health
     networks: [backend]
 
+  # Certificados de prueba para la comunicacion AS2 (AS2-94 / AS2-100).
+  as2-certs:
+    image: eclipse-temurin:25-jre
+    command: ["sh", "/interop/gen-certs.sh"]
+    <<: [*logging]
+    volumes:
+      - ../interop/gen-certs.sh:/interop/gen-certs.sh:ro
+      - as2certs:/certs
+    networks: [backend]
+
+  # Motor AS2 (HU-15): envio y recepcion de documentos EDI.
+  as2-adapter:
+    image: as2-platform-services:local
+    command: ["java", "-jar", "/app/as2-adapter.jar"]
+    <<: [*restart, *logging]
+    environment:
+      PARTNERS_SERVICE_URL: http://partners-service:8081
+      AS2_SPIKE_ENABLED: "true"
+      AS2_SPIKE_URL: http://openas2:10080
+      AS2_SPIKE_FROM: PLATAFORMA
+      AS2_SPIKE_TO: OPENAS2
+      AS2_SPIKE_MDN_TO: edi.plataforma@example.com
+      AS2_SPIKE_KEYSTORE: /certs/plataforma/plataforma.p12
+      AS2_SPIKE_KEY_ALIAS: plataforma
+      AS2_SPIKE_PARTNER_CERTIFICATE: /certs/plataforma/openas2.cer
+      SPRING_CONFIG_IMPORT: "configtree:/certs/secrets/plataforma/"
+    volumes:
+      - as2certs:/certs:ro
+    depends_on:
+      as2-certs:
+        condition: service_completed_successfully
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://localhost:8085/actuator/health | grep -q UP"]
+      <<: *java-health
+    networks: [backend]
+
+  # Socio de prueba OpenAS2 (AS2-94 / AS2-100), activo solo con el perfil demo.
+  openas2:
+    profiles: ["demo"]
+    build:
+      context: https://github.com/OpenAS2/OpenAs2App.git#v4.15.0
+      dockerfile_inline: |
+        FROM eclipse-temurin:21-jdk-jammy AS builder
+        WORKDIR /usr/src/openas2
+        COPY . .
+        RUN rm -f Server/dist/* Remote/dist/* Bundle/dist/* && ./mvnw -B -q clean package -DskipTests
+        RUN mkdir Runtime && cd Runtime && jar xf ../Server/dist/OpenAS2Server-*.zip
+        RUN cp start-container.sh Runtime/bin/ && chmod 755 Runtime/bin/*.sh && mv Runtime/config Runtime/config_template
+
+        FROM eclipse-temurin:21-jre-jammy
+        ENV OPENAS2_BASE=/opt/openas2 OPENAS2_HOME=/opt/openas2 OPENAS2_TMPDIR=/opt/openas2/temp
+        COPY --from=builder /usr/src/openas2/Runtime/bin /opt/openas2/bin
+        COPY --from=builder /usr/src/openas2/Runtime/lib /opt/openas2/lib
+        COPY --from=builder /usr/src/openas2/Runtime/resources /opt/openas2/resources
+        COPY --from=builder /usr/src/openas2/Runtime/config_template /opt/openas2/config_template
+        RUN useradd --uid 1000 --gid 0 --home-dir /opt/openas2 --no-create-home --shell /usr/sbin/nologin openas2 \
+            && mkdir -p /opt/openas2/config /opt/openas2/data /opt/openas2/logs /opt/openas2/temp \
+            && chown -R 1000:0 /opt/openas2 && chmod -R g=u /opt/openas2
+        USER 1000
+        WORKDIR /opt/openas2
+        ENTRYPOINT ["/opt/openas2/bin/start-container.sh"]
+    entrypoint: ["sh", "/interop/start.sh"]
+    tty: true
+    <<: [*restart, *logging]
+    depends_on:
+      as2-certs:
+        condition: service_completed_successfully
+    volumes:
+      - ../interop/openas2:/interop:ro
+      - as2certs:/certs:ro
+      - ./salida/openas2:/opt/openas2/data
+    healthcheck:
+      test: ["CMD", "sh", "-c", "grep -Eqi ':2760 [0-9a-f]+:[0-9a-f]{4} 0a' /proc/net/tcp /proc/net/tcp6"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+    networks: [backend]
+
   gateway:
     image: as2-platform-services:local
     command: ["java", "-jar", "/app/gateway.jar"]
@@ -141,12 +219,13 @@ services:
       DOCUMENTS_SERVICE_URL: http://documents-service:8084
       AS2_ADAPTER_URL: http://as2-adapter:8085
       # Inicio (AS2-99): servicios que este despliegue no incluye y que no se consultan.
-      GATEWAY_STATUS_EXCLUDE: alerts,as2-adapter
+      GATEWAY_STATUS_EXCLUDE: alerts
       APP_CORS_ALLOWED_ORIGINS: *cors-origins
     depends_on:
       auth-service: { condition: service_healthy }
       partners-service: { condition: service_healthy }
       documents-service: { condition: service_healthy }
+      as2-adapter: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "wget -qO- http://localhost:8765/actuator/health | grep -q UP"]
       <<: *java-health
@@ -199,6 +278,7 @@ services:
 volumes:
   dbdata:
   as2data:
+  as2certs:
 
 networks:
   backend:

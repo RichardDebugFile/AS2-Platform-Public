@@ -9,10 +9,14 @@ La plataforma corre en contenedores con Docker Compose. Se valida primero en loc
 | `gateway` | Punto único de entrada (JWT, rutas, traza de acceso) | ninguno |
 | `auth-service` | Identidad y sesiones | ninguno |
 | `partners-service` | Socios comerciales y su configuración AS2 | ninguno |
+| `documents-service` | Repositorio de documentos EDI y validación X12 | ninguno |
+| `as2-adapter` | Motor AS2 (envío y recepción con firma, cifrado y MDN) | ninguno |
+| `as2-certs` | Generación de certificados de prueba en el volumen `as2certs` | ninguno |
+| `openas2` | Servidor socio AS2 de prueba (solo con perfil `demo`) | ninguno |
 | `db` | PostgreSQL 16 con una base y un usuario por servicio | ninguno |
 | `backup` | `pg_dump` diario de cada base, conserva 7 días | ninguno |
 
-Los servicios de documentos, alertas y AS2 se incorporan al stack con sus historias.
+Alertas se incorpora al stack con su historia.
 
 ## Puesta en marcha
 
@@ -26,6 +30,20 @@ cd deploy/docker
 ./start.sh              # ./start.sh --no-build si las imágenes ya están construidas
 ./stop.sh               # detiene conservando los datos (./stop.sh --purge los borra)
 ```
+
+### Perfil demo (OpenAS2)
+
+Para probar el envío AS2 de punta a punta con un servidor socio real de código abierto (OpenAS2):
+
+```bash
+COMPOSE_PROFILES=demo ./start.sh
+```
+
+Con este perfil se levanta el servicio `openas2` con certificados de prueba y los documentos recibidos
+quedan en `salida/openas2/recibidos/PLATAFORMA/`.
+
+Sin el perfil `demo`, la plataforma arranca normalmente; el servicio `as2-adapter` está activo pero
+un intento de envío responderá 502 Bad Gateway ("No se pudo conectar…").
 
 O paso a paso:
 
