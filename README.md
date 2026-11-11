@@ -42,7 +42,7 @@ cd frontend && npm ci && npm run lint && npm test && npm run build
 Entorno completo en Docker (servicios, consola y proxy TLS): `deploy/docker/start.sh` (también en Git Bash)
 y `deploy/docker/smoke-test.sh` para verificarlo; `deploy/docker/stop.sh` lo detiene.
 
-Windows: `build.bat` → `start.bat` (base de datos + 6 servicios, cada uno en su ventana) → `stop.bat`.
+Windows: `build.bat` → `start.bat` (base de datos, 6 servicios y consola web, cada uno en su ventana) → `stop.bat`.
 Los scripts buscan un Java 25 o superior (`AS2_JAVA_HOME`, `JAVA_HOME`, carpetas de instalación
 habituales y PATH) y se detienen con un aviso si no lo encuentran; si tienes varios JDK, indica el 25
 con `set AS2_JAVA_HOME=C:\ruta\al\jdk-25`.
