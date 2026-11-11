@@ -62,3 +62,6 @@ __pycache__/
 deploy/docker/certs/
 deploy/docker/backups/
 deploy/docker/shared/
+
+# Lo que recibe OpenAS2 en la prueba de interoperabilidad (AS2-94)
+deploy/interop/salida/

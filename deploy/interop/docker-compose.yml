@@ -1,0 +1,92 @@
+# Prueba de interoperabilidad AS2 (AS2-94): la plataforma (as2-adapter) envia un 850 a OpenAS2, un
+# servidor AS2 de codigo abierto que hace de socio, y lee su MDN firmado. Ver README.md.
+# Independiente de la plataforma de deploy/docker: no usa su base de datos ni sus volumenes.
+name: as2-interop
+
+services:
+  certs:
+    image: eclipse-temurin:25-jre
+    command: ["sh", "/interop/gen-certs.sh"]
+    volumes:
+      - ./gen-certs.sh:/interop/gen-certs.sh:ro
+      - certs:/certs
+
+  openas2:
+    # OpenAS2 compilado desde su repositorio, en una version fija. Es el Dockerfile del proyecto sin
+    # apt-get: el zip de la distribucion se extrae con la herramienta jar del JDK, y la imagen solo
+    # necesita Docker Hub, GitHub y Maven Central.
+    build:
+      context: https://github.com/OpenAS2/OpenAs2App.git#v4.15.0
+      dockerfile_inline: |
+        FROM eclipse-temurin:21-jdk-jammy AS builder
+        WORKDIR /usr/src/openas2
+        COPY . .
+        RUN rm -f Server/dist/* Remote/dist/* Bundle/dist/* && ./mvnw -B -q clean package -DskipTests
+        RUN mkdir Runtime && cd Runtime && jar xf ../Server/dist/OpenAS2Server-*.zip
+        RUN cp start-container.sh Runtime/bin/ && chmod 755 Runtime/bin/*.sh && mv Runtime/config Runtime/config_template
+
+        FROM eclipse-temurin:21-jre-jammy
+        ENV OPENAS2_BASE=/opt/openas2 OPENAS2_HOME=/opt/openas2 OPENAS2_TMPDIR=/opt/openas2/temp
+        COPY --from=builder /usr/src/openas2/Runtime/bin /opt/openas2/bin
+        COPY --from=builder /usr/src/openas2/Runtime/lib /opt/openas2/lib
+        COPY --from=builder /usr/src/openas2/Runtime/resources /opt/openas2/resources
+        COPY --from=builder /usr/src/openas2/Runtime/config_template /opt/openas2/config_template
+        RUN useradd --uid 1000 --gid 0 --home-dir /opt/openas2 --no-create-home --shell /usr/sbin/nologin openas2 \
+            && mkdir -p /opt/openas2/config /opt/openas2/data /opt/openas2/logs /opt/openas2/temp \
+            && chown -R 1000:0 /opt/openas2 && chmod -R g=u /opt/openas2
+        USER 1000
+        WORKDIR /opt/openas2
+        ENTRYPOINT ["/opt/openas2/bin/start-container.sh"]
+    entrypoint: ["sh", "/interop/start.sh"]
+    tty: true
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+    volumes:
+      - ./openas2:/interop:ro
+      - certs:/certs:ro
+      # Lo que OpenAS2 recibe queda a la vista en esta carpeta.
+      - ./salida/openas2:/opt/openas2/data
+    ports:
+      - "127.0.0.1:4080:10080"
+    healthcheck:
+      # Mira si el puerto 10080 (0x2760) esta escuchando sin conectarse: una conexion vacia deja un
+      # error "Invalid HTTP Request" en el registro de OpenAS2 en cada comprobacion.
+      test: ["CMD", "sh", "-c", "grep -Eqi ':2760 [0-9a-f]+:[0-9a-f]{4} 0a' /proc/net/tcp /proc/net/tcp6"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+  as2-adapter:
+    build:
+      context: ../..
+      dockerfile: deploy/docker/Dockerfile
+    command: ["java", "-jar", "/app/as2-adapter.jar"]
+    depends_on:
+      certs:
+        condition: service_completed_successfully
+      openas2:
+        condition: service_healthy
+    environment:
+      AS2_SPIKE_ENABLED: "true"
+      AS2_SPIKE_URL: http://openas2:10080
+      AS2_SPIKE_FROM: PLATAFORMA
+      AS2_SPIKE_TO: OPENAS2
+      AS2_SPIKE_MDN_TO: edi.plataforma@example.com
+      AS2_SPIKE_KEYSTORE: /certs/plataforma/plataforma.p12
+      AS2_SPIKE_KEY_ALIAS: plataforma
+      AS2_SPIKE_PARTNER_CERTIFICATE: /certs/plataforma/openas2.cer
+      # La clave del almacen se lee de un archivo del volumen, no de una variable.
+      SPRING_CONFIG_IMPORT: "configtree:/certs/secrets/plataforma/"
+    volumes:
+      - certs:/certs:ro
+    ports:
+      - "127.0.0.1:8085:8085"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8085/actuator/health"]
+      interval: 5s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  certs:

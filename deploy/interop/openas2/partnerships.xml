@@ -1,0 +1,32 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Socios de OpenAS2 en la prueba de interoperabilidad (AS2-94). Todos los datos son ficticios.
+  OpenAS2 actua como socio: recibe de la plataforma, guarda el documento y responde un MDN firmado
+  con su clave "openas2". La firma de la plataforma se verifica con el certificado "plataforma".
+-->
+<partnerships>
+    <partner name="OpenAS2" as2_id="OPENAS2" x509_alias="openas2" email="edi.openas2@example.com"/>
+    <partner name="Plataforma" as2_id="PLATAFORMA" x509_alias="plataforma" email="edi.plataforma@example.com"/>
+
+    <partnership name="Plataforma-to-OpenAS2">
+        <sender name="Plataforma"/>
+        <receiver name="OpenAS2"/>
+        <attribute name="store_received_file_to"
+                   value="$properties.storageBaseDir$/recibidos/$msg.sender.as2_id$/$date.yyyyMMdd-HHmmss$-$msg.content-disposition.filename$"/>
+        <attribute name="reject_unsigned_messages" value="true"/>
+    </partnership>
+
+    <!-- Sentido inverso, para cuando la plataforma reciba (HU-16). Sin sondeo de carpetas. -->
+    <partnership name="OpenAS2-to-Plataforma">
+        <sender name="OpenAS2"/>
+        <receiver name="Plataforma"/>
+        <pollerConfig enabled="false"/>
+        <attribute name="protocol" value="as2"/>
+        <attribute name="as2_url" value="http://as2-adapter:8085/as2"/>
+        <attribute name="as2_mdn_to" value="edi.openas2@example.com"/>
+        <attribute name="as2_mdn_options"
+                   value="signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha-256"/>
+        <attribute name="encrypt" value="AES256_CBC"/>
+        <attribute name="sign" value="SHA-256"/>
+    </partnership>
+</partnerships>
