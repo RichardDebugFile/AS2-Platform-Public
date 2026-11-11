@@ -17,6 +17,11 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   con OpenAS2, un servidor AS2 de código abierto, que hace de socio, con certificados de prueba
   generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; todavía no se
   integra con la consola.
+- Inicio muestra el tablero de la operación (AS2-99). Muestra las cifras del rango elegido (por defecto
+  los últimos 7 días): documentos, correctos, con error y tasa de éxito. Incluye un gráfico de tráfico
+  por día, el reparto de resultados, el tráfico por socio y el estado de cada servicio con su latencia.
+  Se filtra por fechas, dirección y socio. Lo sirven `GET /api/documents/dashboard` y
+  `GET /api/system/status` (el gateway consulta la salud de cada servicio).
 
 ### Correcciones
 - `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con

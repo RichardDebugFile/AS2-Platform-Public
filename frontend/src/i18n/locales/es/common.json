@@ -34,9 +34,64 @@
   },
   "home": {
     "welcome": "Hola, {{name}}",
-    "intro": "Desde el menú accede a las secciones que permite su rol.",
+    "intro": "Resumen de la operación en el rango elegido.",
     "role": "Rol: {{roles}}",
-    "denied": "Su rol no tiene acceso a {{path}}. Se le trajo al inicio."
+    "denied": "Su rol no tiene acceso a {{path}}. Se le trajo al inicio.",
+    "filters": {
+      "range": "Rango de fechas",
+      "direction": "Dirección",
+      "partner": "Socio",
+      "all": "Todos",
+      "refresh": "Actualizar",
+      "clear": "Restablecer"
+    },
+    "kpi": {
+      "total": "Documentos",
+      "detail": "En curso: {{inProgress}} · Repetidos: {{duplicates}}",
+      "ok": "Correctos",
+      "failed": "Con error",
+      "successRate": "Tasa de éxito",
+      "rateHint": "Sobre los documentos finalizados",
+      "noRate": "Ningún documento con resultado final"
+    },
+    "byDay": {
+      "title": "Tráfico por día",
+      "ok": "Correctos",
+      "failed": "Con error",
+      "other": "En curso o repetidos"
+    },
+    "outcome": {
+      "title": "Resultado de los documentos",
+      "OK": "Correctos",
+      "FAILED": "Con error",
+      "IN_PROGRESS": "En curso",
+      "DUPLICATE": "Repetidos"
+    },
+    "byPartner": {
+      "title": "Tráfico por socio",
+      "partner": "Socio",
+      "inbound": "Entrantes",
+      "outbound": "Salientes",
+      "ok": "Correctos",
+      "failed": "Con error",
+      "total": "Total"
+    },
+    "system": {
+      "title": "Estado del sistema",
+      "refresh": "Revisar",
+      "checkedAt": "Revisado: {{at}}",
+      "latency": "{{ms}} ms",
+      "empty": "Sin datos de los servicios",
+      "error": "No se pudo consultar el estado: {{message}}",
+      "status": {
+        "UP": "En línea",
+        "DOWN": "Caído",
+        "OUT_OF_SERVICE": "Fuera de servicio",
+        "UNREACHABLE": "Sin respuesta"
+      }
+    },
+    "empty": "No hay documentos en el rango elegido.",
+    "error": "No se pudo cargar el tablero: {{message}}"
   },
   "placeholder": {
     "title": "Sección en construcción",
