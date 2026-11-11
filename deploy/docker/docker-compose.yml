@@ -140,6 +140,8 @@ services:
       ALERTS_SERVICE_URL: http://alerts-service:8082
       DOCUMENTS_SERVICE_URL: http://documents-service:8084
       AS2_ADAPTER_URL: http://as2-adapter:8085
+      # Inicio (AS2-99): servicios que este despliegue no incluye y que no se consultan.
+      GATEWAY_STATUS_EXCLUDE: alerts,as2-adapter
       APP_CORS_ALLOWED_ORIGINS: *cors-origins
     depends_on:
       auth-service: { condition: service_healthy }
