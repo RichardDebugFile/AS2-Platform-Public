@@ -5,6 +5,13 @@ rem habituales y el PATH.
 rem Cada candidato se prueba con "java -version": los JAR estan compilados para Java 25.
 rem Uso: call scripts\win\java.bat   (errorlevel 1 si no hay Java 25)
 set "JAVA="
+rem start.bat ya lo busco y lo pasa en AS2_JAVA a cada ventana: no se vuelve a buscar.
+if not defined AS2_JAVA goto :buscar
+if not exist "%AS2_JAVA%" goto :buscar
+set "JAVA=%AS2_JAVA%"
+exit /b 0
+
+:buscar
 if defined AS2_JAVA_HOME call :probar "%AS2_JAVA_HOME%\bin\java.exe"
 if not defined JAVA if defined JAVA_HOME call :probar "%JAVA_HOME%\bin\java.exe"
 rem El JDK que Maven usa para compilar (toolchains) tambien sirve para ejecutar.
@@ -29,11 +36,18 @@ exit /b 1
 :probar
 if not exist "%~1" exit /b 0
 set "AS2_JMAJOR=0"
-"%~1" -version 2>"%TEMP%\as2-java-version.txt" >nul
-for /f "usebackq tokens=3" %%V in (`findstr /i /c:" version " "%TEMP%\as2-java-version.txt"`) do (
+rem Archivo propio de esta ventana: varias ventanas pueden buscar a la vez.
+rem %RANDOM% se repite en ventanas abiertas en el mismo segundo: se le suma la hora con centesimas.
+set "AS2_T=%TIME::=%"
+set "AS2_T=%AS2_T:,=%"
+set "AS2_T=%AS2_T:.=%"
+set "AS2_T=%AS2_T: =0%"
+set "AS2_JVER=%TEMP%\as2-java-%AS2_T%-%RANDOM%.txt"
+"%~1" -version 2>"%AS2_JVER%" >nul
+for /f "usebackq tokens=3" %%V in (`findstr /i /c:" version " "%AS2_JVER%"`) do (
   for /f "delims=." %%M in ("%%~V") do set "AS2_JMAJOR=%%M"
 )
-del "%TEMP%\as2-java-version.txt" >nul 2>&1
+del "%AS2_JVER%" >nul 2>&1
 if %AS2_JMAJOR% GEQ 25 goto :aceptar
 rem Fuera de parentesis: una ruta como "Program Files (x86)" no rompe el echo.
 echo   Se descarta "%~1" ^(Java %AS2_JMAJOR%^)

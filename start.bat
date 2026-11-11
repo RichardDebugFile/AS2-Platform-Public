@@ -22,6 +22,8 @@ if errorlevel 1 (
   exit /b 1
 )
 echo Java: %JAVA%
+rem Cada ventana hereda AS2_JAVA y usa el mismo Java sin volver a buscar.
+set "AS2_JAVA=%JAVA%"
 "%JAVA%" -version
 echo.
 echo [2/3] Servicios (cada uno en su ventana)...
