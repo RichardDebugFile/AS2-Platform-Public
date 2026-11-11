@@ -30,7 +30,10 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 - Envío AS2 de prueba desde la consola (AS2-100). Está en el generador X12 y en el detalle de cada
   documento, para ADMIN y OPERATOR. Manda el documento al socio de prueba firmado y cifrado, y muestra
   el MDN: disposición, validez de la firma, coincidencia del MIC, Message-ID y tiempo de ida y vuelta.
-  Si el motor AS2 o el socio no responden, lo indica con el motivo.
+  Si el motor AS2 o el socio no responden, lo indica con el motivo. El envío se publica en
+  `POST /api/as2/test-send` por el gateway (sesión con ADMIN u OPERATOR). El as2-adapter entra al
+  stack de `deploy/docker` con certificados de prueba; con `COMPOSE_PROFILES=demo` arranca además
+  OpenAS2 como socio y el envío funciona de punta a punta. Sin el perfil, el envío responde 502.
 
 ### Correcciones
 - `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con

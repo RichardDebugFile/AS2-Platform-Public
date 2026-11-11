@@ -54,7 +54,8 @@ reutilizan en el siguiente arranque.
 ## Alcance
 
 Es una prueba de concepto. Hoy solo cubre el envío con MDN síncrono, desde un endpoint
-(`POST /spike/send`) que existe solo en este entorno (`AS2_SPIKE_ENABLED=true`). Lo que llega después:
+(`POST /api/as2/test-send`) que existe solo con `AS2_SPIKE_ENABLED=true` (este entorno y el perfil
+`demo` de `deploy/docker`). Lo que llega después:
 
 | Historia | Qué agrega |
 |---|---|

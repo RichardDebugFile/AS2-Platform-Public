@@ -47,7 +47,7 @@ class SpikeContextTest {
 
     @Test
     void elControladorDelSpikeArrancaConSuConfiguracion() throws Exception {
-        mvc.perform(post("/spike/send").content("ISA*00~"))
+        mvc.perform(post("/api/as2/test-send").content("ISA*00~"))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.error").value(org.hamcrest.Matchers.startsWith("No se pudo conectar")));
     }
