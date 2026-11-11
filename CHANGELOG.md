@@ -19,6 +19,13 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   integra con la consola.
 
 ### Correcciones
+- `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con
+  Java 17 en el PATH, los servicios se detenían con `UnsupportedClassVersionError` (AS2-96).
+- La base de datos de `start.bat` es un proyecto de Docker propio (`as2-platform-dev`). Compartía
+  nombre de proyecto y volumen con la plataforma de `deploy/docker`: tomaba su base, con otras claves,
+  y la dejaba sin base de datos (AS2-97).
+- `start.bat` abre también la consola web cuando el gateway ya responde, con el navegador en
+  `http://localhost:5173`, y `stop.bat` la detiene junto con los servicios (AS2-98).
 - "Abrir en el visor", desde el generador o desde el detalle de un documento, interpreta el documento
   recibido; antes seguía mostrando el resultado del documento interpretado anteriormente. Si se cambia
   el texto del visor, el resultado anterior se oculta hasta volver a pulsar "Interpretar". Desde el

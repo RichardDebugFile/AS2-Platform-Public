@@ -30,7 +30,7 @@ Vite · Vitest · GitHub Actions (CI, gitleaks, Trivy, CodeQL) · SonarQube Clou
 ## Puesta en marcha (desarrollo)
 
 Requisitos: JDK 25, Maven 3.9, Node 22, Docker. Maven selecciona el JDK 25 instalado aunque
-`JAVA_HOME` apunte a otra versión (*toolchains*); los scripts `.bat` usan `JAVA_HOME` si está definido.
+`JAVA_HOME` apunte a otra versión (*toolchains*); los scripts `.bat` buscan un Java 25 (ver abajo).
 
 ```bash
 git config core.hooksPath .githooks   # hooks de calidad (una vez por clon)
@@ -42,7 +42,10 @@ cd frontend && npm ci && npm run lint && npm test && npm run build
 Entorno completo en Docker (servicios, consola y proxy TLS): `deploy/docker/start.sh` (también en Git Bash)
 y `deploy/docker/smoke-test.sh` para verificarlo; `deploy/docker/stop.sh` lo detiene.
 
-Windows: `build.bat` → `start.bat` (base de datos + 6 servicios, cada uno en su ventana) → `stop.bat`.
+Windows: `build.bat` → `start.bat` (base de datos, 6 servicios y consola web, cada uno en su ventana) → `stop.bat`.
+Los scripts buscan un Java 25 o superior (`AS2_JAVA_HOME`, `JAVA_HOME`, carpetas de instalación
+habituales y PATH) y se detienen con un aviso si no lo encuentran; si tienes varios JDK, indica el 25
+con `set AS2_JAVA_HOME=C:\ruta\al\jdk-25`.
 Salud de cada servicio: `http://localhost:<puerto>/actuator/health`.
 
 ## Calidad y trazabilidad
