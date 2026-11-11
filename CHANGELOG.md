@@ -19,6 +19,8 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   integra con la consola.
 
 ### Correcciones
+- `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con
+  Java 17 en el PATH, los servicios se detenían con `UnsupportedClassVersionError` (AS2-95).
 - "Abrir en el visor", desde el generador o desde el detalle de un documento, interpreta el documento
   recibido; antes seguía mostrando el resultado del documento interpretado anteriormente. Si se cambia
   el texto del visor, el resultado anterior se oculta hasta volver a pulsar "Interpretar". Desde el

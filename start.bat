@@ -16,6 +16,14 @@ if not exist "gateway\target\gateway-1.0-SNAPSHOT.jar" (
   pause
   exit /b 1
 )
+call "%~dp0scripts\win\java.bat"
+if errorlevel 1 (
+  pause
+  exit /b 1
+)
+echo Java: %JAVA%
+"%JAVA%" -version
+echo.
 echo [2/3] Servicios (cada uno en su ventana)...
 start "" cmd /k call "%~dp0scripts\win\auth.bat"
 start "" cmd /k call "%~dp0scripts\win\partners.bat"
