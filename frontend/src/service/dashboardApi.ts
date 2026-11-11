@@ -51,6 +51,8 @@ export interface ServiceStatus {
     service: string;
     status: ServiceHealth;
     latencyMs: number | null;
+    /** Estado de cada verificacion interna del servicio (db, diskSpace...), por nombre. */
+    components?: Record<string, string>;
 }
 
 export interface SystemStatus {

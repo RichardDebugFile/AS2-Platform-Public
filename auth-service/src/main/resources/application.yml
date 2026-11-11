@@ -60,6 +60,9 @@ management:
     health:
       probes:
         enabled: true
+      # Solo el nombre y estado de cada verificacion (db, disco...), sin detalles: el gateway los
+      # muestra en Estado del sistema de la consola (AS2-99).
+      show-components: always
       show-details: never
 
 logging:

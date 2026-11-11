@@ -27,6 +27,9 @@ class DocumentsServiceApplicationTests {
     void healthRespondeUp() throws Exception {
         mvc.perform(get("/actuator/health"))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.status").value("UP"));
+                .andExpect(jsonPath("$.status").value("UP"))
+                // El gateway lee el estado de cada verificacion para la consola; sus detalles no se publican.
+                .andExpect(jsonPath("$.components.db.status").value("UP"))
+                .andExpect(jsonPath("$.components.db.details").doesNotExist());
     }
 }

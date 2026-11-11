@@ -17,7 +17,8 @@
     "auditGroup": "Auditoría",
     "audit": "Bitácora de auditoría",
     "administration": "Administración",
-    "users": "Usuarios"
+    "users": "Usuarios",
+    "system": "Estado del sistema"
   },
   "userMenu": {
     "logout": "Cerrar sesión"
@@ -87,7 +88,8 @@
         "UP": "En línea",
         "DOWN": "Caído",
         "OUT_OF_SERVICE": "Fuera de servicio",
-        "UNREACHABLE": "Sin respuesta"
+        "UNREACHABLE": "Sin respuesta",
+        "UNKNOWN": "Desconocido"
       }
     },
     "empty": "No hay documentos en el rango elegido.",
@@ -103,5 +105,46 @@
     "CONFIG_MISSING": "La consola no tiene configurada la dirección del servidor (config.js).",
     "FORBIDDEN": "No tiene permiso para esta acción.",
     "UNKNOWN": "Ocurrió un error inesperado."
+  },
+  "systemPage": {
+    "intro": "Salud de cada microservicio, consultada por el gateway, y el flujo reciente de documentos.",
+    "allUp": "Todos los servicios en línea",
+    "problems_one": "{{count}} servicio con problemas",
+    "problems_other": "{{count}} servicios con problemas",
+    "auto": "Revisión automática (30 s)",
+    "latency": "Latencia:",
+    "noComponents": "El servicio no publica verificaciones internas.",
+    "gatewayNote": "Es quien responde esta consulta: si la ve, está en línea.",
+    "components": {
+      "db": "Base de datos",
+      "diskSpace": "Espacio en disco",
+      "ping": "Respuesta",
+      "livenessState": "Proceso activo",
+      "readinessState": "Listo para atender",
+      "ssl": "Certificados TLS",
+      "mail": "Servidor de correo"
+    },
+    "flow": {
+      "title": "Flujo de documentos",
+      "today": "Documentos de hoy",
+      "inbound": "Entrantes hoy",
+      "outbound": "Salientes hoy",
+      "failed": "Con error hoy",
+      "lastInbound": "Último entrante:",
+      "lastOutbound": "Último saliente:",
+      "none": "ninguno todavía",
+      "recent": "Últimos {{count}} documentos",
+      "empty": "Aún no hay documentos.",
+      "error": "Parte del flujo no se pudo cargar: {{message}}",
+      "columns": {
+        "createdAt": "Fecha",
+        "direction": "Dirección",
+        "partner": "Socio",
+        "type": "Tipo",
+        "status": "Estado"
+      }
+    },
+    "componentOk": "Correcta",
+    "componentDown": "Con falla"
   }
 }

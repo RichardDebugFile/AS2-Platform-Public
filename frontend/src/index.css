@@ -315,3 +315,28 @@ body {
     min-width: 48px;
     text-align: right;
 }
+.system-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--as2-spacing-md);
+}
+.component-list {
+    list-style: none;
+    margin: var(--as2-spacing-sm) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--as2-spacing-xs);
+}
+.component-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--as2-spacing-sm);
+}
+.flow-last {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--as2-spacing-xs) var(--as2-spacing-xl);
+    margin: var(--as2-spacing-lg) 0;
+}

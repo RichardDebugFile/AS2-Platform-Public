@@ -5,17 +5,11 @@ import { useTranslation } from "react-i18next";
 import { dashboardApi, type ServiceStatus, type SystemStatus } from "../../service/dashboardApi";
 import type { ApiResponse } from "../../service/dataService";
 import { formatDateTime } from "../../utils/dateTime";
+import { healthLevel, KNOWN_HEALTH } from "../system/serviceHealth";
 
 /** Cada cuanto se vuelve a consultar la salud de los servicios. */
 export const STATUS_REFRESH_MS = 30_000;
 
-const KNOWN = new Set(["UP", "DOWN", "OUT_OF_SERVICE", "UNREACHABLE"]);
-
-function badge(status: string): "success" | "error" | "warning" {
-    if (status === "UP") return "success";
-    if (status === "OUT_OF_SERVICE") return "warning";
-    return "error";
-}
 
 /** Estado del sistema (HU-20): un renglon por servicio, con su latencia. */
 export default function SystemStatusCard() {
@@ -45,7 +39,7 @@ export default function SystemStatusCard() {
         return () => globalThis.clearInterval(id);
     }, [apply]);
 
-    const label = (s: ServiceStatus) => (KNOWN.has(s.status) ? t(`home.system.status.${s.status}`) : s.status);
+    const label = (s: ServiceStatus) => (KNOWN_HEALTH.has(s.status) ? t(`home.system.status.${s.status}`) : s.status);
 
     return (
         <Card
@@ -64,7 +58,7 @@ export default function SystemStatusCard() {
                 locale={{ emptyText: loading ? " " : t("home.system.empty") }}
                 renderItem={(s) => (
                     <List.Item data-testid={`service-${s.service}`} className="service-row">
-                        <Badge status={badge(s.status)} text={<span className="mono-text">{s.service}</span>} />
+                        <Badge status={healthLevel(s.status)} text={<span className="mono-text">{s.service}</span>} />
                         <span className="service-state">
                             <Typography.Text type="secondary">{label(s)}</Typography.Text>
                             {/* La latencia del gateway es la de si mismo: no aporta. */}

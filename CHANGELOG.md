@@ -22,6 +22,11 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   por día, el reparto de resultados, el tráfico por socio y el estado de cada servicio con su latencia.
   Se filtra por fechas, dirección y socio. Lo sirven `GET /api/documents/dashboard` y
   `GET /api/system/status` (el gateway consulta la salud de cada servicio).
+- Pantalla "Estado del sistema" en Auditoría, para todos los roles (AS2-99). Muestra cada
+  microservicio con su estado, su latencia y sus verificaciones internas (base de datos, espacio en
+  disco, proceso activo…), y se revisa sola cada 30 segundos. Incluye el flujo de documentos: los de
+  hoy por dirección y con error, el último entrante y el último saliente, y los 10 más recientes. Los
+  servicios publican el estado de esas verificaciones sin sus detalles (`show-components: always`).
 - Envío AS2 de prueba desde la consola (AS2-100). Está en el generador X12 y en el detalle de cada
   documento, para ADMIN y OPERATOR. Manda el documento al socio de prueba firmado y cifrado, y muestra
   el MDN: disposición, validez de la firma, coincidencia del MIC, Message-ID y tiempo de ida y vuelta.

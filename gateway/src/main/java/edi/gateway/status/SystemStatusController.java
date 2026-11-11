@@ -10,6 +10,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeMap;
 import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -33,8 +34,12 @@ import reactor.netty.http.client.HttpClient;
 @RestController
 public class SystemStatusController {
 
-    /** Salud de un servicio: UP, DOWN, OUT_OF_SERVICE o UNREACHABLE si no respondio. */
-    public record ServiceStatus(String service, String status, Long latencyMs) {
+    /**
+     * Salud de un servicio: UP, DOWN, OUT_OF_SERVICE o UNREACHABLE si no respondio. {@code components}
+     * es el estado de cada verificacion interna que publica el servicio (base de datos, disco...), por
+     * nombre; sin detalles.
+     */
+    public record ServiceStatus(String service, String status, Long latencyMs, Map<String, String> components) {
     }
 
     public record SystemStatus(Instant checkedAt, List<ServiceStatus> services) {
@@ -76,7 +81,7 @@ public class SystemStatusController {
             return checks.collectList().map(list -> {
                 List<ServiceStatus> all = new ArrayList<>();
                 // El gateway responde esta misma peticion: esta en marcha.
-                all.add(new ServiceStatus("gateway", "UP", 0L));
+                all.add(new ServiceStatus("gateway", "UP", 0L, Map.of()));
                 all.addAll(list);
                 return new SystemStatus(clock.instant(), all);
             });
@@ -108,7 +113,20 @@ public class SystemStatusController {
                 .exchangeToMono(res -> res.bodyToMono(JSON).defaultIfEmpty(Map.of()))
                 .timeout(timeout)
                 .map(body -> new ServiceStatus(name, String.valueOf(body.getOrDefault("status", "UNKNOWN")),
-                        Duration.ofNanos(System.nanoTime() - start).toMillis()))
-                .onErrorResume(e -> Mono.just(new ServiceStatus(name, UNREACHABLE, null)));
+                        Duration.ofNanos(System.nanoTime() - start).toMillis(), components(body)))
+                .onErrorResume(e -> Mono.just(new ServiceStatus(name, UNREACHABLE, null, Map.of())));
+    }
+
+    /** {@code {"components":{"db":{"status":"UP",...}}}} → {@code {db=UP}}, ordenado por nombre. */
+    static Map<String, String> components(Map<String, Object> body) {
+        Map<String, String> out = new TreeMap<>();
+        if (body.get("components") instanceof Map<?, ?> all) {
+            all.forEach((k, v) -> {
+                if (v instanceof Map<?, ?> c && c.get("status") != null) {
+                    out.put(String.valueOf(k), String.valueOf(c.get("status")));
+                }
+            });
+        }
+        return out;
     }
 }

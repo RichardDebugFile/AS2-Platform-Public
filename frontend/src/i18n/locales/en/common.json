@@ -17,7 +17,8 @@
     "auditGroup": "Audit",
     "audit": "Audit log",
     "administration": "Administration",
-    "users": "Users"
+    "users": "Users",
+    "system": "System status"
   },
   "userMenu": {
     "logout": "Sign out"
@@ -87,7 +88,8 @@
         "UP": "Online",
         "DOWN": "Down",
         "OUT_OF_SERVICE": "Out of service",
-        "UNREACHABLE": "Not responding"
+        "UNREACHABLE": "Not responding",
+        "UNKNOWN": "Unknown"
       }
     },
     "empty": "No documents in the selected range.",
@@ -103,5 +105,46 @@
     "CONFIG_MISSING": "The console has no server address configured (config.js).",
     "FORBIDDEN": "You are not allowed to perform this action.",
     "UNKNOWN": "An unexpected error occurred."
+  },
+  "systemPage": {
+    "intro": "Health of each microservice, checked by the gateway, and the recent document flow.",
+    "allUp": "All services online",
+    "problems_one": "{{count}} service with problems",
+    "problems_other": "{{count}} services with problems",
+    "auto": "Auto check (30 s)",
+    "latency": "Latency:",
+    "noComponents": "The service publishes no internal checks.",
+    "gatewayNote": "It answers this request: if you see it, it is online.",
+    "components": {
+      "db": "Database",
+      "diskSpace": "Disk space",
+      "ping": "Response",
+      "livenessState": "Process alive",
+      "readinessState": "Ready to serve",
+      "ssl": "TLS certificates",
+      "mail": "Mail server"
+    },
+    "flow": {
+      "title": "Document flow",
+      "today": "Documents today",
+      "inbound": "Inbound today",
+      "outbound": "Outbound today",
+      "failed": "Failed today",
+      "lastInbound": "Last inbound:",
+      "lastOutbound": "Last outbound:",
+      "none": "none yet",
+      "recent": "Last {{count}} documents",
+      "empty": "No documents yet.",
+      "error": "Part of the flow could not be loaded: {{message}}",
+      "columns": {
+        "createdAt": "Date",
+        "direction": "Direction",
+        "partner": "Partner",
+        "type": "Type",
+        "status": "Status"
+      }
+    },
+    "componentOk": "OK",
+    "componentDown": "Failing"
   }
 }

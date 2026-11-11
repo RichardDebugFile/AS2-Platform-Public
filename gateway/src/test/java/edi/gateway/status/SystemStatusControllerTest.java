@@ -1,6 +1,7 @@
 package edi.gateway.status;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.entry;
 import static org.assertj.core.api.Assertions.tuple;
 
 import com.sun.net.httpserver.HttpServer;
@@ -62,8 +63,9 @@ class SystemStatusControllerTest {
 
     @Test
     void consultaCadaServicioUnaVezYMarcaLosCaidosOSinRespuesta() throws Exception {
-        up = health(200, "{\"status\":\"UP\"}");
-        down = health(503, "{\"status\":\"DOWN\"}");
+        up = health(200, "{\"status\":\"UP\",\"components\":{\"ping\":{\"status\":\"UP\"},"
+                + "\"db\":{\"status\":\"UP\",\"details\":{\"database\":\"PostgreSQL\"}}}}");
+        down = health(503, "{\"status\":\"DOWN\",\"components\":{\"db\":{\"status\":\"DOWN\"}}}");
         RouteDefinitionLocator routes = () -> Flux.just(
                 route("partners", url(up)),
                 route("documents", url(down)),
@@ -83,6 +85,11 @@ class SystemStatusControllerTest {
                 tuple("as2-adapter", SystemStatusController.UNREACHABLE));
         assertThat(s.services().get(1).latencyMs()).isNotNull();
         assertThat(s.services().get(3).latencyMs()).isNull();
+        // Verificaciones internas por nombre, sin sus detalles.
+        assertThat(s.services().get(1).components()).containsExactly(entry("db", "UP"), entry("ping", "UP"));
+        assertThat(s.services().get(2).components()).containsExactly(entry("db", "DOWN"));
+        assertThat(s.services().get(0).components()).isEmpty();
+        assertThat(s.services().get(3).components()).isEmpty();
     }
 
     @Test
