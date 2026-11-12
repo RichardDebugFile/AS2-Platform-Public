@@ -272,6 +272,24 @@ class DocumentRepositoryApiIntegrationTest {
     }
 
     @Test
+    void tablero_cuentaElRangoPorSocioYDia_yRechazaRangosInvalidos() throws Exception {
+        ingest("SOCIO-A", Direction.INBOUND, "<T1@example.com>", Samples.po850()).andExpect(status().isCreated());
+
+        mvc.perform(get("/api/documents/dashboard")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.byDay.length()").value(7))
+                .andExpect(jsonPath("$.total").isNumber());
+        mvc.perform(get("/api/documents/dashboard").param("partner", "socio-a").param("direction", "INBOUND"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.byPartner.length()").value(1))
+                .andExpect(jsonPath("$.byPartner[0].partner").value("SOCIO-A"))
+                .andExpect(jsonPath("$.byDirection.OUTBOUND").doesNotExist());
+        mvc.perform(get("/api/documents/dashboard").param("from", "2026-11-10").param("to", "2026-11-01"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/documents/dashboard").param("from", "2024-01-01").param("to", "2026-11-01"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     void socioNoRegistrado_vacio_oDireccionInvalida_son400() throws Exception {
         ingest("NO-EXISTE", Direction.INBOUND, "<M8@example.com>", Samples.po850())
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("PARTNER_UNKNOWN"));

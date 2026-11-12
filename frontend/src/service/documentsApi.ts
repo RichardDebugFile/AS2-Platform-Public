@@ -142,6 +142,8 @@ export const documentsApi = {
     payload: (id: string) => dataService.get<string>(`${byId(id)}/payload`),
     storageStatus: (id: string) => dataService.get<StorageStatus>(`${byId(id)}/storage-status`),
     stats: () => dataService.get<DocumentStats>(`${BASE}/stats`),
+    /** Ultimos documentos registrados, del mas nuevo al mas antiguo. */
+    recent: (limit = 10) => dataService.get<EdiDocument[]>(`${BASE}/recent?limit=${limit}`),
     remove: (id: string) => dataService.delete<void>(byId(id)),
     ingest: ({ partner, direction, content, messageId }: IngestRequest) =>
         dataService.postText<IngestResponse>(

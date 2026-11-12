@@ -5,6 +5,7 @@ import UsersPage from "../pages/UsersPage";
 import PartnersPage from "../pages/partners/PartnersPage";
 import AuditPage from "../pages/audit/AuditPage";
 import DocumentsPage from "../pages/documents/DocumentsPage";
+import SystemPage from "../pages/system/SystemPage";
 import Login from "../pages/auth/Login";
 import AppLayout from "./AppLayout";
 import PublicRoutes from "./PublicRoutes";
@@ -26,6 +27,7 @@ export default function AppRoutes() {
                     <Route path="/documents" element={<DocumentsPage />} />
                     <Route path="/alerts" element={<SectionPlaceholder ns="alerts" />} />
                     <Route path="/audit" element={<AuditPage />} />
+                    <Route path="/system-status" element={<SystemPage />} />
                     <Route element={<RequireRole allowedRoles={ADMIN_ONLY} />}>
                         <Route path="/admin/users" element={<UsersPage />} />
                     </Route>

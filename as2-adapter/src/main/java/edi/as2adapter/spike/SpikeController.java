@@ -24,9 +24,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
- * Spike AS2-94: envia un documento al socio configurado y devuelve lo que paso con su MDN. Solo existe
- * con {@code as2.spike.enabled=true} y no se publica por el gateway; la integracion con la consola y el
- * repositorio llega con HU-15.
+ * Envio de prueba AS2-94 / AS2-100: envia un documento al socio configurado y devuelve lo que paso con
+ * su MDN. Solo existe con {@code as2.spike.enabled=true}. El gateway enruta
+ * {@code POST /api/as2/test-send} hacia este controlador y exige ADMIN u OPERATOR; la integracion
+ * completa con la consola y el repositorio llega con HU-15.
  */
 @RestController
 @ConditionalOnProperty(name = "as2.spike.enabled", havingValue = "true")
@@ -55,7 +56,7 @@ public class SpikeController {
     }
 
     /** Envia el cuerpo (un X12, por ejemplo) como {@code fileName} y resume el MDN. */
-    @PostMapping("/spike/send")
+    @PostMapping("/api/as2/test-send")
     public Map<String, Object> send(@RequestBody byte[] document,
                                     @RequestParam(defaultValue = "documento.edi") String fileName) {
         String name = safeFileName(fileName);

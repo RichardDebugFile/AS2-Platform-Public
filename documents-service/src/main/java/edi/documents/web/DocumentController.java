@@ -5,6 +5,7 @@ import edi.documents.ingest.DocumentIngestService.IngestResult;
 import edi.documents.ingest.DocumentWriter;
 import edi.documents.ingest.IngestCommand;
 import edi.documents.ingest.IngestOutcome;
+import edi.documents.query.Dashboard;
 import edi.documents.query.DocumentQueryService;
 import edi.documents.query.DocumentQueryService.Filter;
 import edi.documents.query.DocumentQueryService.MdnView;
@@ -94,6 +95,15 @@ public class DocumentController {
     @GetMapping("/stats")
     public Stats stats() {
         return query.stats();
+    }
+
+    /** Tablero de Inicio (AS2-99): cifras del rango, por socio y por dia. */
+    @GetMapping("/dashboard")
+    public Dashboard dashboard(
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate from,
+            @RequestParam(required = false) @DateTimeFormat(iso = DateTimeFormat.ISO.DATE) LocalDate to,
+            @RequestParam(required = false) Direction direction, @RequestParam(required = false) String partner) {
+        return query.dashboard(from, to, direction, partner);
     }
 
     @GetMapping("/by-message-id")

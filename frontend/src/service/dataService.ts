@@ -18,6 +18,8 @@ export interface ApiError {
     code: string;
     message: string;
     status: number;
+    /** Texto del campo "error" del cuerpo, si lo trae (p. ej. el motivo de un 502 del motor AS2). */
+    detail?: string;
 }
 
 export type ApiResponse<T = unknown> = { ok: true; data: T } | { ok: false; error: ApiError };
@@ -51,6 +53,7 @@ function errorFrom(json: unknown, status: number): ApiError {
         code: typeof obj.code === "string" ? obj.code : `HTTP_${status}`,
         message: typeof obj.message === "string" ? obj.message : `Error HTTP ${status}`,
         status,
+        ...(typeof obj.error === "string" ? { detail: obj.error } : {}),
     };
 }
 

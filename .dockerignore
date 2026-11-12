@@ -12,6 +12,8 @@ _local/
 deploy/docker/.env
 deploy/docker/certs/
 deploy/docker/backups/
+deploy/docker/shared/
+deploy/docker/salida/
 *.p12
 *.pem
 *.key

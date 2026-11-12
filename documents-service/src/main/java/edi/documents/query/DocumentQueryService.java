@@ -8,6 +8,7 @@ import edi.documents.store.Document;
 import edi.documents.store.DocumentMdn;
 import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentRepository;
+import edi.documents.store.DocumentRepository.DashboardRow;
 import edi.documents.store.DocumentStatus;
 import edi.documents.store.PartnerCopyStatus;
 import jakarta.persistence.criteria.CriteriaBuilder;
@@ -131,6 +132,27 @@ public class DocumentQueryService {
         List<DayCount> days = new ArrayList<>();
         perDay.forEach((day, n) -> days.add(new DayCount(day, n)));
         return new Stats(total, byStatus, counts(documents.countByType()), counts(documents.countByDirection()), days);
+    }
+
+    /** Rango maximo del tablero: un año. */
+    static final int DASHBOARD_MAX_DAYS = 366;
+
+    /**
+     * Tablero de Inicio (AS2-99): por defecto los ultimos 7 dias. Socio y direccion son opcionales;
+     * un rango invertido o de mas de un año se rechaza.
+     */
+    public Dashboard dashboard(LocalDate from, LocalDate to, Direction direction, String partner) {
+        LocalDate last = to != null ? to : LocalDate.now(clock.withZone(zone));
+        LocalDate first = from != null ? from : last.minusDays(STATS_DAYS - 1L);
+        if (first.isAfter(last)) {
+            throw new IllegalArgumentException("La fecha inicial es posterior a la final");
+        }
+        if (first.plusDays(DASHBOARD_MAX_DAYS).isBefore(last)) {
+            throw new IllegalArgumentException("El rango no puede superar " + DASHBOARD_MAX_DAYS + " dias");
+        }
+        Filter f = new Filter(partner, direction, null, null, first, last, null, null);
+        List<DashboardRow> rows = documents.findBy(spec(f), q -> q.as(DashboardRow.class).all());
+        return Dashboard.of(first, last, rows, zone);
     }
 
     private static Map<String, Long> counts(List<Object[]> rows) {

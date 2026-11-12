@@ -251,6 +251,7 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
             <DocumentDrawer
                 key={selected?.id ?? "none"}
                 doc={selected}
+                canSend={canEdit}
                 canDelete={canDelete}
                 onClose={() => setSelected(null)}
                 onOpenInViewer={(text) => {

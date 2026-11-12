@@ -14,6 +14,12 @@ públicas y registra una traza JSON de cada petición. Puerto **8765**.
 | `/api/documents/**` | documents-service :8084 |
 | `/api/as2/**`, `/api/mdn/**`, `/as2/receive` | as2-adapter :8085 |
 | `POST /internal/as2/mdn-callback` → `/internal/as2/mdn` | documents-service :8084 |
+| `GET /api/system/status` | el propio gateway: consulta `/actuator/health` de cada destino de la tabla |
+
+`/api/system/status` (AS2-99) devuelve, por servicio, su estado (`UP`, `DOWN`, `OUT_OF_SERVICE` o
+`UNREACHABLE` si no responde en 2 s, `gateway.system-status.timeout-ms`), la latencia y el estado de cada
+verificación interna (`db`, `diskSpace`…), sin detalles. Los ids de ruta de `GATEWAY_STATUS_EXCLUDE`
+no se consultan (servicios que un despliegue no incluye).
 
 ## Seguridad en el borde
 

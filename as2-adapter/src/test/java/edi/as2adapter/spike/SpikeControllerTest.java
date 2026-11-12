@@ -58,7 +58,7 @@ class SpikeControllerTest {
 
     @Test
     void enviaElDocumentoYResumeElMdn() throws Exception {
-        mvc(props(null)).perform(post("/spike/send").param("fileName", "orden-850.edi")
+        mvc(props(null)).perform(post("/api/as2/test-send").param("fileName", "orden-850.edi")
                         .contentType(MediaType.TEXT_PLAIN).content("ISA*00~ST*850*0001~SE*2*0001~"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.delivered").value(true))
@@ -72,7 +72,7 @@ class SpikeControllerTest {
     @Test
     void unFalloDelSocioResponde502ConElMotivo() throws Exception {
         reply.set("http-500");
-        mvc(props("plataforma")).perform(post("/spike/send").content("x".getBytes(StandardCharsets.US_ASCII)))
+        mvc(props("plataforma")).perform(post("/api/as2/test-send").content("x".getBytes(StandardCharsets.US_ASCII)))
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.error").value("El socio respondio HTTP 500 sin MDN"));
     }
