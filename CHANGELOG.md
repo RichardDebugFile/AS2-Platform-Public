@@ -34,6 +34,8 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   `POST /api/as2/test-send` por el gateway (sesión con ADMIN u OPERATOR). El as2-adapter entra al
   stack de `deploy/docker` con certificados de prueba; con `COMPOSE_PROFILES=demo` arranca además
   OpenAS2 como socio y el envío funciona de punta a punta. Sin el perfil, el envío responde 502.
+- Si un servicio está detenido o caído, el gateway responde 503 con su nombre ("El servicio
+  as2-adapter no responde") en lugar de un 500 genérico, y la consola lo muestra así.
 
 ### Correcciones
 - `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con

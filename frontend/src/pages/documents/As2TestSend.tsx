@@ -48,7 +48,8 @@ export default function As2TestSend({ content, fileName }: Readonly<Props>) {
     };
 
     const errorText = (e: ApiError) => {
-        if (e.status === 502) return t("as2Test.unavailable");
+        // 502: el motor respondio pero el socio no; 503: el gateway no llega al motor (detenido o caido).
+        if (e.status === 502 || e.status === 503) return t("as2Test.unavailable");
         if (e.status === 403) return t("as2Test.forbidden");
         return e.message;
     };

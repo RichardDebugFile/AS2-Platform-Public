@@ -79,6 +79,17 @@ describe("envio AS2 de prueba", () => {
         expect(within(dialog).getByText("Connection refused")).toBeInTheDocument();
     });
 
+    it("con el motor AS2 detenido (503 del gateway) da el mismo aviso", async () => {
+        fetchMock.mockResolvedValue(json(503, { code: "SERVICE_UNAVAILABLE", message: "El servicio as2-adapter no responde", error: "El servicio as2-adapter no responde" }));
+        renderSend();
+
+        fireEvent.click(screen.getByRole("button", { name: /Enviar por AS2/ }));
+
+        const dialog = await screen.findByRole("dialog");
+        expect(within(dialog).getByText("El motor AS2 o el socio de prueba no respondió, o el envío falló.")).toBeInTheDocument();
+        expect(within(dialog).getByText("El servicio as2-adapter no responde")).toBeInTheDocument();
+    });
+
     it("sin documento el boton esta deshabilitado", async () => {
         renderSend(null);
         await waitFor(() => expect(screen.getByRole("button", { name: /Enviar por AS2/ })).toBeDisabled());
