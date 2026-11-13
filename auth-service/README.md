@@ -75,5 +75,7 @@ mvn -pl auth-service verify
 `AuthFlowIntegrationTest` recorre los escenarios de aceptación contra PostgreSQL. Sin base de datos
 local se salta; en el CI es obligatoria.
 
-Colección de Postman: [`postman/auth-service.postman_collection.json`](postman/auth-service.postman_collection.json)
-(variable `baseUrl`, por defecto `http://localhost:8083`).
+Colección de Postman: [`postman/auth-service.postman_collection.json`](postman/auth-service.postman_collection.json),
+a través del gateway (`host = https://localhost`, contraseña del administrador en `adminPassword`).
+Crea un usuario de prueba aleatorio, le activa el segundo factor calculando el código TOTP en la propia
+colección y lo desactiva al final. Cómo correrla con Newman: `deploy/docker/README.md`.

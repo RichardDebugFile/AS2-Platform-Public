@@ -261,8 +261,11 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const r = pm.response.json();",
+                  "// Si el socio no confirma, la respuesta completa (sin secretos) ayuda a ver por que.",
+                  "if (!r.delivered) console.log('Respuesta del envío:', JSON.stringify(r));",
                   "pm.test('delivered = true', () => pm.expect(r.delivered).to.be.true);",
-                  "pm.test('MDN procesado', () => pm.expect(r.disposition).to.include('processed'));",
+                  "pm.test('MDN procesado, sin error ni aviso', () => pm.expect(r.disposition).to.match(/;\\s*processed\\s*$/i));",
+                  "pm.test('responde al mensaje enviado', () => pm.expect(r.originalMessageId).to.eql(r.messageId));",
                   "pm.test('MDN firmado y firma válida', () => { pm.expect(r.mdnSigned).to.be.true; pm.expect(r.mdnSignatureValid).to.be.true; });",
                   "pm.test('MIC coincide', () => pm.expect(r.micMatches).to.be.true);"
                 ]

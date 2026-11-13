@@ -1,0 +1,913 @@
+{
+  "info": {
+    "name": "gateway",
+    "description": "Borde de la plataforma (HU-05, HU-20): sin sesión todo da 401, salud de cada servicio, protección CSRF, permisos por rol y rutas que no se publican. Contra el stack Docker: host = https://localhost (con --insecure en Newman por el certificado local) y adminPassword = ADMIN_PASSWORD de deploy/docker/.env, sin escribirla en la colección. Se ejecuta completa y en orden. Crea un AUDITOR aleatorio que se desactiva en \"Limpieza\".",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sin sesión",
+      "item": [
+        {
+          "name": "Estado del sistema (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/system/status",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documentos (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/search",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "search"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Socios (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi usuario (401)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users/me",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Sesión (vía gateway)",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear usuario auditor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\",\n  \"email\": \"{{auditorUser}}@example.com\",\n  \"roles\": [\n    \"AUDITOR\"\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sin credenciales fijas en el repositorio: usuario y contrasena aleatorios por corrida.",
+                  "pm.collectionVariables.set('auditorUser', 'auditor-gw-' + Date.now());",
+                  "const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';",
+                  "let s = '';",
+                  "for (let i = 0; i < 24; i++) s += abc[Math.floor(Math.random() * abc.length)];",
+                  "pm.collectionVariables.set('auditorPassword', s + '#1');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const u = pm.response.json();",
+                  "pm.collectionVariables.set('auditorId', u.id);",
+                  "pm.test('rol AUDITOR', () => pm.expect(u.roles).to.eql(['AUDITOR']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Salud",
+      "item": [
+        {
+          "name": "Estado del sistema",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/system/status",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "const s = Object.fromEntries(r.services.map(x => [x.service, x]));",
+                  "pm.test('revisado ahora', () => pm.expect(Date.parse(r.checkedAt)).to.be.above(Date.now() - 60000));",
+                  "pm.test('gateway en línea', () => pm.expect(s.gateway.status).to.eql('UP'));",
+                  "['partners-service', 'auth-service', 'documents-service'].forEach(n => {",
+                  "  pm.test(n + ' en línea con su base de datos', () => {",
+                  "    pm.expect(s[n].status).to.eql('UP');",
+                  "    pm.expect(s[n].latencyMs).to.be.a('number');",
+                  "    pm.expect(s[n].components.db).to.eql('UP');",
+                  "  });",
+                  "});",
+                  "pm.test('as2-adapter en línea', () => pm.expect(s['as2-adapter'].status).to.eql('UP'));",
+                  "pm.test('sin detalles internos', () => r.services.forEach(x => Object.values(x.components || {}).forEach(v => pm.expect(v).to.be.a('string'))));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Protección CSRF",
+      "item": [
+        {
+          "name": "POST sin token CSRF (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.remove('X-XSRF-TOKEN');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST con token CSRF ajeno (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: 'token-de-otro-sitio' });"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "POST con token CSRF (200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "Con la sesión en cookie, todo lo que modifica exige la cabecera X-XSRF-TOKEN igual a la cookie."
+    },
+    {
+      "name": "Permisos por rol (AUDITOR)",
+      "item": [
+        {
+          "name": "Login (auditor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sesión abierta', () => pm.expect(pm.response.json().username).to.eql(pm.variables.get('auditorUser')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar socios (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado del sistema (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/system/status",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "system",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar X12 (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar un documento (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Configuración SMTP, solo ADMIN (403)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear usuarios, solo ADMIN (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"no-debe-crearse\",\n  \"password\": \"x\",\n  \"email\": \"no@example.com\",\n  \"roles\": [\n    \"ADMIN\"\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Rutas no publicadas",
+      "item": [
+        {
+          "name": "Bitácora interna",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/internal/audit-logs",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "internal",
+                "audit-logs"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no responde un servicio', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.not.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Actuator de los servicios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/actuator/env",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "actuator",
+                "env"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('no responde un servicio', () => pm.expect(pm.response.headers.get('Content-Type') || '').to.not.include('application/json'));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "El proxy solo publica /api, /auth, /users, /.well-known, la recepción AS2 y la consola: estas rutas devuelven la consola, nunca la respuesta de un servicio."
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar usuario auditor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{auditorId}}/active",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{auditorId}}",
+                "active"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('auditorId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('usuario inactivo', () => pm.expect(pm.response.json().active).to.be.false);",
+                  "pm.collectionVariables.set('auditorId', '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "auditorUser",
+      "value": ""
+    },
+    {
+      "key": "auditorPassword",
+      "value": ""
+    },
+    {
+      "key": "auditorId",
+      "value": ""
+    }
+  ]
+}
