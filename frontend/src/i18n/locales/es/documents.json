@@ -12,6 +12,7 @@
     "sample": "Cargar ejemplo",
     "clear": "Limpiar",
     "empty": "Pegue un documento para ver su contenido",
+    "stale": "El texto cambió: pulse “Interpretar” para ver el resultado de este documento.",
     "summary": "Resumen",
     "segments": "Segmentos ({{count}})",
     "fields": {
@@ -202,6 +203,30 @@
       "present": "Presente",
       "missing": "No está",
       "pendingHelp": "La carpeta del socio no estaba disponible: el sistema reintenta la copia cada hora."
+    }
+  },
+  "as2Test": {
+    "send": "Enviar por AS2 (prueba)",
+    "title": "Envío AS2 de prueba",
+    "help": "El documento se envía al socio de prueba firmado (SHA-256), cifrado (AES-256) y con acuse MDN firmado. No se registra en el repositorio.",
+    "delivered": "Entregado: el socio confirmó la recepción con un MDN válido.",
+    "notDelivered": "No entregado: el socio respondió, pero el acuse no confirma la recepción.",
+    "unavailable": "El motor AS2 o el socio de prueba no respondió, o el envío falló.",
+    "forbidden": "Su rol no permite enviar documentos.",
+    "close": "Cerrar",
+    "signatureOk": "Firma del MDN válida",
+    "signatureBad": "Firma del MDN no válida",
+    "unsigned": "MDN sin firma",
+    "micOk": "El MIC del MDN coincide con el enviado",
+    "micBad": "El MIC del MDN no coincide",
+    "elapsed": "{{ms}} ms de ida y vuelta",
+    "fields": {
+      "disposition": "Disposición del MDN",
+      "signature": "Firma",
+      "mic": "MIC",
+      "messageId": "Message-ID",
+      "http": "Respuesta HTTP",
+      "file": "Archivo"
     }
   }
 }

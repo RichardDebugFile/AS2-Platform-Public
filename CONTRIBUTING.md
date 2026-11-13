@@ -26,19 +26,31 @@ Reglas:
 
 ## Commits — Conventional Commits
 
-Formato `tipo(ámbito): resumen` en imperativo y en español; el cuerpo termina con la referencia a
-la HU o a la tarea de Jira (`Refs: HU-11` o `Refs: AS2-75`) para poder rastrear cada cambio hasta su
-historia. Tipos: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`, `build`, `perf`.
+Formato `tipo(ámbito): AS2-NN resumen`, en imperativo y en español. La primera línea lleva la clave de
+Jira más específica (la subtarea o la tarea), para que cada cambio se identifique también en
+`git log --oneline` y en la lista de commits de GitHub; el cuerpo termina con la historia a la que
+pertenece (`Refs: HU-XX (AS2-NN)`) o, en una tarea sin historia, con su propia clave (`Refs: AS2-NN`).
+Tipos: `feat`, `fix`, `chore`, `docs`, `test`, `refactor`, `ci`, `build`, `perf`. El ámbito es opcional.
 
 ```
-feat(partners): carga de certificados X.509
+fix(documents): AS2-86 nombre binario de FileRef en la consulta de consistencia
 
-Refs: HU-11 (AS2-64)
+La consulta de consistencia usaba el nombre canónico de la clase anidada.
+
+Refs: HU-14 (AS2-14)
 ```
 
-La referencia es obligatoria: el *hook* `commit-msg` rechaza el commit sin `HU-XX` ni `AS2-NN`, y el
-CI aplica la misma regla a los commits de cada PR (`.github/scripts/check_commit_refs.sh`). No se
-exige en los commits de fusión ni en las ramas `release/*` y `hotfix/*`.
+```
+chore: AS2-91 pruebas portables a Windows
+
+Refs: AS2-91
+```
+
+El formato es obligatorio: el *hook* `commit-msg` rechaza el commit sin la clave en la primera línea o
+sin la línea `Refs:`, y el CI aplica la misma regla a los commits de cada PR
+(`.github/scripts/check_commit_refs.sh`, con las reglas en `.github/scripts/commit_rules.sh`). No se
+exige en los commits de fusión ni en las ramas `release/*` y `hotfix/*`. Los commits anteriores al
+01-nov-2026 llevan la referencia solo en el pie (`Refs:`).
 
 ## Trazabilidad con Jira y SonarQube Cloud
 

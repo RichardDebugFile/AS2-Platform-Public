@@ -1,8 +1,9 @@
 import { PlusOutlined } from "@ant-design/icons";
-import { App, Button, Form, Input, Modal, Select, Space, Table, Tag, Typography } from "antd";
+import { App, Button, Form, Input, Modal, Select, Space, Table, Tag, Tooltip, Typography } from "antd";
 import type { ColumnsType } from "antd/es/table";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
+import { useAuthStore } from "../store/authStore";
 import { useUsersStore, type NewUser, type Role, type User } from "../store/usersStore";
 
 const ROLES: Role[] = ["ADMIN", "OPERATOR", "AUDITOR"];
@@ -13,6 +14,7 @@ export default function UsersPage() {
     const { message, modal } = App.useApp();
     const { users, loading, error, pagination, query, fetchUsers, createUser, updateUserRoles, updateUserStatus } =
         useUsersStore();
+    const me = useAuthStore((s) => s.user?.username);
     const [creating, setCreating] = useState(false);
     const [editing, setEditing] = useState<User | null>(null);
     const [createForm] = Form.useForm<NewUser>();
@@ -46,6 +48,9 @@ export default function UsersPage() {
         if (!u.active) return void run();
         modal.confirm({ title: t("users.confirmDeactivate", { username: u.username }), onOk: run });
     };
+
+    /** La propia cuenta no se puede desactivar (el servidor tambien lo impide): se perderia el acceso. */
+    const isSelf = (u: User) => u.username.toLowerCase() === me?.toLowerCase();
 
     const columns: ColumnsType<User> = [
         { title: t("users.columns.username"), dataIndex: "username" },
@@ -81,9 +86,17 @@ export default function UsersPage() {
                     >
                         {t("users.editRoles")}
                     </Button>
-                    <Button size="small" danger={u.active} onClick={() => toggle(u)}>
-                        {u.active ? t("users.deactivate") : t("users.activate")}
-                    </Button>
+                    {u.active && isSelf(u) ? (
+                        <Tooltip title={t("users.selfDeactivate")}>
+                            <Button size="small" disabled>
+                                {t("users.deactivate")}
+                            </Button>
+                        </Tooltip>
+                    ) : (
+                        <Button size="small" danger={u.active} onClick={() => toggle(u)}>
+                            {u.active ? t("users.deactivate") : t("users.activate")}
+                        </Button>
+                    )}
                 </Space>
             ),
         },

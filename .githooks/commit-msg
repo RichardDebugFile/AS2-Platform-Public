@@ -1,10 +1,17 @@
 #!/bin/sh
-# Cada commit identifica su historia o tarea de Jira: HU-XX o AS2-NN en el resumen o en el cuerpo,
-# normalmente como ultima linea (`Refs: HU-11` o `Refs: AS2-75`). Asi cada cambio se rastrea hasta
-# su historia y el app GitHub for Jira lo muestra en ella.
+# Cada commit identifica su tarea de Jira en la primera linea y su historia al final del cuerpo, para
+# rastrear cada cambio en `git log --oneline`, en GitHub y en Jira (app GitHub for Jira):
 #
-# No se exige en los commits de fusion ni en las ramas release/* y hotfix/* (commits de version).
-# El CI aplica la misma regla a los commits de cada pull request (.github/scripts/check_commit_refs.sh).
+#     fix(documents): AS2-86 nombre binario de FileRef en la consulta de consistencia
+#
+#     Detalle del cambio.
+#
+#     Refs: HU-14 (AS2-14)
+#
+# En la primera linea va la clave mas especifica (subtarea o tarea); una tarea sin historia repite su
+# clave en el pie (`Refs: AS2-91`). No se exige en los commits de fusion ni en las ramas release/* y
+# hotfix/* (commits de version). El CI aplica la misma regla a cada pull request
+# (.github/scripts/check_commit_refs.sh).
 #
 # Activar en tu clon (una sola vez):   git config core.hooksPath .githooks
 # Excepcion puntual:                   git commit --no-verify
@@ -18,17 +25,17 @@ case "$branch" in
     release/* | hotfix/*) exit 0 ;;
 esac
 
-# Las lineas de comentario (#) no cuentan: git las quita del mensaje.
-if grep -v '^#' "$msg_file" | grep -Eq '(HU|AS2)-[0-9]+'; then
+. "$(git rev-parse --show-toplevel)/.github/scripts/commit_rules.sh"
+if problema=$(commit_problema "$msg_file"); then
     exit 0
 fi
 
 echo "-----------------------------------------------------------"
-echo "commit-msg: el mensaje no indica su historia ni su tarea."
-echo "Agrega al final del cuerpo la referencia, por ejemplo:"
+echo "commit-msg: $problema"
+echo "Formato:"
 echo ""
-echo "    feat(partners): carga de certificados X.509"
+echo "    fix(documents): AS2-86 nombre binario de FileRef"
 echo ""
-echo "    Refs: HU-11 (AS2-64)"
+echo "    Refs: HU-14 (AS2-14)"
 echo "-----------------------------------------------------------"
 exit 1

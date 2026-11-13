@@ -17,7 +17,8 @@
     "auditGroup": "Audit",
     "audit": "Audit log",
     "administration": "Administration",
-    "users": "Users"
+    "users": "Users",
+    "system": "System status"
   },
   "userMenu": {
     "logout": "Sign out"
@@ -34,8 +35,65 @@
   },
   "home": {
     "welcome": "Hello, {{name}}",
-    "intro": "Use the menu to open the sections your role allows.",
-    "role": "Role: {{roles}}"
+    "intro": "Summary of operations in the selected range.",
+    "role": "Role: {{roles}}",
+    "denied": "Your role cannot open {{path}}. You were taken to the home page.",
+    "filters": {
+      "range": "Date range",
+      "direction": "Direction",
+      "partner": "Partner",
+      "all": "All",
+      "refresh": "Refresh",
+      "clear": "Reset"
+    },
+    "kpi": {
+      "total": "Documents",
+      "detail": "In progress: {{inProgress}} · Duplicates: {{duplicates}}",
+      "ok": "Successful",
+      "failed": "Failed",
+      "successRate": "Success rate",
+      "rateHint": "Over finished documents",
+      "noRate": "No document with a final result"
+    },
+    "byDay": {
+      "title": "Traffic per day",
+      "ok": "Successful",
+      "failed": "Failed",
+      "other": "In progress or duplicate"
+    },
+    "outcome": {
+      "title": "Document results",
+      "OK": "Successful",
+      "FAILED": "Failed",
+      "IN_PROGRESS": "In progress",
+      "DUPLICATE": "Duplicates"
+    },
+    "byPartner": {
+      "title": "Traffic per partner",
+      "partner": "Partner",
+      "inbound": "Inbound",
+      "outbound": "Outbound",
+      "ok": "Successful",
+      "failed": "Failed",
+      "total": "Total"
+    },
+    "system": {
+      "title": "System status",
+      "refresh": "Check",
+      "checkedAt": "Checked: {{at}}",
+      "latency": "{{ms}} ms",
+      "empty": "No service data",
+      "error": "Could not check the status: {{message}}",
+      "status": {
+        "UP": "Online",
+        "DOWN": "Down",
+        "OUT_OF_SERVICE": "Out of service",
+        "UNREACHABLE": "Not responding",
+        "UNKNOWN": "Unknown"
+      }
+    },
+    "empty": "No documents in the selected range.",
+    "error": "Could not load the dashboard: {{message}}"
   },
   "placeholder": {
     "title": "Section under construction",
@@ -47,5 +105,46 @@
     "CONFIG_MISSING": "The console has no server address configured (config.js).",
     "FORBIDDEN": "You are not allowed to perform this action.",
     "UNKNOWN": "An unexpected error occurred."
+  },
+  "systemPage": {
+    "intro": "Health of each microservice, checked by the gateway, and the recent document flow.",
+    "allUp": "All services online",
+    "problems_one": "{{count}} service with problems",
+    "problems_other": "{{count}} services with problems",
+    "auto": "Auto check (30 s)",
+    "latency": "Latency:",
+    "noComponents": "The service publishes no internal checks.",
+    "gatewayNote": "It answers this request: if you see it, it is online.",
+    "components": {
+      "db": "Database",
+      "diskSpace": "Disk space",
+      "ping": "Response",
+      "livenessState": "Process alive",
+      "readinessState": "Ready to serve",
+      "ssl": "TLS certificates",
+      "mail": "Mail server"
+    },
+    "flow": {
+      "title": "Document flow",
+      "today": "Documents today",
+      "inbound": "Inbound today",
+      "outbound": "Outbound today",
+      "failed": "Failed today",
+      "lastInbound": "Last inbound:",
+      "lastOutbound": "Last outbound:",
+      "none": "none yet",
+      "recent": "Last {{count}} documents",
+      "empty": "No documents yet.",
+      "error": "Part of the flow could not be loaded: {{message}}",
+      "columns": {
+        "createdAt": "Date",
+        "direction": "Direction",
+        "partner": "Partner",
+        "type": "Type",
+        "status": "Status"
+      }
+    },
+    "componentOk": "OK",
+    "componentDown": "Failing"
   }
 }

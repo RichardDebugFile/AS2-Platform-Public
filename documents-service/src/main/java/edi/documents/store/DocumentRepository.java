@@ -24,6 +24,17 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
             + " from Document d")
     List<FileRef> fileRefs();
 
+    /** Lo justo de cada documento para el tablero de Inicio (sin contenido ni rutas). */
+    interface DashboardRow {
+        String getPartnerAs2Name();
+
+        Direction getDirection();
+
+        DocumentStatus getStatus();
+
+        Instant getCreatedAt();
+    }
+
     @Query("select d.status, count(d) from Document d group by d.status")
     List<Object[]> countByStatus();
 

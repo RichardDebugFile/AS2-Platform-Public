@@ -128,6 +128,30 @@ describe("documentos X12", () => {
         await waitFor(() => expect(screen.getByRole("tab", { name: "Visor X12", selected: true })).toBeInTheDocument());
         const viewer = screen.getByRole("textbox", { name: "Visor X12" }) as HTMLTextAreaElement;
         expect(viewer.value).toBe(SAMPLE_850);
+        // Se interpreta solo, sin pulsar "Interpretar".
+        expect(await screen.findByText("Válido según el esquema del 850")).toBeInTheDocument();
+        expect(calls().filter((c) => c.url === "/documents/x12/parse")).toHaveLength(1);
+    });
+
+    it("si el texto cambia, el visor no muestra el resultado del documento anterior", async () => {
+        renderAs(AUDITOR);
+        fireEvent.click(screen.getByRole("tab", { name: "Visor X12" }));
+        fireEvent.click(screen.getByRole("button", { name: "Cargar ejemplo" }));
+        fireEvent.click(screen.getByRole("button", { name: "Interpretar" }));
+        expect(await screen.findByText("Válido según el esquema del 850")).toBeInTheDocument();
+
+        const otro = SAMPLE_850.replace("ST*850*0789", "ST*889*0789");
+        fireEvent.change(screen.getByRole("textbox", { name: "Visor X12" }), { target: { value: otro } });
+
+        expect(screen.queryByText("Válido según el esquema del 850")).not.toBeInTheDocument();
+        expect(screen.queryByText("Segmentos (15)")).not.toBeInTheDocument();
+        expect(screen.getByText(/El texto cambió/)).toBeInTheDocument();
+
+        // Tras la primera interpretacion el boton conserva un momento el icono de carga en su nombre.
+        fireEvent.click(screen.getByRole("button", { name: /Interpretar/ }));
+        expect(await screen.findByText("Segmentos (15)")).toBeInTheDocument();
+        expect(screen.queryByText(/El texto cambió/)).not.toBeInTheDocument();
+        expect(calls().filter((c) => c.url === "/documents/x12/parse").at(-1)!.body).toBe(otro);
     });
 
     it("el 997 pide el documento que se acusa, no el emisor ni el receptor", async () => {

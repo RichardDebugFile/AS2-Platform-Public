@@ -56,8 +56,8 @@ public class X12RequestMapper {
     private static X12Generator.PurchaseOrder purchaseOrder(GenerateRequest r, LocalDateTime now) {
         GenerateRequest.PurchaseOrder po = require(r.purchaseOrder(), "purchaseOrder");
         LocalDate date = po.date() != null ? po.date() : now.toLocalDate();
-        LocalDate delivery = po.deliveryDate() != null ? po.deliveryDate()
-                : date.plusDays(po.deliveryDays() != null ? po.deliveryDays() : DEFAULT_DELIVERY_DAYS);
+        int deliveryDays = po.deliveryDays() != null ? po.deliveryDays() : DEFAULT_DELIVERY_DAYS;
+        LocalDate delivery = po.deliveryDate() != null ? po.deliveryDate() : date.plusDays(deliveryDays);
         List<Line> lines = require(po.lines(), "purchaseOrder.lines").stream()
                 .map(l -> new Line(l.quantity(), l.unit() == null || l.unit().isBlank() ? "EA" : l.unit(),
                         l.unitPrice(), l.productId(), l.description()))
@@ -71,8 +71,8 @@ public class X12RequestMapper {
     private static X12Generator.Promotion promotion(GenerateRequest r, LocalDateTime now) {
         GenerateRequest.Promotion p = require(r.promotion(), "promotion");
         LocalDate start = p.start() != null ? p.start() : now.toLocalDate();
-        LocalDate end = p.end() != null ? p.end()
-                : start.plusDays(p.days() != null ? p.days() : DEFAULT_PROMOTION_DAYS);
+        int days = p.days() != null ? p.days() : DEFAULT_PROMOTION_DAYS;
+        LocalDate end = p.end() != null ? p.end() : start.plusDays(days);
         return new X12Generator.Promotion(required(p.id(), "promotion.id"), now.toLocalDate(), start, end,
                 company(p.vendor(), "promotion.vendor"));
     }

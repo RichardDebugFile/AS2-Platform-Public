@@ -172,11 +172,30 @@ body {
     font-family: "Roboto Mono", ui-monospace, Consolas, monospace;
     font-size: 12px;
     white-space: pre-wrap;
-    word-break: break-word;
+    overflow-wrap: anywhere;
 }
 
 .nowrap {
     white-space: nowrap;
+}
+
+/* Texto libre en una celda (detalle de la bitacora): se parte en lineas en vez de ensanchar la tabla. */
+.cell-wrap {
+    display: block;
+    min-width: 200px;
+    white-space: normal;
+    overflow-wrap: anywhere;
+}
+
+/* Nombres sin espacios (socios, usuarios): los cortos caben enteros y los largos se cortan. */
+.cell-break {
+    display: block;
+    min-width: 8em;
+    overflow-wrap: anywhere;
+}
+
+.ant-tag.tag-wrap {
+    white-space: normal;
 }
 
 /* ---- login ---- */
@@ -232,4 +251,92 @@ body {
     .login-brand {
         padding: 32px 24px;
     }
+}
+
+/* Inicio (AS2-99): filtros, barra de resultados y leyendas del tablero. */
+.filter-label {
+    display: block;
+    margin-bottom: var(--as2-spacing-xs);
+    color: var(--as2-color-text-secondary);
+    font-size: 12px;
+}
+.chart-box {
+    width: 100%;
+    min-height: 260px;
+}
+.outcome-bar {
+    display: flex;
+    gap: 2px;
+    height: 16px;
+    border-radius: 4px;
+    overflow: hidden;
+    background: var(--as2-color-bg-subtle);
+}
+.outcome-seg {
+    display: block;
+    min-width: 4px;
+    height: 100%;
+}
+.outcome-legend {
+    list-style: none;
+    margin: var(--as2-spacing-lg) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--as2-spacing-sm);
+}
+.outcome-legend li {
+    display: grid;
+    grid-template-columns: 12px 1fr auto 56px;
+    align-items: center;
+    gap: var(--as2-spacing-sm);
+}
+.legend-swatch {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+.outcome-value,
+.outcome-pct {
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+.kpi-card {
+    height: 100%;
+}
+.service-row {
+    gap: var(--as2-spacing-sm);
+}
+.service-state {
+    display: inline-flex;
+    gap: var(--as2-spacing-md);
+    align-items: baseline;
+}
+.service-latency {
+    min-width: 48px;
+    text-align: right;
+}
+.system-toolbar {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--as2-spacing-md);
+}
+.component-list {
+    list-style: none;
+    margin: var(--as2-spacing-sm) 0 0;
+    padding: 0;
+    display: grid;
+    gap: var(--as2-spacing-xs);
+}
+.component-list li {
+    display: flex;
+    justify-content: space-between;
+    gap: var(--as2-spacing-sm);
+}
+.flow-last {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--as2-spacing-xs) var(--as2-spacing-xl);
+    margin: var(--as2-spacing-lg) 0;
 }

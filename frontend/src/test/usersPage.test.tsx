@@ -2,6 +2,7 @@ import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, beforeEach, describe, expect, it, vi, type Mock } from "vitest";
 import AppProviders from "../AppProviders";
+import { useAuthStore } from "../store/authStore";
 import UsersPage from "../pages/UsersPage";
 import { json, resetAuth, stubFetch } from "./helpers";
 
@@ -51,6 +52,14 @@ describe("pantalla de usuarios", () => {
         await waitFor(() =>
             expect(fetchMock.mock.calls.some((c) => String(c[0]).endsWith("/users/u2/active") && c[1].method === "PATCH")).toBe(true),
         );
+    });
+
+    it("la propia cuenta no ofrece desactivarse", async () => {
+        useAuthStore.setState({ isAuthenticated: true, user: { username: "Operador1", email: "op@example.com", roles: ["ADMIN"] } });
+        renderPage();
+        expect(await screen.findByRole("button", { name: "Desactivar" })).toBeDisabled();
+        // La de otro usuario si se puede activar.
+        expect(screen.getByRole("button", { name: "Activar" })).toBeEnabled();
     });
 
     it("busca por usuario o correo", async () => {

@@ -9,10 +9,14 @@ La plataforma corre en contenedores con Docker Compose. Se valida primero en loc
 | `gateway` | Punto único de entrada (JWT, rutas, traza de acceso) | ninguno |
 | `auth-service` | Identidad y sesiones | ninguno |
 | `partners-service` | Socios comerciales y su configuración AS2 | ninguno |
+| `documents-service` | Repositorio de documentos EDI y validación X12 | ninguno |
+| `as2-adapter` | Motor AS2 (envío y recepción con firma, cifrado y MDN) | ninguno |
+| `as2-certs` | Generación de certificados de prueba en el volumen `as2certs` | ninguno |
+| `openas2` | Servidor socio AS2 de prueba (solo con perfil `demo`) | ninguno |
 | `db` | PostgreSQL 16 con una base y un usuario por servicio | ninguno |
 | `backup` | `pg_dump` diario de cada base, conserva 7 días | ninguno |
 
-Los servicios de documentos, alertas y AS2 se incorporan al stack con sus historias.
+Alertas se incorpora al stack con su historia.
 
 ## Puesta en marcha
 
@@ -26,6 +30,20 @@ cd deploy/docker
 ./start.sh              # ./start.sh --no-build si las imágenes ya están construidas
 ./stop.sh               # detiene conservando los datos (./stop.sh --purge los borra)
 ```
+
+### Perfil demo (OpenAS2)
+
+Para probar el envío AS2 de punta a punta con un servidor socio real de código abierto (OpenAS2):
+
+```bash
+COMPOSE_PROFILES=demo ./start.sh
+```
+
+Con este perfil se levanta el servicio `openas2` con certificados de prueba y los documentos recibidos
+quedan en `salida/openas2/recibidos/PLATAFORMA/`.
+
+Sin el perfil `demo`, la plataforma arranca normalmente; el servicio `as2-adapter` está activo pero
+un intento de envío responderá 502 Bad Gateway ("No se pudo conectar…").
 
 O paso a paso:
 
@@ -97,5 +115,33 @@ cortafuegos solo debe abrir 22 (SSH por clave), 80 y 443.
 
 ## Verificación automática
 
-El workflow `Docker` de GitHub Actions levanta el stack completo y ejecuta `smoke-test.sh` en cada
-cambio de `deploy/docker/`.
+El workflow `Docker` de GitHub Actions levanta el stack completo con el perfil `demo`. Ejecuta
+`smoke-test.sh` y después las colecciones de Postman de todos los servicios con Newman, en cada
+cambio de `deploy/docker/` o de una colección.
+
+## API con Newman
+
+Con la plataforma levantada (`COMPOSE_PROFILES=demo ./start.sh`), desde la raíz del repositorio y
+con la contraseña del administrador de `.env`:
+
+```bash
+pw="$(grep '^ADMIN_PASSWORD=' deploy/docker/.env | cut -d= -f2-)"
+for c in gateway auth-service documents-service as2-adapter; do
+  npx -y newman@6.2.1 run "$c/postman/$c.postman_collection.json" --insecure \
+    --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw"
+done
+npx -y newman@6.2.1 run partners-service/postman/partners-service.postman_collection.json --insecure \
+  --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw" \
+  --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+```
+
+| Colección | Qué comprueba |
+|---|---|
+| `gateway` | 401 sin sesión, salud de cada servicio con sus verificaciones internas, protección CSRF, permisos de AUDITOR y rutas que el proxy no publica |
+| `auth-service` | Login, renovación y cierre de sesión, administración de usuarios y el segundo factor completo (la colección calcula el código TOTP como la app autenticadora) |
+| `documents-service` | Interpretar, validar y generar X12; registro en el repositorio, reenvío con el mismo Message-ID, detalle, contenido, tablero y consistencia; permisos de AUDITOR |
+| `as2-adapter` | Envío AS2 de prueba a OpenAS2 con MDN firmado (necesita el perfil `demo`), 403 con AUDITOR y 401 sin sesión |
+| `partners-service` | Socios, bitácora y certificados con doble compuerta ("Carpetas" necesita además la carpeta compartida del ERP) |
+
+Los usuarios, socios y documentos que crean llevan nombres aleatorios y se desactivan o se borran al
+final de cada colección; ninguna escribe credenciales en el repositorio.

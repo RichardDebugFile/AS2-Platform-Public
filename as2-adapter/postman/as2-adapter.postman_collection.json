@@ -1,0 +1,585 @@
+{
+  "info": {
+    "name": "as2-adapter",
+    "description": "Motor AS2 (HU-15 / AS2-100). Contra el stack Docker: host = https://localhost y ejecutar primero la carpeta \"Sesión (vía gateway)\" (Postman guarda las cookies). Contra el servicio en local (sin gateway): host = http://localhost:8085 y omitir esa carpeta. El usuario AUDITOR de la prueba se crea en cada corrida con nombre y contraseña aleatorios (salvo que se den auditorUser y auditorPassword) y se desactiva al final, en la carpeta \"Limpieza\".",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "user",
+      "value": "admin"
+    },
+    {
+      "key": "password",
+      "value": ""
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "auditorUser",
+      "value": ""
+    },
+    {
+      "key": "auditorPassword",
+      "value": ""
+    },
+    {
+      "key": "auditorId",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "effectiveUser",
+      "value": ""
+    },
+    {
+      "key": "effectivePassword",
+      "value": ""
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
+    }
+  ],
+  "item": [
+    {
+      "name": "Sesión (vía gateway)",
+      "description": "Solo contra el stack completo (host = https://localhost). Sin esta carpeta, el gateway responde 401.",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{user}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = pm.variables.get('user') || pm.variables.get('adminUser') || 'admin';",
+                  "const p = pm.variables.get('password') || pm.variables.get('adminPassword') || '';",
+                  "pm.variables.set('user', u);",
+                  "pm.variables.set('password', p);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear usuario auditor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\",\n  \"email\": \"{{auditorUser}}@example.com\",\n  \"roles\": [\n    \"AUDITOR\"\n  ],\n  \"active\": true\n}"
+            },
+            "description": "Crea el usuario con rol AUDITOR para comprobar la restricción de acceso."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sin credenciales fijas en el repositorio: usuario y contrasena aleatorios por corrida.",
+                  "if (!pm.variables.get('auditorUser')) {",
+                  "  pm.collectionVariables.set('auditorUser', 'auditor-as2-' + Date.now());",
+                  "}",
+                  "if (!pm.variables.get('auditorPassword')) {",
+                  "  const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';",
+                  "  let s = '';",
+                  "  for (let i = 0; i < 24; i++) s += abc[Math.floor(Math.random() * abc.length)];",
+                  "  pm.collectionVariables.set('auditorPassword', s + '#1');",
+                  "}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('Usuario auditor creado (201) o ya existente (409)', () => pm.expect(pm.response.code).to.be.oneOf([201, 409]));",
+                  "if (pm.response.code === 201) pm.collectionVariables.set('auditorId', pm.response.json().id);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Motor AS2 (prueba)",
+      "item": [
+        {
+          "name": "Envío de un 850 con ADMIN",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/edi-x12"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/as2/test-send?fileName=850-4010.edi",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "as2",
+                "test-send"
+              ],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "850-4010.edi"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~"
+            },
+            "description": "Envío de prueba AS2 con usuario ADMIN: debe responder 200 y delivered = true."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "// Si el socio no confirma, la respuesta completa (sin secretos) ayuda a ver por que.",
+                  "if (!r.delivered) console.log('Respuesta del envío:', JSON.stringify(r));",
+                  "pm.test('delivered = true', () => pm.expect(r.delivered).to.be.true);",
+                  "pm.test('MDN procesado, sin error ni aviso', () => pm.expect(r.disposition).to.match(/;\\s*processed\\s*$/i));",
+                  "pm.test('responde al mensaje enviado', () => pm.expect(r.originalMessageId).to.eql(r.messageId));",
+                  "pm.test('MDN firmado y firma válida', () => { pm.expect(r.mdnSigned).to.be.true; pm.expect(r.mdnSignatureValid).to.be.true; });",
+                  "pm.test('MIC coincide', () => pm.expect(r.micMatches).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (auditor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\"\n}"
+            },
+            "description": "Inicia sesión con el usuario de rol AUDITOR."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión cambiada a auditor', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Envío con usuario AUDITOR (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/edi-x12"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/as2/test-send?fileName=850-4010.edi",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "as2",
+                "test-send"
+              ],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "850-4010.edi"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~"
+            },
+            "description": "El rol AUDITOR no tiene permisos para POST /api/**; el gateway debe responder 403 Forbidden."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Logout (limpiar sesión)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/auth/logout",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "logout"
+              ]
+            },
+            "description": "Cierra la sesión para que las siguientes peticiones vayan sin credenciales."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204 o 200', () => pm.expect(pm.response.code).to.be.oneOf([200, 204]));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Envío sin sesión (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/edi-x12"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/as2/test-send?fileName=850-4010.edi",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "as2",
+                "test-send"
+              ],
+              "query": [
+                {
+                  "key": "fileName",
+                  "value": "850-4010.edi"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~"
+            },
+            "description": "Sin cookie de sesión ni autorización, el gateway debe responder 401 Unauthorized."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "try {",
+                  "  const jar = pm.cookies.jar();",
+                  "  jar.clear(pm.request.url, function (error) {});",
+                  "} catch (e) {}"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Limpieza",
+      "description": "Vuelve a entrar como ADMIN y desactiva el usuario AUDITOR creado por la prueba.",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{user}}\",\n  \"password\": \"{{password}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "const u = pm.variables.get('user') || pm.variables.get('adminUser') || 'admin';",
+                  "const p = pm.variables.get('password') || pm.variables.get('adminPassword') || '';",
+                  "pm.variables.set('user', u);",
+                  "pm.variables.set('password', p);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar usuario auditor",
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('auditorId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('usuario inactivo', () => pm.expect(pm.response.json().active).to.be.false);",
+                  "pm.collectionVariables.set('auditorId', '');"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{auditorId}}/active",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{auditorId}}",
+                "active"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

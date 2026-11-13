@@ -6,12 +6,15 @@
 #
 # Al crear el volumen por primera vez, db/init/ crea un usuario y una base por microservicio:
 #   auth, partners, documents, alerts  (usuario = contrasena = nombre de la base).
-name: as2-platform
+#
+# Proyecto propio (as2-platform-dev): no comparte contenedores ni volumen con la plataforma de
+# deploy/docker (proyecto as2-platform), que tiene sus propias claves.
+name: as2-platform-dev
 
 services:
   db:
     image: postgres:16
-    container_name: as2platform-db
+    container_name: as2platform-dev-db
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: postgres
@@ -27,7 +30,7 @@ services:
 
   pgadmin:
     image: dpage/pgadmin4
-    container_name: as2platform-pgadmin
+    container_name: as2platform-dev-pgadmin
     environment:
       PGADMIN_DEFAULT_EMAIL: admin@example.com
       PGADMIN_DEFAULT_PASSWORD: admin

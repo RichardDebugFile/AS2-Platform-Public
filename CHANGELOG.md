@@ -4,6 +4,78 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## 0.6.0 — 2026-11-12
+
+### Novedades
+- La primera línea de cada commit lleva la clave de la tarea de Jira (`tipo(ámbito): AS2-NN resumen`)
+  y el cuerpo termina con su historia (`Refs: HU-XX (AS2-NN)`), de modo que cada cambio se identifica
+  también en el historial resumido y en la lista de commits de GitHub; el equipo del desarrollador y la
+  verificación de cada pull request rechazan los que no cumplen el formato (AS2-92).
+- Prueba de concepto del motor AS2 (AS2-94). El as2-adapter arma un mensaje AS2 1.2: firma el documento
+  con SHA-256, lo cifra con AES-256 para el socio y pide un MDN firmado síncrono. Al recibir el MDN,
+  verifica su firma y comprueba que el MIC coincide con el enviado. En `deploy/interop` hay un entorno
+  con OpenAS2, un servidor AS2 de código abierto, que hace de socio, con certificados de prueba
+  generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; la consola lo
+  usa desde AS2-100.
+- Inicio muestra el tablero de la operación (AS2-99). Muestra las cifras del rango elegido (por defecto
+  los últimos 7 días): documentos, correctos, con error y tasa de éxito. Incluye un gráfico de tráfico
+  por día, el reparto de resultados, el tráfico por socio y el estado de cada servicio con su latencia.
+  Se filtra por fechas, dirección y socio. Lo sirven `GET /api/documents/dashboard` y
+  `GET /api/system/status` (el gateway consulta la salud de cada servicio).
+- Pantalla "Estado del sistema" en Auditoría, para todos los roles (AS2-99). Muestra cada
+  microservicio con su estado, su latencia y sus verificaciones internas (base de datos, espacio en
+  disco, proceso activo…), y se revisa sola cada 30 segundos. Incluye el flujo de documentos: los de
+  hoy por dirección y con error, el último entrante y el último saliente, y los 10 más recientes. Los
+  servicios publican el estado de esas verificaciones sin sus detalles (`show-components: always`).
+- Envío AS2 de prueba desde la consola (AS2-100). Está en el generador X12 y en el detalle de cada
+  documento, para ADMIN y OPERATOR. Manda el documento al socio de prueba firmado y cifrado, y muestra
+  el MDN: disposición, validez de la firma, coincidencia del MIC, Message-ID y tiempo de ida y vuelta.
+  Si el motor AS2 o el socio no responden, lo indica con el motivo. El envío se publica en
+  `POST /api/as2/test-send` por el gateway (sesión con ADMIN u OPERATOR). El as2-adapter entra al
+  stack de `deploy/docker` con certificados de prueba; con `COMPOSE_PROFILES=demo` arranca además
+  OpenAS2 como socio y el envío funciona de punta a punta. Sin el perfil, el envío responde 502.
+- Si un servicio está detenido o caído, el gateway responde 503 con su nombre ("El servicio
+  as2-adapter no responde") en lugar de un 500 genérico, y la consola lo muestra así.
+- Colecciones de Postman de documents-service (X12, repositorio, tablero y consistencia) y del gateway
+  (401 sin sesión, salud, CSRF, permisos por rol y rutas no publicadas). La de auth-service pasa a ir
+  por el gateway y prueba el segundo factor completo calculando el código TOTP (AS2-101). Ninguna
+  escribe credenciales: los usuarios y socios de prueba son aleatorios y se desactivan o borran al
+  final. El workflow `Docker` las corre todas con Newman contra el stack con el perfil `demo`.
+
+### Correcciones
+- Avisos de SonarQube acumulados en la 0.5.0: complejidad del retiro de certificados, palabra clave
+  CSS obsoleta, ternarios anidados y encadenamiento opcional, con pruebas de las fechas por defecto
+  (AS2-90).
+- Las pruebas pasan también en Windows: rutas esperadas normalizadas y, sin el Modo de desarrollador,
+  se omiten las que crean enlaces simbólicos. La prueba de humo busca un respaldo de las últimas 24 h
+  en vez de la carpeta del día, que puede no existir pasada la medianoche UTC (AS2-91).
+- Perfil `demo` en Linux: OpenAS2 no podía escribir en `salida/openas2` (Docker crea la carpeta
+  como root y OpenAS2 corre con el uid 1000), así que respondía el MDN con `processed/Error` y la
+  plataforma marcaba el envío como no entregado. `prepare-storage.sh` le da la carpeta a OpenAS2. En
+  Windows y macOS (Docker Desktop) no pasaba. Lo detectó la colección de Postman del as2-adapter al
+  correr en el CI (AS2-101).
+- `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con
+  Java 17 en el PATH, los servicios se detenían con `UnsupportedClassVersionError` (AS2-96).
+- La base de datos de `start.bat` es un proyecto de Docker propio (`as2-platform-dev`). Compartía
+  nombre de proyecto y volumen con la plataforma de `deploy/docker`: tomaba su base, con otras claves,
+  y la dejaba sin base de datos (AS2-97).
+- `start.bat` abre también la consola web cuando el gateway ya responde, con el navegador en
+  `http://localhost:5173`, y `stop.bat` la detiene junto con los servicios (AS2-98).
+- "Abrir en el visor", desde el generador o desde el detalle de un documento, interpreta el documento
+  recibido; antes seguía mostrando el resultado del documento interpretado anteriormente. Si se cambia
+  el texto del visor, el resultado anterior se oculta hasta volver a pulsar "Interpretar". Desde el
+  detalle, el panel se cierra para dejar a la vista el visor (AS2-93).
+- La paginación, los calendarios y los diálogos de confirmación salen en el idioma de la consola; en el
+  navegador quedaban en inglés (AS2-93).
+- Un administrador ya no puede desactivar su propia cuenta: el servidor lo rechaza y la consola no
+  ofrece la acción en su fila (AS2-93).
+- En la bitácora, el detalle, el tipo de evento, el socio y el usuario largos se parten en varias
+  líneas en vez de ensanchar la tabla más allá de la pantalla (AS2-93).
+- Las fechas tienen el mismo formato en la lista y en el detalle del repositorio y en la bitácora,
+  tanto con el idioma detectado del navegador como con el elegido en el selector (AS2-93).
+- Quien abre por la URL una pantalla que su rol no permite vuelve al inicio con un aviso que lo explica
+  (AS2-93).
+
 ## 0.5.0 — 2026-11-01
 
 ### Novedades

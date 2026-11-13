@@ -1,42 +1,12 @@
 {
   "info": {
     "name": "auth-service",
-    "description": "Identidad: login JWT con cookies HttpOnly, sesión, MFA TOTP y administración de usuarios. Postman guarda las cookies del dominio, así que tras el login las demás peticiones ya van autenticadas. Protección CSRF: la colección guarda la cookie XSRF-TOKEN de cada respuesta y la envía en la cabecera X-XSRF-TOKEN; ejecutar primero \"Token CSRF\".",
+    "description": "Identidad (HU-02, HU-03, HU-04) a través del gateway: login con cookies HttpOnly, sesión, renovación, segundo factor TOTP y administración de usuarios. Contra el stack Docker: host = https://localhost (con --insecure en Newman por el certificado local) y adminPassword = ADMIN_PASSWORD de deploy/docker/.env, sin escribirla en la colección. Se ejecuta completa y en orden. El usuario de prueba se crea con nombre y contraseña aleatorios, activa su segundo factor (el código lo calcula la propia colección, como la app autenticadora) y se desactiva al final; el administrador no se toca.",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
-  "variable": [
-    {
-      "key": "baseUrl",
-      "value": "http://localhost:8083"
-    },
-    {
-      "key": "adminUser",
-      "value": "admin"
-    },
-    {
-      "key": "adminPassword",
-      "value": "admin123"
-    },
-    {
-      "key": "userId",
-      "value": ""
-    },
-    {
-      "key": "mfaToken",
-      "value": ""
-    },
-    {
-      "key": "totpCode",
-      "value": "000000"
-    },
-    {
-      "key": "xsrfToken",
-      "value": ""
-    }
-  ],
   "item": [
     {
-      "name": "Sesión",
+      "name": "Sesión (admin)",
       "item": [
         {
           "name": "Token CSRF",
@@ -44,13 +14,13 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/actuator/health",
+              "raw": "{{host}}/.well-known/jwks.json",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "actuator",
-                "health"
+                ".well-known",
+                "jwks.json"
               ]
             },
             "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
@@ -61,6 +31,7 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
                 ]
               }
@@ -78,9 +49,9 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/auth/login",
+              "raw": "{{host}}/auth/login",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
                 "auth",
@@ -90,6 +61,36 @@
             "body": {
               "mode": "raw",
               "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi usuario",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users/me",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
             }
           },
           "event": [
@@ -99,114 +100,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
-                  "pm.test('cookies de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);",
-                  "pm.test('sin tokens en el cuerpo', () => pm.expect(pm.response.json()).to.not.have.property('accessToken'));",
-                  "if (pm.response.json().mfaToken) pm.collectionVariables.set('mfaToken', pm.response.json().mfaToken);"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Login con contraseña errónea",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/login",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "login"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"incorrecta1\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
-                  "pm.test('mensaje genérico', () => pm.expect(pm.response.json().message).to.eql('Usuario o contraseña inválidos'));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Verificar MFA",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/auth/mfa/verify",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "mfa",
-                "verify"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"mfaToken\": \"{{mfaToken}}\",\n  \"code\": \"{{totpCode}}\"\n}"
-            },
-            "description": "Solo si el login respondió MFA_REQUIRED. Poner en totpCode el código de la app autenticadora."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Renovar (refresh)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/auth/refresh",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "auth",
-                "refresh"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "pm.test('es ADMIN', () => pm.expect(pm.response.json().roles).to.include('ADMIN'));"
                 ]
               }
             }
@@ -218,9 +112,9 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/.well-known/jwks.json",
+              "raw": "{{host}}/.well-known/jwks.json",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
                 ".well-known",
@@ -235,25 +129,26 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
-                  "pm.test('una clave RSA pública', () => pm.expect(pm.response.json().keys[0].kty).to.eql('RSA'));"
+                  "pm.test('clave pública RSA', () => pm.expect(pm.response.json().keys[0].kty).to.eql('RSA'));",
+                  "pm.test('sin parte privada', () => pm.expect(pm.response.json().keys[0]).to.not.have.property('d'));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Mi usuario",
+          "name": "Renovar (refresh)",
           "request": {
-            "method": "GET",
+            "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users/me",
+              "raw": "{{host}}/auth/refresh",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "users",
-                "me"
+                "auth",
+                "refresh"
               ]
             }
           },
@@ -263,7 +158,514 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('nueva cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Administración de usuarios (ADMIN)",
+      "item": [
+        {
+          "name": "Crear usuario de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\",\n  \"email\": \"{{testUser}}@example.com\",\n  \"roles\": [\n    \"OPERATOR\"\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sin credenciales fijas en el repositorio: usuario y contrasena aleatorios por corrida.",
+                  "pm.collectionVariables.set('testUser', 'postman-auth-' + Date.now());",
+                  "const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';",
+                  "let s = '';",
+                  "for (let i = 0; i < 24; i++) s += abc[Math.floor(Math.random() * abc.length)];",
+                  "pm.collectionVariables.set('testPassword', s + '#1');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const u = pm.response.json();",
+                  "pm.collectionVariables.set('testUserId', u.id);",
+                  "pm.test('rol OPERATOR', () => pm.expect(u.roles).to.eql(['OPERATOR']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear duplicado (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\",\n  \"email\": \"otro-{{testUser}}@example.com\",\n  \"roles\": [\n    \"OPERATOR\"\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('USERNAME_TAKEN', () => pm.expect(pm.response.json().code).to.eql('USERNAME_TAKEN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Listar (búsqueda)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users?page=0&size=20&q={{testUser}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "0"
+                },
+                {
+                  "key": "size",
+                  "value": "20"
+                },
+                {
+                  "key": "q",
+                  "value": "{{testUser}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('lo encuentra', () => pm.expect(pm.response.json().totalElements).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cambiar roles",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{testUserId}}/roles",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{testUserId}}",
+                "roles"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"roles\": [\n    \"OPERATOR\",\n    \"AUDITOR\"\n  ]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('roles nuevos', () => pm.expect(pm.response.json().roles).to.have.members(['OPERATOR', 'AUDITOR']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{testUserId}}/active",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{testUserId}}",
+                "active"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('inactivo', () => pm.expect(pm.response.json().active).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login del usuario desactivado (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reactivar",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{testUserId}}/active",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{testUserId}}",
+                "active"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('activo', () => pm.expect(pm.response.json().active).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Segundo factor (usuario de prueba)",
+      "item": [
+        {
+          "name": "Login con contraseña errónea (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"no-es-la-clave\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (usuario de prueba)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sesión abierta', () => pm.expect(pm.response.json().username).to.eql(pm.variables.get('testUser')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Estado del segundo factor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users/me/mfa/status",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "mfa",
+                "status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('desactivado', () => pm.expect(pm.response.json().enabled).to.be.false);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar secreto (QR)",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users/me/mfa/setup",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "mfa",
+                "setup"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('URI otpauth y QR', () => { pm.expect(r.otpauthUrl).to.match(/^otpauth:\\/\\/totp\\//); pm.expect(r.qrPngBase64).to.be.a('string').and.not.empty; });",
+                  "pm.test('el secreto viaja enmascarado fuera de la URI', () => pm.expect(r.secretMasked).to.include('*'));",
+                  "const secret = decodeURIComponent(r.otpauthUrl.split('secret=')[1].split('&')[0]);",
+                  "pm.collectionVariables.set('totpSecret', secret);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Activar con código",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/me/mfa/verify",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me",
+                "mfa",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"code\": \"{{totpCode}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// TOTP de la RFC 6238 (HMAC-SHA1, 6 digitos, pasos de 30 s), como la app autenticadora.",
+                  "function base32ToHex(b32) {",
+                  "  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  for (const c of b32.replace(/=+$/, '').toUpperCase()) {",
+                  "    const v = a.indexOf(c);",
+                  "    if (v >= 0) bits += v.toString(2).padStart(5, '0');",
+                  "  }",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  return hex;",
+                  "}",
+                  "function totp(secret) {",
+                  "  const CryptoJS = require('crypto-js');",
+                  "  const step = Math.floor(Date.now() / 1000 / 30);",
+                  "  const counter = step.toString(16).padStart(16, '0');",
+                  "  const h = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counter), CryptoJS.enc.Hex.parse(base32ToHex(secret))).toString(CryptoJS.enc.Hex);",
+                  "  const o = parseInt(h.substr(h.length - 1), 16);",
+                  "  const bin = parseInt(h.substr(o * 2, 8), 16) & 0x7fffffff;",
+                  "  return String(bin % 1000000).padStart(6, '0');",
+                  "}",
+                  "pm.variables.set('totpCode', totp(pm.collectionVariables.get('totpSecret')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }
@@ -275,9 +677,9 @@
             "method": "POST",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/auth/logout",
+              "raw": "{{host}}/auth/logout",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
                 "auth",
@@ -296,75 +698,9 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "MFA del usuario",
-      "item": [
-        {
-          "name": "Estado",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/me/mfa/status",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "me",
-                "mfa",
-                "status"
-              ]
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
         },
         {
-          "name": "Generar secreto (QR)",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "url": {
-              "raw": "{{baseUrl}}/users/me/mfa/setup",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "me",
-                "mfa",
-                "setup"
-              ]
-            },
-            "description": "Escanear otpauthUrl / qrPngBase64 con la app autenticadora."
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Activar con código",
+          "name": "Login pide el segundo factor",
           "request": {
             "method": "POST",
             "header": [
@@ -374,36 +710,108 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/me/mfa/verify",
+              "raw": "{{host}}/auth/login",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "users",
-                "me",
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{testUser}}\",\n  \"password\": \"{{testPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('MFA_REQUIRED', () => pm.expect(r.status).to.eql('MFA_REQUIRED'));",
+                  "pm.collectionVariables.set('mfaToken', r.mfaToken);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Código erróneo (401)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/mfa/verify",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
                 "mfa",
                 "verify"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"code\": \"{{totpCode}}\"\n}"
+              "raw": "{\n  \"mfaToken\": \"{{mfaToken}}\",\n  \"code\": \"{{wrongCode}}\"\n}"
             }
           },
           "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// TOTP de la RFC 6238 (HMAC-SHA1, 6 digitos, pasos de 30 s), como la app autenticadora.",
+                  "function base32ToHex(b32) {",
+                  "  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  for (const c of b32.replace(/=+$/, '').toUpperCase()) {",
+                  "    const v = a.indexOf(c);",
+                  "    if (v >= 0) bits += v.toString(2).padStart(5, '0');",
+                  "  }",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  return hex;",
+                  "}",
+                  "function totp(secret) {",
+                  "  const CryptoJS = require('crypto-js');",
+                  "  const step = Math.floor(Date.now() / 1000 / 30);",
+                  "  const counter = step.toString(16).padStart(16, '0');",
+                  "  const h = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counter), CryptoJS.enc.Hex.parse(base32ToHex(secret))).toString(CryptoJS.enc.Hex);",
+                  "  const o = parseInt(h.substr(h.length - 1), 16);",
+                  "  const bin = parseInt(h.substr(o * 2, 8), 16) & 0x7fffffff;",
+                  "  return String(bin % 1000000).padStart(6, '0');",
+                  "}",
+                  "// Un codigo distinto del vigente y de los pasos vecinos.",
+                  "const ok = totp(pm.collectionVariables.get('totpSecret'));",
+                  "pm.variables.set('wrongCode', String((Number(ok) + 500000) % 1000000).padStart(6, '0'));"
+                ]
+              }
+            },
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));",
+                  "pm.test('MFA_INVALID_CODE', () => pm.expect(pm.response.json().code).to.eql('MFA_INVALID_CODE'));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Desactivar con código",
+          "name": "Verificar el segundo factor",
           "request": {
             "method": "POST",
             "header": [
@@ -413,9 +821,108 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/me/mfa/disable",
+              "raw": "{{host}}/auth/mfa/verify",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "mfa",
+                "verify"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"mfaToken\": \"{{mfaToken}}\",\n  \"code\": \"{{totpCode}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// TOTP de la RFC 6238 (HMAC-SHA1, 6 digitos, pasos de 30 s), como la app autenticadora.",
+                  "function base32ToHex(b32) {",
+                  "  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  for (const c of b32.replace(/=+$/, '').toUpperCase()) {",
+                  "    const v = a.indexOf(c);",
+                  "    if (v >= 0) bits += v.toString(2).padStart(5, '0');",
+                  "  }",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  return hex;",
+                  "}",
+                  "function totp(secret) {",
+                  "  const CryptoJS = require('crypto-js');",
+                  "  const step = Math.floor(Date.now() / 1000 / 30);",
+                  "  const counter = step.toString(16).padStart(16, '0');",
+                  "  const h = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counter), CryptoJS.enc.Hex.parse(base32ToHex(secret))).toString(CryptoJS.enc.Hex);",
+                  "  const o = parseInt(h.substr(h.length - 1), 16);",
+                  "  const bin = parseInt(h.substr(o * 2, 8), 16) & 0x7fffffff;",
+                  "  return String(bin % 1000000).padStart(6, '0');",
+                  "}",
+                  "pm.variables.set('totpCode', totp(pm.collectionVariables.get('totpSecret')));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sesión del usuario', () => pm.expect(pm.response.json().username).to.eql(pm.variables.get('testUser')));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Mi usuario con segundo factor",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/users/me",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "me"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('mfaEnabled', () => pm.expect(pm.response.json().mfaEnabled).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar el segundo factor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/me/mfa/disable",
+              "host": [
+                "{{host}}"
               ],
               "path": [
                 "users",
@@ -431,6 +938,36 @@
           },
           "event": [
             {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// TOTP de la RFC 6238 (HMAC-SHA1, 6 digitos, pasos de 30 s), como la app autenticadora.",
+                  "function base32ToHex(b32) {",
+                  "  const a = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ234567';",
+                  "  let bits = '';",
+                  "  for (const c of b32.replace(/=+$/, '').toUpperCase()) {",
+                  "    const v = a.indexOf(c);",
+                  "    if (v >= 0) bits += v.toString(2).padStart(5, '0');",
+                  "  }",
+                  "  let hex = '';",
+                  "  for (let i = 0; i + 8 <= bits.length; i += 8) hex += parseInt(bits.substr(i, 8), 2).toString(16).padStart(2, '0');",
+                  "  return hex;",
+                  "}",
+                  "function totp(secret) {",
+                  "  const CryptoJS = require('crypto-js');",
+                  "  const step = Math.floor(Date.now() / 1000 / 30);",
+                  "  const counter = step.toString(16).padStart(16, '0');",
+                  "  const h = CryptoJS.HmacSHA1(CryptoJS.enc.Hex.parse(counter), CryptoJS.enc.Hex.parse(base32ToHex(secret))).toString(CryptoJS.enc.Hex);",
+                  "  const o = parseInt(h.substr(h.length - 1), 16);",
+                  "  const bin = parseInt(h.substr(o * 2, 8), 16) & 0x7fffffff;",
+                  "  return String(bin % 1000000).padStart(6, '0');",
+                  "}",
+                  "pm.variables.set('totpCode', totp(pm.collectionVariables.get('totpSecret')));"
+                ]
+              }
+            },
+            {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
@@ -440,34 +977,21 @@
               }
             }
           ]
-        }
-      ]
-    },
-    {
-      "name": "Administración de usuarios (ADMIN)",
-      "item": [
+        },
         {
-          "name": "Crear usuario",
+          "name": "Cerrar sesión del usuario",
           "request": {
             "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
+            "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users",
+              "raw": "{{host}}/auth/logout",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "users"
+                "auth",
+                "logout"
               ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"operador1\",\n  \"password\": \"password1\",\n  \"email\": \"operador1@example.com\",\n  \"roles\": [\n    \"OPERATOR\"\n  ]\n}"
             }
           },
           "event": [
@@ -476,75 +1000,25 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
-                  "pm.collectionVariables.set('userId', pm.response.json().id);"
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Crear duplicado (409)",
-          "request": {
-            "method": "POST",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users"
-              ]
-            },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"username\": \"OPERADOR1\",\n  \"password\": \"password1\",\n  \"email\": \"otro@example.com\"\n}"
-            }
-          },
-          "event": [
-            {
-              "listen": "test",
-              "script": {
-                "type": "text/javascript",
-                "exec": [
-                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));"
-                ]
-              }
-            }
-          ]
-        },
-        {
-          "name": "Listar",
+          "name": "Mi usuario sin sesión (401)",
           "request": {
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{baseUrl}}/users?page=0&size=20&q=",
+              "raw": "{{host}}/users/me",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "users"
-              ],
-              "query": [
-                {
-                  "key": "page",
-                  "value": "0"
-                },
-                {
-                  "key": "size",
-                  "value": "20"
-                },
-                {
-                  "key": "q",
-                  "value": ""
-                }
+                "users",
+                "me"
               ]
             }
           },
@@ -554,16 +1028,51 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "pm.test('HTTP 401', () => pm.response.to.have.status(401));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Cambiar roles",
+          "name": "Login (admin)",
           "request": {
-            "method": "PATCH",
+            "method": "POST",
             "header": [
               {
                 "key": "Content-Type",
@@ -571,20 +1080,20 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/roles",
+              "raw": "{{host}}/auth/login",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
-                "users",
-                "{{userId}}",
-                "roles"
+                "auth",
+                "login"
               ]
             },
             "body": {
               "mode": "raw",
-              "raw": "{\n  \"roles\": [\n    \"AUDITOR\"\n  ]\n}"
-            }
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
           },
           "event": [
             {
@@ -592,14 +1101,15 @@
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
                 ]
               }
             }
           ]
         },
         {
-          "name": "Desactivar",
+          "name": "Desactivar usuario de prueba",
           "request": {
             "method": "PATCH",
             "header": [
@@ -609,13 +1119,13 @@
               }
             ],
             "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/active",
+              "raw": "{{host}}/users/{{testUserId}}/active",
               "host": [
-                "{{baseUrl}}"
+                "{{host}}"
               ],
               "path": [
                 "users",
-                "{{userId}}",
+                "{{testUserId}}",
                 "active"
               ]
             },
@@ -626,83 +1136,29 @@
           },
           "event": [
             {
-              "listen": "test",
+              "listen": "prerequest",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "if (!pm.collectionVariables.get('testUserId')) pm.execution.skipRequest();"
                 ]
               }
-            }
-          ]
-        },
-        {
-          "name": "Reactivar",
-          "request": {
-            "method": "PATCH",
-            "header": [
-              {
-                "key": "Content-Type",
-                "value": "application/json"
-              }
-            ],
-            "url": {
-              "raw": "{{baseUrl}}/users/{{userId}}/active",
-              "host": [
-                "{{baseUrl}}"
-              ],
-              "path": [
-                "users",
-                "{{userId}}",
-                "active"
-              ]
             },
-            "body": {
-              "mode": "raw",
-              "raw": "{\n  \"active\": true\n}"
-            }
-          },
-          "event": [
             {
               "listen": "test",
               "script": {
                 "type": "text/javascript",
                 "exec": [
-                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('usuario inactivo', () => pm.expect(pm.response.json().active).to.be.false);",
+                  "pm.collectionVariables.set('testUserId', '');"
                 ]
               }
             }
           ]
         }
-      ]
-    },
-    {
-      "name": "Salud",
-      "request": {
-        "method": "GET",
-        "header": [],
-        "url": {
-          "raw": "{{baseUrl}}/actuator/health",
-          "host": [
-            "{{baseUrl}}"
-          ],
-          "path": [
-            "actuator",
-            "health"
-          ]
-        }
-      },
-      "event": [
-        {
-          "listen": "test",
-          "script": {
-            "type": "text/javascript",
-            "exec": [
-              "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
-            ]
-          }
-        }
-      ]
+      ],
+      "description": "Vuelve a entrar como ADMIN y desactiva el usuario de prueba."
     }
   ],
   "event": [
@@ -726,6 +1182,44 @@
           "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
         ]
       }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "testUser",
+      "value": ""
+    },
+    {
+      "key": "testPassword",
+      "value": ""
+    },
+    {
+      "key": "testUserId",
+      "value": ""
+    },
+    {
+      "key": "totpSecret",
+      "value": ""
+    },
+    {
+      "key": "mfaToken",
+      "value": ""
     }
   ]
 }

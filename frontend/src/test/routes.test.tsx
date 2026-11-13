@@ -86,6 +86,14 @@ describe("rutas y menu por rol", () => {
         signIn(AUDITOR);
         renderAt("/admin/users");
         expect(await screen.findByText("Hola, auditor1")).toBeInTheDocument();
+        expect(screen.getByText("Su rol no tiene acceso a /admin/users. Se le trajo al inicio.")).toBeInTheDocument();
+    });
+
+    it("el inicio no muestra el aviso de acceso si se llega desde el menu", async () => {
+        signIn(AUDITOR);
+        renderAt("/dashboard");
+        expect(await screen.findByText("Hola, auditor1")).toBeInTheDocument();
+        expect(screen.queryByText(/no tiene acceso/)).not.toBeInTheDocument();
     });
 
     it("con sesion, el login lleva al inicio", async () => {
