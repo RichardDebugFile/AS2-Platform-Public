@@ -3,8 +3,9 @@
 # "docker compose build":
 #   - volumen as2data -> /opt/as2_data/partners (raiz de las carpetas de cada socio);
 #   - recurso compartido del ERP -> /mnt/erp (en local, ./shared; en un servidor, ERP_SHARED_PATH en
-#     .env con la ruta donde esta montado el recurso Samba/CIFS).
-# Deja ambos con dueno el usuario sin privilegios de los contenedores. No borra ni mueve nada: se
+#     .env con la ruta donde esta montado el recurso Samba/CIFS);
+#   - con el perfil demo, ./salida/openas2 -> lo que recibe el socio de prueba OpenAS2.
+# Deja cada uno con dueno el usuario sin privilegios de los contenedores. No borra ni mueve nada: se
 # puede repetir sin riesgo.
 set -euo pipefail
 cd "$(dirname "$0")"
@@ -37,3 +38,17 @@ docker compose run --rm --no-deps --user root --entrypoint sh partners-service -
         && echo "Almacenamiento listo: el servicio puede escribir en ambas carpetas." \
         || { echo "El servicio no puede escribir en /opt/as2_data/partners o /mnt/erp." >&2; exit 1; }
 '
+
+# Perfil demo: OpenAS2 corre con el uid 1000 y guarda lo que recibe en ./salida/openas2. En Linux,
+# Docker crea esa carpeta como root y OpenAS2 no podria escribir: respondia el MDN con
+# "processed/Error" y el envio quedaba como no entregado. Docker Desktop (Windows, macOS) no lo nota.
+if docker compose config --services | grep -qx openas2; then
+    docker compose run --rm --no-deps --user root --entrypoint sh openas2 -c '
+        set -e
+        chown 1000:0 /opt/openas2/data
+        chmod 0775 /opt/openas2/data
+        su -s /bin/sh -c "test -w /opt/openas2/data" openas2 \
+            && echo "Carpeta de OpenAS2 lista: salida/openas2" \
+            || { echo "OpenAS2 no puede escribir en salida/openas2." >&2; exit 1; }
+    '
+fi

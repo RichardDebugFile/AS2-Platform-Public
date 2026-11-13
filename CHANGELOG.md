@@ -43,6 +43,11 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   final. El workflow `Docker` las corre todas con Newman contra el stack con el perfil `demo`.
 
 ### Correcciones
+- Perfil `demo` en Linux: OpenAS2 no podía escribir en `salida/openas2` (Docker crea la carpeta
+  como root y OpenAS2 corre con el uid 1000), así que respondía el MDN con `processed/Error` y la
+  plataforma marcaba el envío como no entregado. `prepare-storage.sh` le da la carpeta a OpenAS2. En
+  Windows y macOS (Docker Desktop) no pasaba. Lo detectó la colección de Postman del as2-adapter al
+  correr en el CI (AS2-101).
 - `build.bat` y `start.bat` buscan un Java 25 o superior en vez de usar el primero que encuentran: con
   Java 17 en el PATH, los servicios se detenían con `UnsupportedClassVersionError` (AS2-96).
 - La base de datos de `start.bat` es un proyecto de Docker propio (`as2-platform-dev`). Compartía
