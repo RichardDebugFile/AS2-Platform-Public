@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.6.0 — 2026-11-12
 
 ### Novedades
 - La primera línea de cada commit lleva la clave de la tarea de Jira (`tipo(ámbito): AS2-NN resumen`)
@@ -15,8 +15,8 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   con SHA-256, lo cifra con AES-256 para el socio y pide un MDN firmado síncrono. Al recibir el MDN,
   verifica su firma y comprueba que el MIC coincide con el enviado. En `deploy/interop` hay un entorno
   con OpenAS2, un servidor AS2 de código abierto, que hace de socio, con certificados de prueba
-  generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; todavía no se
-  integra con la consola.
+  generados al arrancar. Sirve para comprobar la interoperabilidad antes de HU-15; la consola lo
+  usa desde AS2-100.
 - Inicio muestra el tablero de la operación (AS2-99). Muestra las cifras del rango elegido (por defecto
   los últimos 7 días): documentos, correctos, con error y tasa de éxito. Incluye un gráfico de tráfico
   por día, el reparto de resultados, el tráfico por socio y el estado de cada servicio con su latencia.
@@ -43,6 +43,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   final. El workflow `Docker` las corre todas con Newman contra el stack con el perfil `demo`.
 
 ### Correcciones
+- Avisos de SonarQube acumulados en la 0.5.0: complejidad del retiro de certificados, palabra clave
+  CSS obsoleta, ternarios anidados y encadenamiento opcional, con pruebas de las fechas por defecto
+  (AS2-90).
+- Las pruebas pasan también en Windows: rutas esperadas normalizadas y, sin el Modo de desarrollador,
+  se omiten las que crean enlaces simbólicos. La prueba de humo busca un respaldo de las últimas 24 h
+  en vez de la carpeta del día, que puede no existir pasada la medianoche UTC (AS2-91).
 - Perfil `demo` en Linux: OpenAS2 no podía escribir en `salida/openas2` (Docker crea la carpeta
   como root y OpenAS2 corre con el uid 1000), así que respondía el MDN con `processed/Error` y la
   plataforma marcaba el envío como no entregado. `prepare-storage.sh` le da la carpeta a OpenAS2. En
