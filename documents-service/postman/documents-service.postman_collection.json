@@ -486,7 +486,8 @@
                   "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
                   "const r = pm.response.json();",
                   "pm.collectionVariables.set('documentId', r.document.id);",
-                  "pm.test('CREATED y VALIDATED', () => { pm.expect(r.outcome).to.eql('CREATED'); pm.expect(r.document.status).to.eql('VALIDATED'); });",
+                  "// Un entrante valido queda RECEIVED (en curso) hasta entregarse al ERP; uno invalido, VALIDATION_FAILED.",
+                  "pm.test('CREATED y RECEIVED (válido)', () => { pm.expect(r.outcome).to.eql('CREATED'); pm.expect(r.document.status).to.eql('RECEIVED'); pm.expect(r.document.validationDetail).to.not.be.ok; });",
                   "pm.test('controles del sobre', () => { pm.expect(r.document.isaControl).to.eql('000000123'); pm.expect(r.document.stControl).to.eql('0789'); });"
                 ]
               }
@@ -964,7 +965,8 @@
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
                   "const r = pm.response.json();",
-                  "pm.test('un documento correcto', () => { pm.expect(r.total).to.eql(1); pm.expect(r.ok).to.eql(1); pm.expect(r.successRate).to.eql(100); });",
+                  "pm.test('un documento en curso', () => { pm.expect(r.total).to.eql(1); pm.expect(r.inProgress).to.eql(1); pm.expect(r.failed).to.eql(0); });",
+                  "pm.test('sin resultado final no hay tasa de éxito', () => pm.expect(r.successRate).to.be.null);",
                   "pm.test('tráfico del socio', () => { pm.expect(r.byPartner[0].partner).to.eql(pm.collectionVariables.get('as2Name')); pm.expect(r.byPartner[0].inbound).to.eql(1); });"
                 ]
               }
