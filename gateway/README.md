@@ -81,3 +81,7 @@ mvn -pl gateway verify
 
 `GatewaySecurityTest` recorre los criterios de aceptación de HU-05 (rutas públicas y protegidas,
 roles, rutas sin normalizar) contra un destino simulado, sin necesitar los demás servicios.
+
+Contra la plataforma levantada, la colección [`postman/gateway.postman_collection.json`](postman/gateway.postman_collection.json)
+comprueba el 401 sin sesión, el estado del sistema, la protección CSRF, los permisos de AUDITOR y que
+el proxy no publique rutas internas (cómo correrla: `deploy/docker/README.md`).

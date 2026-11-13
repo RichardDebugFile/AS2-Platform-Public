@@ -1,8 +1,10 @@
 name: Docker
 
-# Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo y verifica los
-# criterios de aceptacion con deploy/docker/smoke-test.sh (HTTPS, puertos, reinicio automatico,
-# cookies Secure, respaldo restaurable y carpetas de los socios). Corre cuando cambia el despliegue.
+# Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo con el socio de
+# prueba OpenAS2 (perfil demo) y verifica los criterios de aceptacion con deploy/docker/smoke-test.sh
+# (HTTPS, puertos, reinicio automatico, cookies Secure, respaldo restaurable y carpetas de los socios).
+# Despues corre con Newman las colecciones de Postman de todos los servicios contra el stack (AS2-101).
+# Corre cuando cambia el despliegue o una coleccion.
 
 permissions:
   contents: read
@@ -11,12 +13,14 @@ on:
   push:
     paths:
       - 'deploy/docker/**'
+      - '*/postman/**'
       - '.dockerignore'
       - '.github/workflows/docker.yml'
   pull_request:
     branches: [main, develop]
     paths:
       - 'deploy/docker/**'
+      - '*/postman/**'
       - '.dockerignore'
       - '.github/workflows/docker.yml'
   workflow_dispatch:
@@ -30,6 +34,9 @@ jobs:
     name: Stack Docker + criterios HU-07
     runs-on: ubuntu-latest
     timeout-minutes: 30
+    env:
+      # OpenAS2 como socio de prueba: la coleccion del as2-adapter hace un envio AS2 de punta a punta.
+      COMPOSE_PROFILES: demo
     defaults:
       run:
         working-directory: deploy/docker
@@ -54,6 +61,31 @@ jobs:
 
       - name: Criterios de aceptacion
         run: ./smoke-test.sh
+
+      # La contrasena del admin la genera init-env.sh en cada corrida; se enmascara en los logs. De la
+      # coleccion de partners se omite "Carpetas" (necesita la carpeta compartida del ERP montada en
+      # el equipo) y "Motor AS2 (red interna)" (rutas /internal que el gateway no publica).
+      - name: API con Newman (colecciones de Postman)
+        working-directory: .
+        run: |
+          pw="$(grep '^ADMIN_PASSWORD=' deploy/docker/.env | cut -d= -f2-)"
+          echo "::add-mask::$pw"
+          # Corre todas aunque alguna falle, para ver en un solo intento que colecciones fallan.
+          rc=0
+          coleccion() {
+            echo "::group::$1"
+            npx -y newman@6.2.1 run "$1" --insecure --reporters cli \
+              --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw" "${@:2}" \
+              || { rc=1; echo "::error title=Newman::$1"; }
+            echo "::endgroup::"
+          }
+          coleccion gateway/postman/gateway.postman_collection.json
+          coleccion auth-service/postman/auth-service.postman_collection.json
+          coleccion documents-service/postman/documents-service.postman_collection.json
+          coleccion as2-adapter/postman/as2-adapter.postman_collection.json
+          coleccion partners-service/postman/partners-service.postman_collection.json \
+            --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+          exit $rc
 
       # Los logs de Actions solo se ven con sesion iniciada: ante un fallo, el paso que fallo y las
       # ultimas lineas utiles quedan tambien como anotaciones del job (visibles en el resumen).

@@ -1,0 +1,1636 @@
+{
+  "info": {
+    "name": "documents-service",
+    "description": "Documentos X12 (HU-12) y repositorio (HU-14), a través del gateway. Contra el stack Docker: host = https://localhost (con --insecure en Newman por el certificado local) y adminPassword = ADMIN_PASSWORD de deploy/docker/.env, sin escribirla en la colección. Se ejecuta completa y en orden. Crea un socio de prueba con nombre aleatorio (el repositorio solo acepta documentos de socios registrados) y un AUDITOR aleatorio; en \"Limpieza\" borra el documento, da de baja y borra el socio y desactiva el AUDITOR.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sesión (vía gateway)",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear socio de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/partners/complete",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "complete"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"partner\": {\n    \"as2Name\": \"{{as2Name}}\",\n    \"partnerName\": \"Socio de prueba de documentos\",\n    \"partnerType\": \"CUSTOMER\",\n    \"serverAddress\": \"as2.socio.example\",\n    \"port\": 4443,\n    \"transportType\": \"HTTPS\",\n    \"path\": \"/as2\",\n    \"signingAlgorithm\": \"RSA_SHA256\",\n    \"encryptionAlgorithm\": \"AES256\",\n    \"micAlgorithm\": \"SHA256\",\n    \"contactEmail\": \"ops@example.com\"\n  }\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('as2Name', 'DOCS-POSTMAN-' + Date.now());",
+                  "pm.collectionVariables.set('messageId', '<docs-postman-' + Date.now() + '@example.com>');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "pm.collectionVariables.set('partnerId', pm.response.json().partner.id);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Crear usuario auditor",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\",\n  \"email\": \"{{auditorUser}}@example.com\",\n  \"roles\": [\n    \"AUDITOR\"\n  ],\n  \"active\": true\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Sin credenciales fijas en el repositorio: usuario y contrasena aleatorios por corrida.",
+                  "pm.collectionVariables.set('auditorUser', 'auditor-docs-' + Date.now());",
+                  "const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';",
+                  "let s = '';",
+                  "for (let i = 0; i < 24; i++) s += abc[Math.floor(Math.random() * abc.length)];",
+                  "pm.collectionVariables.set('auditorPassword', s + '#1');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const u = pm.response.json();",
+                  "pm.collectionVariables.set('auditorId', u.id);",
+                  "pm.test('rol AUDITOR', () => pm.expect(u.roles).to.eql(['AUDITOR']));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "X12",
+      "item": [
+        {
+          "name": "Esquemas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/schemas",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "schemas"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const tipos = pm.response.json().map(s => s.typeCode);",
+                  "pm.test('850, 997 y 889', () => pm.expect(tipos).to.include.members(['850', '997', '889']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Interpretar 850",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/parse",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "parse"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('tipo y versión', () => { pm.expect(r.typeCode).to.eql('850'); pm.expect(r.version).to.eql('4010'); });",
+                  "pm.test('separadores leídos del documento', () => { pm.expect(r.elementSeparator).to.eql('*'); pm.expect(r.segmentTerminator).to.eql('~'); });",
+                  "pm.test('completo', () => pm.expect(r.complete).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validar 850",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/validate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "validate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('VALIDATED', () => pm.expect(pm.response.json().status).to.eql('VALIDATED'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validar 850 sin BEG",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/validate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "validate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('VALIDATION_FAILED', () => pm.expect(r.status).to.eql('VALIDATION_FAILED'));",
+                  "pm.test('falta BEG', () => pm.expect(r.missingSegments).to.include('BEG'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar 997 del 850",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const t = pm.response.text();",
+                  "pm.test('es un 997', () => pm.expect(t).to.include('ST*997*'));",
+                  "pm.test('acusa el grupo del 850', () => pm.expect(t).to.include('AK1*PO*456'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar tipo no admitido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"810\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('UNSUPPORTED_TYPE', () => pm.expect(pm.response.json().code).to.eql('UNSUPPORTED_TYPE'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Repositorio",
+      "item": [
+        {
+          "name": "Registrar 850 entrante",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              },
+              {
+                "key": "Message-ID",
+                "value": "{{messageId}}"
+              },
+              {
+                "key": "AS2-From",
+                "value": "{{as2Name}}"
+              },
+              {
+                "key": "AS2-To",
+                "value": "PLATAFORMA"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/ingest/as2?partner={{as2Name}}&direction=INBOUND",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "ingest",
+                "as2"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                },
+                {
+                  "key": "direction",
+                  "value": "INBOUND"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const r = pm.response.json();",
+                  "pm.collectionVariables.set('documentId', r.document.id);",
+                  "pm.test('CREATED y VALIDATED', () => { pm.expect(r.outcome).to.eql('CREATED'); pm.expect(r.document.status).to.eql('VALIDATED'); });",
+                  "pm.test('controles del sobre', () => { pm.expect(r.document.isaControl).to.eql('000000123'); pm.expect(r.document.stControl).to.eql('0789'); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Reenvío con el mismo Message-ID",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              },
+              {
+                "key": "Message-ID",
+                "value": "{{messageId}}"
+              },
+              {
+                "key": "AS2-From",
+                "value": "{{as2Name}}"
+              },
+              {
+                "key": "AS2-To",
+                "value": "PLATAFORMA"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/ingest/as2?partner={{as2Name}}&direction=INBOUND",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "ingest",
+                "as2"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                },
+                {
+                  "key": "direction",
+                  "value": "INBOUND"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('DUPLICATE, mismo documento', () => { pm.expect(r.outcome).to.eql('DUPLICATE'); pm.expect(r.document.id).to.eql(pm.collectionVariables.get('documentId')); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Socio no registrado (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/ingest/as2?partner=SOCIO-QUE-NO-EXISTE&direction=INBOUND",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "ingest",
+                "as2"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "SOCIO-QUE-NO-EXISTE"
+                },
+                {
+                  "key": "direction",
+                  "value": "INBOUND"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('PARTNER_UNKNOWN', () => pm.expect(pm.response.json().code).to.eql('PARTNER_UNKNOWN'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por socio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/search?partner={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('un documento', () => pm.expect(pm.response.json().totalElements).to.eql(1));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar por Message-ID",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/by-message-id?messageId={{messageId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "by-message-id"
+              ],
+              "query": [
+                {
+                  "key": "messageId",
+                  "value": "{{messageId}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('el registrado', () => pm.expect(pm.response.json().id).to.eql(pm.collectionVariables.get('documentId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('del socio de prueba', () => pm.expect(pm.response.json().partnerAs2Name).to.eql(pm.collectionVariables.get('as2Name')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Contenido como texto",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}/payload",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}",
+                "payload"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('el 850 tal como llegó', () => pm.expect(pm.response.text()).to.include('BEG*00*SA*OC-2026-001'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Descargar archivo",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}/content",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}",
+                "content"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('como adjunto', () => pm.expect(pm.response.headers.get('Content-Disposition')).to.include('attachment'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dónde está guardado",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}/storage-status",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}",
+                "storage-status"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('en la base y como archivo', () => { pm.expect(r.database).to.be.true; pm.expect(r.repositoryFile).to.be.true; });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "MDN de un entrante (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}/mdn",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}",
+                "mdn"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Recientes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/recent?limit=5",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "recent"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('incluye el registrado', () => pm.expect(pm.response.json().map(d => d.id)).to.include(pm.collectionVariables.get('documentId')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Documento inexistente (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/00000000-0000-0000-0000-000000000000",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "00000000-0000-0000-0000-000000000000"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.test('DOCUMENT_NOT_FOUND', () => pm.expect(pm.response.json().code).to.eql('DOCUMENT_NOT_FOUND'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Tablero y consistencia",
+      "item": [
+        {
+          "name": "Estadísticas",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/stats",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "stats"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('siete días', () => pm.expect(pm.response.json().lastDays).to.have.lengthOf(7));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Tablero del socio",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/dashboard?partner={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('un documento correcto', () => { pm.expect(r.total).to.eql(1); pm.expect(r.ok).to.eql(1); pm.expect(r.successRate).to.eql(100); });",
+                  "pm.test('tráfico del socio', () => { pm.expect(r.byPartner[0].partner).to.eql(pm.collectionVariables.get('as2Name')); pm.expect(r.byPartner[0].inbound).to.eql(1); });"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango invertido (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/dashboard?from=2026-11-10&to=2026-11-01",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2026-11-10"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-11-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Rango de más de un año (400)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/dashboard?from=2025-01-01&to=2026-11-01",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "dashboard"
+              ],
+              "query": [
+                {
+                  "key": "from",
+                  "value": "2025-01-01"
+                },
+                {
+                  "key": "to",
+                  "value": "2026-11-01"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consistencia base-disco",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/consistency/documents",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "consistency",
+                "documents"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('informe completo', () => { pm.expect(r).to.have.property('consistent'); pm.expect(r.missingFiles).to.be.an('array'); pm.expect(r.orphanFiles).to.be.an('array'); });"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Permisos (AUDITOR)",
+      "item": [
+        {
+          "name": "Login (auditor)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{auditorUser}}\",\n  \"password\": \"{{auditorPassword}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('sesión abierta', () => pm.expect(pm.response.json().username).to.eql(pm.variables.get('auditorUser')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Validar (consulta: 200)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/validate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "validate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Buscar (200)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/search?partner={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Generar (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/x12/generate",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "x12",
+                "generate"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"997\",\n  \"original\": \"ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\\nST*850*0789~\\nBEG*00*SA*OC-2026-001**20261101~\\nREF*DP*FLORES~\\nDTM*002*20261108~\\nN1*BY*Comprador Ejemplo*92*COMP-01~\\nN1*SE*Proveedor Ejemplo*92*PROV-01~\\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\\nPID*F****Rosa roja 60 cm~\\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\\nCTT*2~\\nSE*11*0789~\\nGE*1*456~\\nIEA*1*000000123~\\n\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar (403)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "text/plain"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/documents/ingest/as2?partner={{as2Name}}&direction=INBOUND",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "ingest",
+                "as2"
+              ],
+              "query": [
+                {
+                  "key": "partner",
+                  "value": "{{as2Name}}"
+                },
+                {
+                  "key": "direction",
+                  "value": "INBOUND"
+                }
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "ISA*00*          *00*          *12*ID-SOCIO       *08*ID-EMPRESA     *261101*0930*U*00401*000000123*0*T*>~\nGS*PO*ID-SOCIO*ID-EMPRESA*20261101*0930*456*X*004010~\nST*850*0789~\nBEG*00*SA*OC-2026-001**20261101~\nREF*DP*FLORES~\nDTM*002*20261108~\nN1*BY*Comprador Ejemplo*92*COMP-01~\nN1*SE*Proveedor Ejemplo*92*PROV-01~\nPO1*1*120*EA*0.85**VP*ROSA-ROJA-60~\nPID*F****Rosa roja 60 cm~\nPO1*2*40*EA*1.2**VP*TULIPAN-BLANCO~\nCTT*2~\nSE*11*0789~\nGE*1*456~\nIEA*1*000000123~\n"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar (403)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 403', () => pm.response.to.have.status(403));"
+                ]
+              }
+            }
+          ]
+        }
+      ],
+      "description": "AUDITOR solo consulta: puede interpretar y validar, pero no generar, registrar ni borrar."
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar documento (ADMIN)",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Detalle tras borrar (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/documents/{{documentId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "documents",
+                "{{documentId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Dar de baja el socio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrado definitivo del socio",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/partners/{{partnerId}}/purge?confirm={{as2Name}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "partners",
+                "{{partnerId}}",
+                "purge"
+              ],
+              "query": [
+                {
+                  "key": "confirm",
+                  "value": "{{as2Name}}"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Desactivar usuario auditor",
+          "request": {
+            "method": "PATCH",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/users/{{auditorId}}/active",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "users",
+                "{{auditorId}}",
+                "active"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"active\": false\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "if (!pm.collectionVariables.get('auditorId')) pm.execution.skipRequest();"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('usuario inactivo', () => pm.expect(pm.response.json().active).to.be.false);",
+                  "pm.collectionVariables.set('auditorId', '');"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "as2Name",
+      "value": ""
+    },
+    {
+      "key": "messageId",
+      "value": ""
+    },
+    {
+      "key": "partnerId",
+      "value": ""
+    },
+    {
+      "key": "documentId",
+      "value": ""
+    },
+    {
+      "key": "auditorUser",
+      "value": ""
+    },
+    {
+      "key": "auditorPassword",
+      "value": ""
+    },
+    {
+      "key": "auditorId",
+      "value": ""
+    }
+  ]
+}

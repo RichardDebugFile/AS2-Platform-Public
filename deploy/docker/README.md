@@ -115,5 +115,33 @@ cortafuegos solo debe abrir 22 (SSH por clave), 80 y 443.
 
 ## Verificación automática
 
-El workflow `Docker` de GitHub Actions levanta el stack completo y ejecuta `smoke-test.sh` en cada
-cambio de `deploy/docker/`.
+El workflow `Docker` de GitHub Actions levanta el stack completo con el perfil `demo`. Ejecuta
+`smoke-test.sh` y después las colecciones de Postman de todos los servicios con Newman, en cada
+cambio de `deploy/docker/` o de una colección.
+
+## API con Newman
+
+Con la plataforma levantada (`COMPOSE_PROFILES=demo ./start.sh`), desde la raíz del repositorio y
+con la contraseña del administrador de `.env`:
+
+```bash
+pw="$(grep '^ADMIN_PASSWORD=' deploy/docker/.env | cut -d= -f2-)"
+for c in gateway auth-service documents-service as2-adapter; do
+  npx -y newman@6.2.1 run "$c/postman/$c.postman_collection.json" --insecure \
+    --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw"
+done
+npx -y newman@6.2.1 run partners-service/postman/partners-service.postman_collection.json --insecure \
+  --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw" \
+  --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+```
+
+| Colección | Qué comprueba |
+|---|---|
+| `gateway` | 401 sin sesión, salud de cada servicio con sus verificaciones internas, protección CSRF, permisos de AUDITOR y rutas que el proxy no publica |
+| `auth-service` | Login, renovación y cierre de sesión, administración de usuarios y el segundo factor completo (la colección calcula el código TOTP como la app autenticadora) |
+| `documents-service` | Interpretar, validar y generar X12; registro en el repositorio, reenvío con el mismo Message-ID, detalle, contenido, tablero y consistencia; permisos de AUDITOR |
+| `as2-adapter` | Envío AS2 de prueba a OpenAS2 con MDN firmado (necesita el perfil `demo`), 403 con AUDITOR y 401 sin sesión |
+| `partners-service` | Socios, bitácora y certificados con doble compuerta ("Carpetas" necesita además la carpeta compartida del ERP) |
+
+Los usuarios, socios y documentos que crean llevan nombres aleatorios y se desactivan o se borran al
+final de cada colección; ninguna escribe credenciales en el repositorio.
