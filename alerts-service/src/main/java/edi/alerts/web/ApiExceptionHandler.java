@@ -28,6 +28,7 @@ public class ApiExceptionHandler {
                 .map(f -> f.getField() + " " + f.getDefaultMessage())
                 .sorted()
                 .collect(Collectors.joining("; "));
+        log.info("Peticion no valida: {}", detail);
         return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "Datos no validos: " + detail);
     }
 
@@ -38,6 +39,7 @@ public class ApiExceptionHandler {
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
     ResponseEntity<ApiError> onUnreadable(HttpMessageNotReadableException e) {
+        log.warn("Cuerpo no legible: {}", e.getMostSpecificCause().getMessage());
         return error(HttpStatus.BAD_REQUEST, BAD_REQUEST, "El cuerpo de la peticion falta o no se puede leer");
     }
 

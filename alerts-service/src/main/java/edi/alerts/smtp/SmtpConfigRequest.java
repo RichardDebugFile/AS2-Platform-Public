@@ -11,6 +11,8 @@ import jakarta.validation.constraints.Size;
 /**
  * Lo que guarda el administrador. La contrasena es opcional: vacia conserva la guardada, y
  * {@code clearPassword} la borra. Sin usuario no se autentica y no se guarda contrasena.
+ * {@code clearPassword} es un objeto y no un primitivo: la consola no lo envia, y Jackson 3 rechaza por
+ * defecto un primitivo que falta en el cuerpo.
  */
 public record SmtpConfigRequest(
         @NotBlank @Size(max = 255)
@@ -20,7 +22,7 @@ public record SmtpConfigRequest(
         @NotNull SmtpSecurity security,
         @Size(max = 255) String username,
         @Size(max = 255) String password,
-        boolean clearPassword,
+        Boolean clearPassword,
         @NotBlank @Email @Size(max = 255) String fromAddress,
         @Size(max = 120) String fromName) {
 }

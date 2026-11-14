@@ -74,7 +74,7 @@ public class SmtpConfigService {
         track(changes, "fromName", c.getFromName(), fromName);
 
         String newPassword = req.password() == null || req.password().isEmpty() ? null : req.password();
-        if (username == null || req.clearPassword()) {
+        if (username == null || Boolean.TRUE.equals(req.clearPassword())) {
             if (c.hasPassword()) {
                 changes.put("password", new Change(CHANGED, REMOVED));
             }

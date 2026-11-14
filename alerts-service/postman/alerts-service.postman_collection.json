@@ -196,6 +196,7 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "if (pm.response.code !== 200) console.log(pm.response.text());",
                   "const c = pm.response.json();",
                   "pm.test('configurado con contraseña guardada', () => {",
                   "  pm.expect(c.configured).to.be.true;",
