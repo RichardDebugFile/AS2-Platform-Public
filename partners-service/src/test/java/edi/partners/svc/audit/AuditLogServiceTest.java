@@ -95,6 +95,30 @@ class AuditLogServiceTest {
     }
 
     @Test
+    void filtrosDeTexto_encuentranPorParteDelValor_sinDistinguirMayusculas() {
+        publisher.publish(event("DOCUMENT_RECEIVED", null, "BETA-DEMO", "ricardo", true, "<demo-14nov@example.com>"));
+        publisher.publish(event("DOCUMENT_RECEIVED", null, "ALFA-DEMO", "operador", true, "<prueba-13nov@example.com>"));
+        publisher.publish(event("PARTNER_UPDATED", null, "AS2_BETA", "ricardo", true, null));
+
+        assertThat(service.search(new AuditLogQuery(null, "beta", null, null, null, null, null, null), 0, 20))
+                .extracting(AuditLogResponse::partnerAs2Name).containsExactlyInAnyOrder("BETA-DEMO", "AS2_BETA");
+        assertThat(service.search(new AuditLogQuery(null, "-demo", null, null, "RIC", null, null, null), 0, 20))
+                .extracting(AuditLogResponse::partnerAs2Name).containsExactly("BETA-DEMO");
+        assertThat(service.search(new AuditLogQuery(null, null, null, null, null, "14nov", null, null), 0, 20))
+                .extracting(AuditLogResponse::partnerAs2Name).containsExactly("BETA-DEMO");
+        // "_" y "%" se buscan como texto, no como comodines de LIKE.
+        assertThat(service.search(new AuditLogQuery(null, "_", null, null, null, null, null, null), 0, 20))
+                .extracting(AuditLogResponse::partnerAs2Name).containsExactly("AS2_BETA");
+        assertThat(service.search(new AuditLogQuery(null, "%", null, null, null, null, null, null), 0, 20)).isEmpty();
+    }
+
+    @Test
+    void patronDeBusqueda_escapaLosComodines() {
+        assertThat(AuditLogService.containsPattern("  Socio_1%  ")).isEqualTo("%socio\\_1\\%%");
+        assertThat(AuditLogService.containsPattern("a\\b")).isEqualTo("%a\\\\b%");
+    }
+
+    @Test
     void sinFiltros_delMasRecienteAlMasAntiguo_yPaginado() {
         for (int i = 0; i < 5; i++) {
             publisher.publish(event("DOCUMENT_SENT", null, "SOCIO-" + i, "system", true, null));

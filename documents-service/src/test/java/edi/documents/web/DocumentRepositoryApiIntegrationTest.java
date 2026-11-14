@@ -246,6 +246,30 @@ class DocumentRepositoryApiIntegrationTest {
     }
 
     @Test
+    void busqueda_porParteDelSocioMessageIdEIsa_sinDistinguirMayusculas() throws Exception {
+        JsonNode doc = body(ingest("SOCIO-A", Direction.INBOUND, "<Parcial-105@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).get("document");
+        String isa = doc.get("isaControl").asString();
+
+        mvc.perform(get("/api/documents/search").param("partner", "ocio-a").param("messageId", "parcial-105"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalElements").value(1))
+                .andExpect(jsonPath("$.content[0].messageId").value("<Parcial-105@example.com>"));
+        mvc.perform(get("/api/documents/search").param("messageId", "PARCIAL-105")
+                        .param("isa", isa.substring(isa.length() - 3)))
+                .andExpect(jsonPath("$.totalElements").value(1));
+        mvc.perform(get("/api/documents/search").param("partner", "socio-b").param("messageId", "parcial-105"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        // "%" se busca como texto: no es un comodin que traiga todo.
+        mvc.perform(get("/api/documents/search").param("messageId", "%"))
+                .andExpect(jsonPath("$.totalElements").value(0));
+        // En el tablero el socio se elige de una lista y se compara completo.
+        mvc.perform(get("/api/documents/dashboard").param("partner", "socio"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.total").value(0));
+    }
+
+    @Test
     void detalle_contenido_descarga_mdn_estadisticas_y_borrado() throws Exception {
         String id = body(ingest("SOCIO-A", Direction.INBOUND, "<M7@example.com>", Samples.po850())
                 .andExpect(status().isCreated())).get("document").get("id").asString();

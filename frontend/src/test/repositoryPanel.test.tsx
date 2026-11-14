@@ -127,6 +127,16 @@ describe("repositorio de documentos", () => {
         );
     });
 
+    it("busca mientras se escribe, sin pulsar Buscar", async () => {
+        renderAs(AUDITOR);
+        await screen.findByText("SOCIO-A");
+        fireEvent.change(screen.getByPlaceholderText("Socio"), { target: { value: "soc" } });
+
+        await waitFor(() =>
+            expect(calls().some((c) => c.url === "/documents/search?partner=soc&page=0&size=20")).toBe(true),
+        );
+    });
+
     it("abrir en el visor cierra el detalle y lleva el documento al visor", async () => {
         renderAs(AUDITOR);
         fireEvent.click(await screen.findByText("SOCIO-A"));
