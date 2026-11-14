@@ -1,0 +1,658 @@
+{
+  "info": {
+    "name": "alerts-service",
+    "description": "Configuración del servidor de correo y correo de prueba (AS2-106, adelanto de HU-21), por el gateway. Contra el stack Docker: host = https://localhost (con --insecure en Newman por el certificado local) y adminPassword = ADMIN_PASSWORD de deploy/docker/.env, sin escribirla en la colección. Se ejecuta completa y en orden. Necesita el perfil demo (Mailpit): smtpHost = mailpit y mailpitUrl = http://localhost:8025, donde se comprueba que el correo llegó. OJO: deja guardada la configuración de Mailpit; si tenía otra, vuelva a escribirla en Alertas → Configuración de correo.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Sesión (vía gateway)",
+      "item": [
+        {
+          "name": "Token CSRF",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/.well-known/jwks.json",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                ".well-known",
+                "jwks.json"
+              ]
+            },
+            "description": "Obtiene la cookie XSRF-TOKEN; las peticiones que modifican la reenvían en X-XSRF-TOKEN."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie XSRF-TOKEN', () => pm.expect(pm.cookies.has('XSRF-TOKEN')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login (admin)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/auth/login",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "auth",
+                "login"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"{{adminUser}}\",\n  \"password\": \"{{adminPassword}}\"\n}"
+            },
+            "description": "La contraseña del administrador está en deploy/docker/.env (ADMIN_PASSWORD)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('cookie de sesión', () => pm.expect(pm.cookies.has('access_token')).to.be.true);"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Configuración SMTP",
+      "item": [
+        {
+          "name": "Consultar la configuración",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('dice si está configurado', () => pm.expect(c.configured).to.be.a('boolean'));",
+                  "pm.test('nunca trae la contraseña', () => pm.expect(c).to.not.have.property('password'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Servidor no válido (400)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"host\": \"servidor con espacios\",\n  \"port\": 70000,\n  \"security\": \"NONE\",\n  \"fromAddress\": \"no-es-un-correo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));",
+                  "pm.test('código BAD_REQUEST', () => pm.expect(pm.response.json().code).to.eql('BAD_REQUEST'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Guardar la configuración (Mailpit)",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"host\": \"{{smtpHost}}\",\n  \"port\": {{smtpPort}},\n  \"security\": \"NONE\",\n  \"username\": \"alertas-postman\",\n  \"password\": \"{{smtpPassword}}\",\n  \"fromAddress\": \"alertas@example.com\",\n  \"fromName\": \"Plataforma AS2/EDI (Postman)\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Contraseña aleatoria por corrida: solo sirve para comprobar que nunca se devuelve.",
+                  "const abc = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz23456789';",
+                  "let s = '';",
+                  "for (let i = 0; i < 24; i++) s += abc[Math.floor(Math.random() * abc.length)];",
+                  "pm.collectionVariables.set('smtpPassword', 'smtp-' + s);"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const c = pm.response.json();",
+                  "pm.test('configurado con contraseña guardada', () => {",
+                  "  pm.expect(c.configured).to.be.true;",
+                  "  pm.expect(c.passwordSet).to.be.true;",
+                  "  pm.expect(c.host).to.eql(pm.collectionVariables.get('smtpHost'));",
+                  "});",
+                  "pm.test('registra quién lo cambió', () => pm.expect(c.updatedBy).to.eql(pm.variables.get('adminUser')));",
+                  "pm.test('no devuelve la contraseña', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('smtpPassword')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Consultar de nuevo: sin la contraseña",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('hay contraseña guardada', () => pm.expect(pm.response.json().passwordSet).to.be.true);",
+                  "pm.test('no devuelve la contraseña', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('smtpPassword')));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Correo de prueba",
+      "item": [
+        {
+          "name": "Enviar el correo de prueba",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config/test",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config",
+                "test"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{testRecipient}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('testRecipient', 'postman-' + Date.now() + '@example.com');"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const r = pm.response.json();",
+                  "pm.test('enviado al destinatario', () => {",
+                  "  pm.expect(r.sent).to.be.true;",
+                  "  pm.expect(r.to).to.eql(pm.collectionVariables.get('testRecipient'));",
+                  "});",
+                  "if (pm.response.code !== 200) console.log(pm.response.text());"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El correo llegó a Mailpit",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{mailpitUrl}}/api/v1/search?query=to:{{testRecipient}}",
+              "host": [
+                "{{mailpitUrl}}"
+              ],
+              "path": [
+                "api",
+                "v1",
+                "search"
+              ],
+              "query": [
+                {
+                  "key": "query",
+                  "value": "to:{{testRecipient}}"
+                }
+              ]
+            },
+            "description": "API de Mailpit (no pasa por el gateway)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const msgs = pm.response.json().messages || [];",
+                  "pm.test('llegó con su asunto', () => pm.expect(msgs.map(m => m.Subject)).to.include('Prueba de correo de la Plataforma AS2/EDI'));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Errores",
+      "item": [
+        {
+          "name": "Servidor que no responde",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"host\": \"{{smtpHost}}\",\n  \"port\": 2,\n  \"security\": \"NONE\",\n  \"username\": \"alertas-postman\",\n  \"password\": \"{{smtpPassword}}\",\n  \"fromAddress\": \"alertas@example.com\",\n  \"fromName\": \"Plataforma AS2/EDI (Postman)\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correo de prueba sin servidor (502)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config/test",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config",
+                "test"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"{{testRecipient}}\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 502', () => pm.response.to.have.status(502));",
+                  "const e = pm.response.json();",
+                  "pm.test('código SMTP_ERROR', () => pm.expect(e.code).to.eql('SMTP_ERROR'));",
+                  "pm.test('explica la causa', () => pm.expect(e.message).to.include('No se pudo enviar el correo de prueba'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Destinatario no válido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config/test",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config",
+                "test"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"to\": \"no-es-un-correo\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 400', () => pm.response.to.have.status(400));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Bitácora",
+      "item": [
+        {
+          "name": "Cambios de configuración registrados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?eventType=SMTP_CONFIG_UPDATED&actor={{adminUser}}&size=5",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "eventType",
+                  "value": "SMTP_CONFIG_UPDATED"
+                },
+                {
+                  "key": "actor",
+                  "value": "{{adminUser}}"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const page = pm.response.json();",
+                  "pm.test('hay eventos', () => pm.expect(page.totalElements).to.be.above(0));",
+                  "pm.test('no devuelve la contraseña', () => pm.expect(pm.response.text()).to.not.include(pm.collectionVariables.get('smtpPassword')));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Correos de prueba registrados",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/audit-logs?eventType=SMTP_TEST_SENT&actor={{adminUser}}&size=5",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "audit-logs"
+              ],
+              "query": [
+                {
+                  "key": "eventType",
+                  "value": "SMTP_TEST_SENT"
+                },
+                {
+                  "key": "actor",
+                  "value": "{{adminUser}}"
+                },
+                {
+                  "key": "size",
+                  "value": "5"
+                }
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('hay eventos', () => pm.expect(pm.response.json().totalElements).to.be.above(0));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Limpieza",
+      "item": [
+        {
+          "name": "Dejar la configuración de Mailpit",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/smtp-config",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "smtp-config"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"host\": \"{{smtpHost}}\",\n  \"port\": {{smtpPort}},\n  \"security\": \"NONE\",\n  \"username\": \"alertas-postman\",\n  \"password\": \"{{smtpPassword}}\",\n  \"fromAddress\": \"alertas@example.com\",\n  \"fromName\": \"Plataforma AS2/EDI (Postman)\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "if (!['GET', 'HEAD', 'OPTIONS'].includes(pm.request.method)) {",
+          "  pm.request.headers.upsert({ key: 'X-XSRF-TOKEN', value: pm.collectionVariables.get('xsrfToken') || '' });",
+          "}"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const xsrf = pm.cookies.get('XSRF-TOKEN');",
+          "if (xsrf) pm.collectionVariables.set('xsrfToken', xsrf);"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "host",
+      "value": "https://localhost"
+    },
+    {
+      "key": "adminUser",
+      "value": "admin"
+    },
+    {
+      "key": "adminPassword",
+      "value": ""
+    },
+    {
+      "key": "xsrfToken",
+      "value": ""
+    },
+    {
+      "key": "smtpHost",
+      "value": "mailpit"
+    },
+    {
+      "key": "smtpPort",
+      "value": "1025"
+    },
+    {
+      "key": "mailpitUrl",
+      "value": "http://localhost:8025"
+    },
+    {
+      "key": "smtpPassword",
+      "value": ""
+    },
+    {
+      "key": "testRecipient",
+      "value": ""
+    }
+  ]
+}

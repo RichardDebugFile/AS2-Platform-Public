@@ -10,13 +10,13 @@ La plataforma corre en contenedores con Docker Compose. Se valida primero en loc
 | `auth-service` | Identidad y sesiones | ninguno |
 | `partners-service` | Socios comerciales y su configuración AS2 | ninguno |
 | `documents-service` | Repositorio de documentos EDI y validación X12 | ninguno |
+| `alerts-service` | Configuración del servidor de correo (SMTP) y correo de prueba; reglas de alerta con HU-21 | ninguno |
 | `as2-adapter` | Motor AS2 (envío y recepción con firma, cifrado y MDN) | ninguno |
 | `as2-certs` | Generación de certificados de prueba en el volumen `as2certs` | ninguno |
 | `openas2` | Servidor socio AS2 de prueba (solo con perfil `demo`) | ninguno |
+| `mailpit` | Servidor de correo de prueba con bandeja web (solo con perfil `demo`) | 8025, solo en `127.0.0.1` |
 | `db` | PostgreSQL 16 con una base y un usuario por servicio | ninguno |
 | `backup` | `pg_dump` diario de cada base, conserva 7 días | ninguno |
-
-Alertas se incorpora al stack con su historia.
 
 ## Puesta en marcha
 
@@ -41,6 +41,11 @@ COMPOSE_PROFILES=demo ./start.sh
 
 Con este perfil se levanta el servicio `openas2` con certificados de prueba y los documentos recibidos
 quedan en `salida/openas2/recibidos/PLATAFORMA/`.
+
+El perfil también levanta `mailpit`, un servidor de correo de prueba que no envía nada a internet. En
+la consola, Alertas → Configuración de correo, se configura con servidor `mailpit`, puerto `1025`,
+seguridad "Sin cifrado" y cualquier usuario y contraseña; los correos de prueba se ven en
+`http://localhost:8025`. `MAILPIT_WEB_PORT` en `.env` cambia ese puerto.
 
 Sin el perfil `demo`, la plataforma arranca normalmente; el servicio `as2-adapter` está activo pero
 un intento de envío responderá 502 Bad Gateway ("No se pudo conectar…").
@@ -126,7 +131,7 @@ con la contraseña del administrador de `.env`:
 
 ```bash
 pw="$(grep '^ADMIN_PASSWORD=' deploy/docker/.env | cut -d= -f2-)"
-for c in gateway auth-service documents-service as2-adapter; do
+for c in gateway auth-service documents-service as2-adapter alerts-service; do
   npx -y newman@6.2.1 run "$c/postman/$c.postman_collection.json" --insecure \
     --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw"
 done
@@ -142,6 +147,7 @@ npx -y newman@6.2.1 run partners-service/postman/partners-service.postman_collec
 | `documents-service` | Interpretar, validar y generar X12; registro en el repositorio, reenvío con el mismo Message-ID, detalle, contenido, tablero y consistencia; permisos de AUDITOR |
 | `as2-adapter` | Envío AS2 de prueba a OpenAS2 con MDN firmado (necesita el perfil `demo`), 403 con AUDITOR y 401 sin sesión |
 | `partners-service` | Socios, bitácora y certificados con doble compuerta ("Carpetas" necesita además la carpeta compartida del ERP) |
+| `alerts-service` | Configuración SMTP sin devolver la contraseña, correo de prueba que llega a Mailpit, 502 con la causa si el servidor no responde y la bitácora de esos cambios (necesita el perfil `demo`; deja guardada la configuración de Mailpit) |
 
 Los usuarios, socios y documentos que crean llevan nombres aleatorios y se desactivan o se borran al
 final de cada colección; ninguna escribe credenciales en el repositorio.

@@ -6,6 +6,17 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ## Sin publicar
 
+### Novedades
+- Configuración del servidor de correo (AS2-106, adelanto de HU-21). En Alertas → Configuración de
+  correo, el administrador guarda el servidor SMTP (servidor, puerto, STARTTLS, SSL o sin cifrado,
+  usuario y remitente) y envía un correo de prueba. Si el servidor no lo acepta, la consola dice por
+  qué (por ejemplo, conexión rechazada o usuario y contraseña rechazados). La contraseña se guarda
+  cifrada con AES-256-GCM (prefijo `gcm:`, clave `ALERTS_SECRET_KEY`, que `init-env.sh` agrega a un
+  `.env` existente) y nunca se devuelve. Guardar y cada correo de prueba quedan en la bitácora.
+  `alerts-service` pasa a formar parte del stack Docker y de Estado del sistema. El perfil `demo`
+  incluye Mailpit, un servidor de correo de prueba con bandeja en `http://localhost:8025`. Las reglas
+  de alerta y los avisos de certificados por caducar llegan con HU-21.
+
 ### Correcciones
 - La búsqueda de la Bitácora y del Repositorio encuentra por parte del texto (AS2-105). Antes los
   filtros de texto exigían el valor completo: "beta" no encontraba `BETA-DEMO` y la tabla quedaba vacía.

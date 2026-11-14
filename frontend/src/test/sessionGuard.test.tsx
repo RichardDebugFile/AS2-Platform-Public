@@ -15,10 +15,11 @@ async function loginAndRender() {
     fetchMock.mockResolvedValueOnce(json(200, sessionBody(ADMIN, T0))).mockResolvedValueOnce(json(200, ADMIN));
     await useAuthStore.getState().login("admin", "secreta");
     fetchMock.mockImplementation(async () => json(200, sessionBody(ADMIN, Date.now())));
-    // Una pantalla sin consultas propias: Inicio y Estado del sistema revisan los servicios cada 30 s y,
-    // con 15 minutos de reloj simulado, la prueba pasaba a depender de lo que tarda en dibujarse Inicio.
+    // Una pantalla con una sola consulta al abrirse: Inicio y Estado del sistema revisan los servicios
+    // cada 30 s y, con 15 minutos de reloj simulado, la prueba pasaba a depender de lo que tarda en
+    // dibujarse Inicio.
     render(
-        <MemoryRouter initialEntries={["/alerts"]}>
+        <MemoryRouter initialEntries={["/alerts/smtp"]}>
             <AppProviders>
                 <AppRoutes />
             </AppProviders>
