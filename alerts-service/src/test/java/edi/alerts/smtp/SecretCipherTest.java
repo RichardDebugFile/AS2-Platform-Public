@@ -3,12 +3,13 @@ package edi.alerts.smtp;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
+import edi.alerts.testsupport.TestKeys;
 import org.junit.jupiter.api.Test;
 
 class SecretCipherTest {
 
-    private static final String KEY_A = "MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=";
-    private static final String KEY_B = "ZmVkY2JhOTg3NjU0MzIxMGZlZGNiYTk4NzY1NDMyMTA=";
+    private static final String KEY_A = TestKeys.aes256();
+    private static final String KEY_B = TestKeys.aes256();
 
     @Test
     void cifra_conPrefijoGcm_yUnIvDistintoCadaVez() {

@@ -15,6 +15,7 @@ import edi.alerts.audit.AuditClient;
 import edi.alerts.audit.AuditEvent;
 import edi.alerts.config.RequestIdentity;
 import edi.alerts.testsupport.FakeSmtpServer;
+import edi.alerts.testsupport.TestKeys;
 import java.util.List;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -24,6 +25,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.http.MediaType;
+import org.springframework.test.context.DynamicPropertyRegistry;
+import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
@@ -36,13 +39,19 @@ import org.springframework.test.web.servlet.ResultActions;
     "spring.datasource.driver-class-name=org.h2.Driver",
     "spring.datasource.username=sa",
     "spring.datasource.password=",
-    "alerts.secret-key=MDEyMzQ1Njc4OWFiY2RlZjAxMjM0NTY3ODlhYmNkZWY=",
     "alerts.mail.timeout-ms=3000"
 })
 @AutoConfigureMockMvc
 class SmtpConfigApiIntegrationTest {
 
     private static final String PASSWORD = "clave-smtp-secreta";
+
+    /** Clave de cifrado generada al correr: el repositorio no guarda ninguna clave. */
+    @DynamicPropertySource
+    static void secretKey(DynamicPropertyRegistry registry) {
+        String key = TestKeys.aes256();
+        registry.add("alerts.secret-key", () -> key);
+    }
 
     @Autowired
     private MockMvc mvc;
