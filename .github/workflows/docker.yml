@@ -88,7 +88,7 @@ jobs:
           coleccion as2-adapter/postman/as2-adapter.postman_collection.json
           coleccion alerts-service/postman/alerts-service.postman_collection.json
           coleccion partners-service/postman/partners-service.postman_collection.json \
-            --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+            --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados --folder "Catálogo EDI"
           exit $rc
 
       # Los logs de Actions solo se ven con sesion iniciada: ante un fallo, el paso que fallo y las

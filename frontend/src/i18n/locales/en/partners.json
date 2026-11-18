@@ -55,7 +55,8 @@
       "incoming": "Incoming",
       "mdn": "MDN",
       "folders": "Folders",
-      "certificates": "Certificates"
+      "certificates": "Certificates",
+      "documentTypes": "EDI documents"
     }
   },
   "form": {
@@ -226,5 +227,27 @@
       "SSL": "It is the only active TLS certificate: the HTTPS connection to the partner will only trust the system authorities."
     },
     "empty": "No certificates for this usage"
+  },
+  "documentTypes": {
+    "intro": "Document types exchanged with this partner, in which direction and with which additional agreement data. Saving replaces the list.",
+    "add": "Add document",
+    "save": "Save documents",
+    "saved": "Partner documents saved",
+    "remove": "Remove",
+    "pickType": "Pick a catalog type",
+    "missingType": "Pick the document type of every row",
+    "fieldsPlaceholder": "Name: value (one per line)",
+    "empty": "No documents assigned to this partner yet.",
+    "columns": {
+      "type": "Type",
+      "direction": "Direction",
+      "responses": "Expected response",
+      "fields": "Additional data",
+      "notes": "Notes"
+    },
+    "direction": {
+      "INBOUND": "Inbound",
+      "OUTBOUND": "Outbound"
+    }
   }
 }

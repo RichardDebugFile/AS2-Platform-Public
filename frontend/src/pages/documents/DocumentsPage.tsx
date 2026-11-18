@@ -3,12 +3,14 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import type { Direction } from "../../service/documentsApi";
 import { hasAnyRole, useAuthStore } from "../../store/authStore";
+import DocumentTypesPanel from "./DocumentTypesPanel";
 import RepositoryPanel from "./RepositoryPanel";
 import X12GeneratorPanel from "./X12GeneratorPanel";
 import X12Viewer from "./X12Viewer";
 
 /**
- * Documentos EDI: repositorio de enviados y recibidos (HU-14) y visor X12 para todos los roles;
+ * Documentos EDI: repositorio de enviados y recibidos (HU-14), visor X12 y catalogo de tipos (HU-13) para
+ * todos los roles;
  * registrar documentos y el generador (HU-12) para quien edita; borrar, solo ADMIN.
  */
 export default function DocumentsPage() {
@@ -47,6 +49,8 @@ export default function DocumentsPage() {
             label: t("tabs.viewer"),
             children: <X12Viewer key={opened} text={text} onTextChange={setText} interpretOnMount={opened > 0} />,
         },
+        // Catalogo de tipos (HU-13): todos lo consultan; ADMIN y OPERATOR lo mantienen.
+        { key: "catalog", label: t("tabs.catalog"), children: <DocumentTypesPanel canEdit={canEdit} /> },
         ...(canEdit
             ? [
                   {

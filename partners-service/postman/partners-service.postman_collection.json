@@ -68,6 +68,18 @@
     {
       "key": "cert2Id",
       "value": ""
+    },
+    {
+      "key": "catalogVersion",
+      "value": ""
+    },
+    {
+      "key": "catalogTypeId",
+      "value": ""
+    },
+    {
+      "key": "seed856Id",
+      "value": ""
     }
   ],
   "event": [
@@ -1943,6 +1955,237 @@
                 "type": "text/javascript",
                 "exec": [
                   "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Catálogo EDI",
+      "description": "HU-13: catálogo de tipos de documento sin duplicados, respuesta esperada y borrado. Usa una versión aleatoria para no chocar con el catálogo inicial (X12 4010).",
+      "item": [
+        {
+          "name": "Catálogo con los tipos iniciales",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "const list = pm.response.json();",
+                  "const t850 = list.find(t => t.standard === 'X12' && t.code === '850' && t.version === '4010');",
+                  "const t856 = list.find(t => t.standard === 'X12' && t.code === '856' && t.version === '4010');",
+                  "pm.test('trae X12 850 4010 y 856 4010', () => { pm.expect(t850).to.exist; pm.expect(t856).to.exist; });",
+                  "pm.test('el 850 espera el 856 como respuesta', () => pm.expect(t850.responses.map(r => r.code)).to.include('856'));",
+                  "pm.collectionVariables.set('seed856Id', t856 ? t856.id : '');"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Registrar un tipo",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"standard\": \"X12\",\n  \"code\": \"850\",\n  \"version\": \"{{catalogVersion}}\",\n  \"name\": \"Orden de compra (Postman)\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "prerequest",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.collectionVariables.set('catalogVersion', 'PM' + Math.floor(Math.random() * 1e7));"
+                ]
+              }
+            },
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 201', () => pm.response.to.have.status(201));",
+                  "const t = pm.response.json();",
+                  "pm.collectionVariables.set('catalogTypeId', t.id);",
+                  "pm.test('sin socios todavía', () => pm.expect(t.partnerCount).to.eql(0));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "El mismo tipo otra vez (409)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"standard\": \"X12\",\n  \"code\": \"850\",\n  \"version\": \"{{catalogVersion}}\",\n  \"name\": \"Orden de compra (Postman)\"\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 409', () => pm.response.to.have.status(409));",
+                  "pm.test('código DOCUMENT_TYPE_DUPLICATE', () => pm.expect(pm.response.json().code).to.eql('DOCUMENT_TYPE_DUPLICATE'));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Respuesta esperada: 856",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types/{{catalogTypeId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types",
+                "{{catalogTypeId}}"
+              ]
+            },
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"standard\": \"X12\",\n  \"code\": \"850\",\n  \"version\": \"{{catalogVersion}}\",\n  \"name\": \"Orden de compra (Postman)\",\n  \"responseTypeIds\": [\"{{seed856Id}}\"]\n}"
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 200', () => pm.response.to.have.status(200));",
+                  "pm.test('responde con el 856', () => pm.expect(pm.response.json().responses.map(r => r.code)).to.eql(['856']));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Borrar el tipo",
+          "request": {
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types/{{catalogTypeId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types",
+                "{{catalogTypeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 204', () => pm.response.to.have.status(204));"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Ya no existe (404)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{host}}/api/catalogs/document-types/{{catalogTypeId}}",
+              "host": [
+                "{{host}}"
+              ],
+              "path": [
+                "api",
+                "catalogs",
+                "document-types",
+                "{{catalogTypeId}}"
+              ]
+            }
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "pm.test('HTTP 404', () => pm.response.to.have.status(404));",
+                  "pm.collectionVariables.set('catalogTypeId', '');"
                 ]
               }
             }

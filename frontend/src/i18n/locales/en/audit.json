@@ -67,6 +67,10 @@
     "DOCUMENT_COPY_PENDING": "Partner copy pending",
     "DOCUMENT_COPY_RESTORED": "Partner copy restored",
     "SMTP_CONFIG_UPDATED": "Email settings saved",
-    "SMTP_TEST_SENT": "Test email"
+    "SMTP_TEST_SENT": "Test email",
+    "DOCUMENT_TYPE_CREATED": "Document type added",
+    "DOCUMENT_TYPE_UPDATED": "Document type updated",
+    "DOCUMENT_TYPE_DELETED": "Document type deleted",
+    "PARTNER_DOCUMENT_TYPES_UPDATED": "Partner documents"
   }
 }

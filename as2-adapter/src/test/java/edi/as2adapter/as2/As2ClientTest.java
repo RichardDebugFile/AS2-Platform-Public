@@ -69,6 +69,18 @@ class As2ClientTest {
         assertThatThrownBy(this::send).isInstanceOf(As2Exception.class).hasMessageContaining("HTTP 500");
 
         server.stop(0);
-        assertThatThrownBy(this::send).isInstanceOf(As2Exception.class).hasMessageContaining("No se pudo conectar");
+        assertThatThrownBy(this::send).isInstanceOf(As2Exception.class).hasMessageContaining("No se pudo conectar")
+                .message().doesNotEndWith("null");
+    }
+
+    @Test
+    void elMotivoDeUnFalloDeConexionNuncaEsNull() {
+        assertThat(As2Client.reason(new java.net.ConnectException())).isEqualTo("conexion rechazada");
+        assertThat(As2Client.reason(new java.net.http.HttpConnectTimeoutException(null)))
+                .isEqualTo("tiempo de conexion agotado");
+        assertThat(As2Client.reason(new java.net.UnknownHostException())).isEqualTo("servidor desconocido");
+        assertThat(As2Client.reason(new java.io.IOException(null, new java.net.ConnectException("Connection refused"))))
+                .isEqualTo("Connection refused");
+        assertThat(As2Client.reason(new java.io.IOException())).isEqualTo("IOException");
     }
 }

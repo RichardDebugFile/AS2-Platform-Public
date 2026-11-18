@@ -137,7 +137,7 @@ for c in gateway auth-service documents-service as2-adapter alerts-service; do
 done
 npx -y newman@6.2.1 run partners-service/postman/partners-service.postman_collection.json --insecure \
   --env-var host=https://localhost --env-var adminUser=admin --env-var "adminPassword=$pw" \
-  --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+  --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados --folder "Catálogo EDI"
 ```
 
 | Colección | Qué comprueba |
@@ -146,7 +146,7 @@ npx -y newman@6.2.1 run partners-service/postman/partners-service.postman_collec
 | `auth-service` | Login, renovación y cierre de sesión, administración de usuarios y el segundo factor completo (la colección calcula el código TOTP como la app autenticadora) |
 | `documents-service` | Interpretar, validar y generar X12; registro en el repositorio, reenvío con el mismo Message-ID, detalle, contenido, tablero y consistencia; permisos de AUDITOR |
 | `as2-adapter` | Envío AS2 de prueba a OpenAS2 con MDN firmado (necesita el perfil `demo`), 403 con AUDITOR y 401 sin sesión |
-| `partners-service` | Socios, bitácora y certificados con doble compuerta ("Carpetas" necesita además la carpeta compartida del ERP) |
+| `partners-service` | Socios, bitácora, certificados con doble compuerta y catálogo de tipos de documento ("Carpetas" necesita además la carpeta compartida del ERP) |
 | `alerts-service` | Configuración SMTP sin devolver la contraseña, correo de prueba que llega a Mailpit, 502 con la causa si el servidor no responde y la bitácora de esos cambios (necesita el perfil `demo`; deja guardada la configuración de Mailpit) |
 
 Los usuarios, socios y documentos que crean llevan nombres aleatorios y se desactivan o se borran al

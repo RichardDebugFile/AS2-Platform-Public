@@ -7,6 +7,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 ## Sin publicar
 
 ### Novedades
+- Catálogo de tipos de documento EDI por socio (HU-13). En Documentos EDI → Catálogo de tipos se
+  mantienen los tipos que maneja la empresa (estándar, código y versión, sin repetir) y la respuesta que
+  se espera de cada uno (el 850 se responde con 855, 856 y 810). En la ficha de cada socio, la pestaña
+  Documentos EDI indica cuáles intercambia, en qué dirección y con qué datos adicionales del acuerdo. Un
+  tipo que usa algún socio no se puede borrar: el aviso nombra a esos socios. Viene cargado con los
+  X12 4010 850, 855, 856, 810, 997 y 889; los cambios quedan en la bitácora.
 - Configuración del servidor de correo (AS2-106, adelanto de HU-21). En Alertas → Configuración de
   correo, el administrador guarda el servidor SMTP (servidor, puerto, STARTTLS, SSL o sin cifrado,
   usuario y remitente) y envía un correo de prueba. Si el servidor no lo acepta, la consola dice por
@@ -18,6 +24,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   de alerta y los avisos de certificados por caducar llegan con HU-21.
 
 ### Correcciones
+- Con un servicio detenido, el aviso "El servicio … no responde" (503) llega en pocos segundos y no en
+  unos 14 (AS2-102). El gateway acota la resolución DNS hacia los servicios: 2 s por consulta y dos
+  consultas como máximo (`GATEWAY_DNS_TIMEOUT_MS`).
+- `stop.sh` detiene también OpenAS2 y Mailpit del perfil `demo`, aunque `COMPOSE_PROFILES` no esté
+  puesto (AS2-103).
+- Envío AS2: si el socio no responde, el motivo dice la causa ("conexión rechazada", "tiempo de
+  conexión agotado") en lugar de terminar en ": null", y el mensaje lleva la cabecera `Date` que pide
+  RFC 4130, que OpenAS2 cita en el texto de su MDN (AS2-104).
 - La búsqueda de la Bitácora y del Repositorio encuentra por parte del texto (AS2-105). Antes los
   filtros de texto exigían el valor completo: "beta" no encontraba `BETA-DEMO` y la tabla quedaba vacía.
   Ahora Socio, Usuario, Message-ID y número ISA encuentran lo que contiene lo escrito, sin distinguir

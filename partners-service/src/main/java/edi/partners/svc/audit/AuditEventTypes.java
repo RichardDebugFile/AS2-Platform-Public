@@ -15,6 +15,10 @@ public final class AuditEventTypes {
     public static final String FOLDERS_LINKED = "FOLDERS_LINKED";
     public static final String PRODUCTION_ENABLED = "PRODUCTION_ENABLED";
     public static final String PRODUCTION_DISABLED = "PRODUCTION_DISABLED";
+    public static final String DOCUMENT_TYPE_CREATED = "DOCUMENT_TYPE_CREATED";
+    public static final String DOCUMENT_TYPE_UPDATED = "DOCUMENT_TYPE_UPDATED";
+    public static final String DOCUMENT_TYPE_DELETED = "DOCUMENT_TYPE_DELETED";
+    public static final String PARTNER_DOCUMENT_TYPES_UPDATED = "PARTNER_DOCUMENT_TYPES_UPDATED";
     public static final String CERTIFICATE_UPLOADED = "CERTIFICATE_UPLOADED";
     public static final String CERTIFICATE_REACTIVATED = "CERTIFICATE_REACTIVATED";
     public static final String CERTIFICATE_PREFERRED = "CERTIFICATE_PREFERRED";
