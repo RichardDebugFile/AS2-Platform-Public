@@ -1,10 +1,9 @@
 package edi.alerts.smtp;
 
-import java.nio.BufferUnderflowException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.security.GeneralSecurityException;
 import java.security.SecureRandom;
+import java.util.Arrays;
 import java.util.Base64;
 import javax.crypto.Cipher;
 import javax.crypto.SecretKey;
@@ -27,41 +26,40 @@ public class SecretCipher {
 
     static final String PREFIX = "gcm:";
     private static final Logger log = LoggerFactory.getLogger(SecretCipher.class);
-    private static final String TRANSFORMATION = "AES/GCM/NoPadding";
-    private static final int KEY_LEN = 32;
-    private static final int IV_LEN = 12;
+    private static final int KEY_BYTES = 32;
+    private static final int IV_BYTES = 12;
     private static final int TAG_BITS = 128;
+    private static final String UNREADABLE =
+            "No se pudo descifrar la contrasena SMTP (cambio la clave ALERTS_SECRET_KEY?): vuelva a escribirla";
 
-    private final SecretKey key;
     private final SecureRandom random = new SecureRandom();
+    private final SecretKey key;
 
     public SecretCipher(@Value("${alerts.secret-key:}") String base64Key) {
-        byte[] raw;
+        this.key = new SecretKeySpec(keyBytes(base64Key, random), "AES");
+    }
+
+    private static byte[] keyBytes(String base64Key, SecureRandom random) {
         if (base64Key == null || base64Key.isBlank()) {
             log.warn("Sin ALERTS_SECRET_KEY: se usa una clave temporal (solo desarrollo)");
-            raw = new byte[KEY_LEN];
-            random.nextBytes(raw);
-        } else {
-            raw = Base64.getDecoder().decode(base64Key.trim());
-            if (raw.length != KEY_LEN) {
-                throw new IllegalStateException("ALERTS_SECRET_KEY debe ser de 32 bytes en Base64");
-            }
+            byte[] temporary = new byte[KEY_BYTES];
+            random.nextBytes(temporary);
+            return temporary;
         }
-        this.key = new SecretKeySpec(raw, "AES");
+        byte[] raw = Base64.getDecoder().decode(base64Key.strip());
+        if (raw.length != KEY_BYTES) {
+            throw new IllegalStateException("ALERTS_SECRET_KEY debe ser de 32 bytes en Base64");
+        }
+        return raw;
     }
 
     public String encrypt(String plain) {
-        try {
-            byte[] iv = new byte[IV_LEN];
-            random.nextBytes(iv);
-            Cipher c = Cipher.getInstance(TRANSFORMATION);
-            c.init(Cipher.ENCRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, iv));
-            byte[] enc = c.doFinal(plain.getBytes(StandardCharsets.UTF_8));
-            return PREFIX + Base64.getEncoder()
-                    .encodeToString(ByteBuffer.allocate(IV_LEN + enc.length).put(iv).put(enc).array());
-        } catch (GeneralSecurityException e) {
-            throw new IllegalStateException("Error cifrando", e);
-        }
+        byte[] iv = new byte[IV_BYTES];
+        random.nextBytes(iv);
+        byte[] sealed = apply(Cipher.ENCRYPT_MODE, iv, plain.getBytes(StandardCharsets.UTF_8));
+        byte[] stored = Arrays.copyOf(iv, IV_BYTES + sealed.length);
+        System.arraycopy(sealed, 0, stored, IV_BYTES, sealed.length);
+        return PREFIX + Base64.getEncoder().encodeToString(stored);
     }
 
     public String decrypt(String stored) {
@@ -69,18 +67,26 @@ public class SecretCipher {
             throw new IllegalStateException("La contrasena guardada no tiene un formato conocido");
         }
         try {
-            ByteBuffer all = ByteBuffer.wrap(Base64.getDecoder().decode(stored.substring(PREFIX.length())));
-            byte[] iv = new byte[IV_LEN];
-            all.get(iv);
-            byte[] enc = new byte[all.remaining()];
-            all.get(enc);
-            Cipher c = Cipher.getInstance(TRANSFORMATION);
-            c.init(Cipher.DECRYPT_MODE, key, new GCMParameterSpec(TAG_BITS, iv));
-            return new String(c.doFinal(enc), StandardCharsets.UTF_8);
-        } catch (GeneralSecurityException | IllegalArgumentException | BufferUnderflowException e) {
-            throw new IllegalStateException(
-                    "No se pudo descifrar la contrasena SMTP (cambio la clave ALERTS_SECRET_KEY?): vuelva a escribirla",
-                    e);
+            byte[] all = Base64.getDecoder().decode(stored.substring(PREFIX.length()));
+            if (all.length <= IV_BYTES) {
+                throw new IllegalArgumentException("valor cifrado incompleto");
+            }
+            byte[] plain = apply(Cipher.DECRYPT_MODE, Arrays.copyOfRange(all, 0, IV_BYTES),
+                    Arrays.copyOfRange(all, IV_BYTES, all.length));
+            return new String(plain, StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException | IllegalStateException e) {
+            throw new IllegalStateException(UNREADABLE, e);
+        }
+    }
+
+    /** Una sola operacion AES-GCM; un tag que no coincide (otra clave, dato alterado) es un error. */
+    private byte[] apply(int mode, byte[] iv, byte[] input) {
+        try {
+            Cipher cipher = Cipher.getInstance("AES/GCM/NoPadding");
+            cipher.init(mode, key, new GCMParameterSpec(TAG_BITS, iv));
+            return cipher.doFinal(input);
+        } catch (GeneralSecurityException e) {
+            throw new IllegalStateException("AES-GCM no pudo procesar el valor", e);
         }
     }
 }

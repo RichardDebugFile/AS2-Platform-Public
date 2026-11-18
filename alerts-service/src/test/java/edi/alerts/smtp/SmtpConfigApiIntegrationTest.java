@@ -13,7 +13,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import edi.alerts.audit.AuditClient;
 import edi.alerts.audit.AuditEvent;
-import edi.alerts.config.RequestIdentity;
+import edi.alerts.web.SmtpConfigController;
 import edi.alerts.testsupport.FakeSmtpServer;
 import edi.alerts.testsupport.TestKeys;
 import java.util.List;
@@ -88,12 +88,12 @@ class SmtpConfigApiIntegrationTest {
 
     private ResultActions save(String body) throws Exception {
         return mvc.perform(put("/api/smtp-config").contentType(MediaType.APPLICATION_JSON)
-                .header(RequestIdentity.USER_HEADER, "ricardo").content(body));
+                .header(SmtpConfigController.USER_HEADER, "ricardo").content(body));
     }
 
     private ResultActions sendTest(String to) throws Exception {
         return mvc.perform(post("/api/smtp-config/test").contentType(MediaType.APPLICATION_JSON)
-                .header(RequestIdentity.USER_HEADER, "ricardo").content("{\"to\": \"" + to + "\"}"));
+                .header(SmtpConfigController.USER_HEADER, "ricardo").content("{\"to\": \"" + to + "\"}"));
     }
 
     private List<AuditEvent> auditEvents() {
