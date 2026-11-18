@@ -1,3 +1,38 @@
 {
-  "title": "Alerts and notifications"
+  "title": "Email settings",
+  "smtp": {
+    "intro": "Mail server (SMTP) the platform sends its notifications through. The password is stored encrypted and never shown.",
+    "notConfigured": "No mail server has been configured yet.",
+    "updated": "Saved by {{by}} on {{at}}.",
+    "demoHint": "With the Docker demo profile: server mailpit, port 1025, no encryption and any user. Emails can be seen at http://localhost:8025.",
+    "host": "Server",
+    "hostHelp": "SMTP server name or IP, for example smtp.example.com.",
+    "port": "Port",
+    "security": "Security",
+    "securityOptions": {
+      "STARTTLS": "STARTTLS (port 587)",
+      "SSL": "SSL/TLS (port 465)",
+      "NONE": "No encryption (test servers only)"
+    },
+    "username": "User",
+    "usernameHelp": "Empty if the server does not require authentication.",
+    "password": "Password",
+    "passwordKeep": "Stored: leave it empty to keep it",
+    "fromAddress": "Sender email",
+    "fromName": "Sender name",
+    "save": "Save",
+    "saved": "Email settings saved",
+    "required": "Required",
+    "invalidEmail": "Enter a valid email",
+    "loadError": "Could not load the settings: {{message}}"
+  },
+  "test": {
+    "title": "Test email",
+    "intro": "Sends an email with the saved settings to check that the server accepts it.",
+    "to": "Recipient",
+    "send": "Send test email",
+    "needsConfig": "Save the settings first.",
+    "sent": "Test email sent to {{to}} through {{server}} in {{ms}} ms.",
+    "failed": "The test email was not sent"
+  }
 }

@@ -65,6 +65,8 @@
     "DOCUMENT_DUPLICATE": "Duplicate document (retry)",
     "DOCUMENT_DELETED": "Document deleted",
     "DOCUMENT_COPY_PENDING": "Partner copy pending",
-    "DOCUMENT_COPY_RESTORED": "Partner copy restored"
+    "DOCUMENT_COPY_RESTORED": "Partner copy restored",
+    "SMTP_CONFIG_UPDATED": "Email settings saved",
+    "SMTP_TEST_SENT": "Test email"
   }
 }

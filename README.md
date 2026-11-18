@@ -17,7 +17,7 @@ Arquitectura de microservicios Spring Boot con una consola web React.
 | `auth-service/` | Usuarios, roles, JWT, sesiones y MFA ([API y configuración](auth-service/README.md)) | 8083 |
 | `partners-service/` | Socios comerciales, configuración AS2, certificados, carpetas, auditoría | 8081 |
 | `documents-service/` | Documentos X12 (interpretación, validación y generación) y repositorio de documentos y MDN | 8084 |
-| `alerts-service/` | Reglas de alerta y notificaciones | 8082 |
+| `alerts-service/` | Servidor de correo (SMTP) y correo de prueba; reglas de alerta y notificaciones con HU-21 | 8082 |
 | `as2-adapter/` | Motor AS2: envío firmado y cifrado (S/MIME) con MDN firmado; hoy, envío de prueba al socio OpenAS2 | 8085 |
 | `frontend/` | Consola web (React + TypeScript + Vite) | 5173 (dev) |
 | `db/init/` | Creación de las bases de datos (una por servicio) | — |

@@ -103,7 +103,7 @@ describe("rutas y menu por rol", () => {
     });
 
     it("menuFor quita las entradas de otros roles y las categorias vacias", () => {
-        expect(menuFor(["OPERATOR"]).map((s) => s.key)).toEqual(["operation", "partners", "documents", "alerts", "audit"]);
+        expect(menuFor(["OPERATOR"]).map((s) => s.key)).toEqual(["operation", "partners", "documents", "audit"]);
         expect(menuFor(["ADMIN"]).map((s) => s.key)).toContain("administration");
         expect(menuFor(undefined).map((s) => s.key)).not.toContain("administration");
     });

@@ -1,3 +1,38 @@
 {
-  "title": "Alertas y notificaciones"
+  "title": "Configuración de correo",
+  "smtp": {
+    "intro": "Servidor de correo (SMTP) con el que la plataforma envía sus avisos. La contraseña se guarda cifrada y nunca se muestra.",
+    "notConfigured": "Todavía no hay un servidor de correo configurado.",
+    "updated": "Guardado por {{by}} el {{at}}.",
+    "demoHint": "Con el perfil demo de Docker: servidor mailpit, puerto 1025, sin cifrado y cualquier usuario. Los correos se ven en http://localhost:8025.",
+    "host": "Servidor",
+    "hostHelp": "Nombre o IP del servidor SMTP, por ejemplo smtp.example.com.",
+    "port": "Puerto",
+    "security": "Seguridad",
+    "securityOptions": {
+      "STARTTLS": "STARTTLS (puerto 587)",
+      "SSL": "SSL/TLS (puerto 465)",
+      "NONE": "Sin cifrado (solo servidores de prueba)"
+    },
+    "username": "Usuario",
+    "usernameHelp": "Vacío si el servidor no pide autenticación.",
+    "password": "Contraseña",
+    "passwordKeep": "Guardada: déjela vacía para conservarla",
+    "fromAddress": "Correo del remitente",
+    "fromName": "Nombre del remitente",
+    "save": "Guardar",
+    "saved": "Configuración de correo guardada",
+    "required": "Obligatorio",
+    "invalidEmail": "Escriba un correo válido",
+    "loadError": "No se pudo cargar la configuración: {{message}}"
+  },
+  "test": {
+    "title": "Correo de prueba",
+    "intro": "Envía un correo con la configuración guardada para comprobar que el servidor lo acepta.",
+    "to": "Destinatario",
+    "send": "Enviar correo de prueba",
+    "needsConfig": "Guarde primero la configuración.",
+    "sent": "Correo de prueba enviado a {{to}} por {{server}} en {{ms}} ms.",
+    "failed": "No se envió el correo de prueba"
+  }
 }

@@ -28,3 +28,13 @@ management:
       # Solo el nombre y estado de cada verificacion (db, disco...), sin detalles: el gateway los
       # muestra en Estado del sistema de la consola (AS2-99).
       show-components: always
+
+alerts:
+  # Clave AES-256 (32 bytes en Base64) con la que se cifra la contrasena SMTP. La genera init-env.sh.
+  secret-key: ${ALERTS_SECRET_KEY:}
+  audit:
+    # Bitacora de partners-service (HU-10).
+    url: ${PARTNERS_SERVICE_URL:http://localhost:8081}
+  mail:
+    # Tiempo maximo para conectar, leer y escribir con el servidor SMTP.
+    timeout-ms: ${ALERTS_MAIL_TIMEOUT_MS:10000}
