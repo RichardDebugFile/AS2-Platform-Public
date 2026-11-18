@@ -7,6 +7,12 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 ## Sin publicar
 
 ### Novedades
+- Catálogo de tipos de documento EDI por socio (HU-13). En Documentos EDI → Catálogo de tipos se
+  mantienen los tipos que maneja la empresa (estándar, código y versión, sin repetir) y la respuesta que
+  se espera de cada uno (el 850 se responde con 855, 856 y 810). En la ficha de cada socio, la pestaña
+  Documentos EDI indica cuáles intercambia, en qué dirección y con qué datos adicionales del acuerdo. Un
+  tipo que usa algún socio no se puede borrar: el aviso nombra a esos socios. Viene cargado con los
+  X12 4010 850, 855, 856, 810, 997 y 889; los cambios quedan en la bitácora.
 - Configuración del servidor de correo (AS2-106, adelanto de HU-21). En Alertas → Configuración de
   correo, el administrador guarda el servidor SMTP (servidor, puerto, STARTTLS, SSL o sin cifrado,
   usuario y remitente) y envía un correo de prueba. Si el servidor no lo acepta, la consola dice por

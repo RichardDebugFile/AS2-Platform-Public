@@ -3,7 +3,8 @@
   "tabs": {
     "viewer": "X12 viewer",
     "generator": "Generate document",
-    "repository": "Repository"
+    "repository": "Repository",
+    "catalog": "Document types"
   },
   "viewer": {
     "intro": "Paste an X12 document as it arrives from the partner: the system reads its delimiters, identifies the type and the parties, and validates it against the schema of its type.",
@@ -227,6 +228,41 @@
       "messageId": "Message-ID",
       "http": "HTTP response",
       "file": "File"
+    }
+  },
+  "catalog": {
+    "intro": "EDI document types the company handles and the response expected for each one. Each partner's record lists the ones it exchanges.",
+    "new": "New type",
+    "newTitle": "New document type",
+    "editTitle": "Edit {{type}}",
+    "edit": "Edit",
+    "delete": "Delete",
+    "deleteTitle": "Delete document type",
+    "deleteBody": "{{type}} will be deleted from the catalog.",
+    "inUse_one": "Used by {{count}} partner",
+    "inUse_other": "Used by {{count}} partners",
+    "save": "Save",
+    "created": "{{type}} added",
+    "updated": "{{type}} updated",
+    "deleted": "{{type}} deleted",
+    "empty": "The catalog is empty.",
+    "loadError": "Could not load the catalog: {{message}}",
+    "columns": {
+      "type": "Type",
+      "name": "Name",
+      "responses": "Expected response",
+      "partners": "Partners",
+      "actions": "Actions"
+    },
+    "form": {
+      "standard": "Standard",
+      "code": "Code",
+      "version": "Version",
+      "name": "Name",
+      "description": "Description",
+      "responses": "Expected response",
+      "responsesHelp": "Documents the partner sends back in response (for example, an 850 is answered with 855, 856 and 810).",
+      "required": "Required"
     }
   }
 }

@@ -3,6 +3,8 @@ package edi.partners.web;
 import edi.partners.dto.ApiError;
 import edi.partners.error.CertificateNotFoundException;
 import edi.partners.error.ConfigNotFoundException;
+import edi.partners.error.DocumentTypeConflictException;
+import edi.partners.error.DocumentTypeNotFoundException;
 import edi.partners.error.DuplicateAs2NameException;
 import edi.partners.error.PartnerNotFoundException;
 import edi.partners.error.FolderPrecheckException;
@@ -43,6 +45,17 @@ public class ApiExceptionHandler {
     @ExceptionHandler(CertificateNotFoundException.class)
     ResponseEntity<ApiError> onCertificateNotFound(CertificateNotFoundException e) {
         return error(HttpStatus.NOT_FOUND, "CERTIFICATE_NOT_FOUND", e.getMessage());
+    }
+
+    @ExceptionHandler(DocumentTypeNotFoundException.class)
+    ResponseEntity<ApiError> onDocumentTypeNotFound(DocumentTypeNotFoundException e) {
+        return error(HttpStatus.NOT_FOUND, "DOCUMENT_TYPE_NOT_FOUND", e.getMessage());
+    }
+
+    /** Tipo repetido en el catalogo, o en uso por algun socio al borrarlo (HU-13). */
+    @ExceptionHandler(DocumentTypeConflictException.class)
+    ResponseEntity<ApiError> onDocumentTypeConflict(DocumentTypeConflictException e) {
+        return error(HttpStatus.CONFLICT, e.code(), e.getMessage());
     }
 
     @ExceptionHandler(MaxUploadSizeExceededException.class)
