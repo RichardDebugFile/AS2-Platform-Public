@@ -96,6 +96,16 @@ describe("pantalla de la bitacora", () => {
         await waitFor(() => expect(urls().some((u) => u.includes("messageId=%3Cm1%40as2.example.com%3E"))).toBe(true));
     });
 
+    it("busca mientras se escribe, por parte del socio y con una sola consulta", async () => {
+        renderPage();
+        await screen.findByText("Socio modificado");
+        const socio = screen.getByPlaceholderText("Socio (identificador AS2)");
+        for (const value of ["b", "be", "bet", "beta"]) fireEvent.change(socio, { target: { value } });
+
+        await waitFor(() => expect(urls().some((u) => u.includes("partnerAs2Name=beta"))).toBe(true));
+        expect(urls().filter((u) => u.includes("partnerAs2Name=")).length).toBe(1);
+    });
+
     it("exporta un CSV con los filtros vigentes", async () => {
         const createUrl = vi.fn(() => "blob:bitacora");
         const revoke = vi.fn();

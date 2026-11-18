@@ -28,7 +28,12 @@ export const MENU: MenuSection[] = [
     { key: "operation", label: "nav.operation", entries: [{ path: "/dashboard", label: "nav.home" }] },
     { key: "partners", label: "nav.partnersGroup", entries: [{ path: "/partners", label: "nav.partners" }] },
     { key: "documents", label: "nav.documentsGroup", entries: [{ path: "/documents", label: "nav.documents" }] },
-    { key: "alerts", label: "nav.alertsGroup", entries: [{ path: "/alerts", label: "nav.alerts" }] },
+    // Alertas (HU-21): por ahora solo la configuracion del correo (AS2-106), que es de ADMIN.
+    {
+        key: "alerts",
+        label: "nav.alertsGroup",
+        entries: [{ path: "/alerts/smtp", label: "nav.smtp", roles: ADMIN_ONLY }],
+    },
     {
         key: "audit",
         label: "nav.auditGroup",

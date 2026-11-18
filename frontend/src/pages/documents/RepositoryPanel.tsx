@@ -18,6 +18,7 @@ import {
 } from "../../service/documentsApi";
 import type { ApiResponse } from "../../service/dataService";
 import { X12_TYPES } from "../../service/x12Api";
+import { useSearchAsYouType } from "../../hooks/useSearchAsYouType";
 import { formatDateTime } from "../../utils/dateTime";
 import DocumentDrawer from "./DocumentDrawer";
 import { DirectionTag, StatusTag } from "./documentTags";
@@ -73,6 +74,7 @@ function sum(values: Record<string, number> | undefined, keep: (k: string) => bo
 export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pending, onPendingHandled }: Readonly<Props>) {
     const { t, i18n } = useTranslation("documents");
     const [form] = Form.useForm<FilterForm>();
+    const searchAsYouType = useSearchAsYouType(form);
     const [filter, setFilter] = useState<DocumentFilter>({});
     const [page, setPage] = useState({ current: 1, pageSize: 20, total: 0 });
     const [rows, setRows] = useState<EdiDocument[]>([]);
@@ -164,7 +166,9 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
                 form={form}
                 layout="inline"
                 style={{ rowGap: 8 }}
+                onValuesChange={searchAsYouType.schedule}
                 onFinish={(v) => {
+                    searchAsYouType.cancel();
                     const f = toFilter(v);
                     setFilter(f);
                     load(f, 1, page.pageSize);
@@ -215,6 +219,7 @@ export default function RepositoryPanel({ canEdit, canDelete, onOpenInViewer, pe
                     </Button>
                     <Button
                         onClick={() => {
+                            searchAsYouType.cancel();
                             form.resetFields();
                             setFilter({});
                             load({}, 1, page.pageSize);

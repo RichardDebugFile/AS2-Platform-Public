@@ -30,8 +30,9 @@ hsts="$("${CURL[@]}" -o /dev/null -D - "$BASE/" | tr -d '\r' | grep -i '^strict-
 
 # 3. Solo se publican los puertos del proxy
 # Publishers incluye tambien los puertos solo expuestos (EXPOSE) con PublishedPort 0: no cuentan.
+# Mailpit (solo con el perfil demo) publica su bandeja web en 127.0.0.1: es una herramienta de prueba.
 publicados="$(docker compose ps --format '{{.Service}}{{range .Publishers}}{{if gt .PublishedPort 0}} {{.PublishedPort}}{{end}}{{end}}' \
-    | awk 'NF > 1 {print $1}' | sort -u | tr '\n' ' ')"
+    | awk 'NF > 1 && $1 != "mailpit" {print $1}' | sort -u | tr '\n' ' ')"
 [ "$publicados" = "proxy " ] && ok "Solo el proxy publica puertos" || fail "Servicios con puertos publicados: $publicados"
 for p in 5432 8083 8765; do
     if (exec 3<>"/dev/tcp/127.0.0.1/$p") 2>/dev/null; then fail "El puerto $p es alcanzable desde fuera"; else ok "Puerto $p cerrado desde fuera"; fi

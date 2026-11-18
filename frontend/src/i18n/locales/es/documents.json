@@ -3,7 +3,8 @@
   "tabs": {
     "viewer": "Visor X12",
     "generator": "Generar documento",
-    "repository": "Repositorio"
+    "repository": "Repositorio",
+    "catalog": "Catálogo de tipos"
   },
   "viewer": {
     "intro": "Pegue un documento X12 tal como llega del socio: el sistema lee sus separadores, identifica el tipo y las partes, y lo valida contra el esquema de su tipo.",
@@ -227,6 +228,41 @@
       "messageId": "Message-ID",
       "http": "Respuesta HTTP",
       "file": "Archivo"
+    }
+  },
+  "catalog": {
+    "intro": "Tipos de documento EDI que maneja la empresa y la respuesta que se espera de cada uno. Cada socio indica en su ficha cuáles intercambia.",
+    "new": "Nuevo tipo",
+    "newTitle": "Nuevo tipo de documento",
+    "editTitle": "Modificar {{type}}",
+    "edit": "Modificar",
+    "delete": "Borrar",
+    "deleteTitle": "Borrar tipo de documento",
+    "deleteBody": "Se borrará {{type}} del catálogo.",
+    "inUse_one": "Lo usa {{count}} socio",
+    "inUse_other": "Lo usan {{count}} socios",
+    "save": "Guardar",
+    "created": "{{type}} registrado",
+    "updated": "{{type}} modificado",
+    "deleted": "{{type}} borrado",
+    "empty": "El catálogo está vacío.",
+    "loadError": "No se pudo cargar el catálogo: {{message}}",
+    "columns": {
+      "type": "Tipo",
+      "name": "Nombre",
+      "responses": "Respuesta esperada",
+      "partners": "Socios",
+      "actions": "Acciones"
+    },
+    "form": {
+      "standard": "Estándar",
+      "code": "Código",
+      "version": "Versión",
+      "name": "Nombre",
+      "description": "Descripción",
+      "responses": "Respuesta esperada",
+      "responsesHelp": "Documentos con los que el socio responde a este (por ejemplo, el 850 se responde con 855, 856 y 810).",
+      "required": "Obligatorio"
     }
   }
 }
