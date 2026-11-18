@@ -83,6 +83,7 @@ public class AuditLogService {
     }
 
     private static final String OCCURRED_AT = "occurredAt";
+    private static final char LIKE_ESCAPE = '\\';
 
     private static Sort order(AuditLogQuery q) {
         Sort.Direction dir = present(q.messageId()) ? Sort.Direction.ASC : Sort.Direction.DESC;
@@ -93,13 +94,13 @@ public class AuditLogService {
         return (root, query, cb) -> {
             List<Predicate> where = new ArrayList<>();
             addEqual(where, cb, root.get("partnerId"), q.partnerId());
-            addEqualIgnoringCase(where, cb, root.get("partnerAs2Name"), q.partnerAs2Name());
+            addContainsIgnoringCase(where, cb, root.get("partnerAs2Name"), q.partnerAs2Name());
             if (present(q.eventType())) {
                 where.add(cb.equal(root.get("eventType"), q.eventType().strip().toUpperCase(Locale.ROOT)));
             }
             addEqual(where, cb, root.get("status"), q.status());
-            addEqualIgnoringCase(where, cb, root.get("actor"), q.actor());
-            addEqual(where, cb, root.get("messageId"), present(q.messageId()) ? q.messageId().strip() : null);
+            addContainsIgnoringCase(where, cb, root.get("actor"), q.actor());
+            addContainsIgnoringCase(where, cb, root.get("messageId"), q.messageId());
             if (q.from() != null) {
                 where.add(cb.greaterThanOrEqualTo(root.get(OCCURRED_AT), q.from()));
             }
@@ -116,11 +117,20 @@ public class AuditLogService {
         }
     }
 
-    private static void addEqualIgnoringCase(List<Predicate> where, CriteriaBuilder cb, Expression<String> field,
-                                             String value) {
+    /**
+     * Agrega {@code campo contiene valor}, sin distinguir mayusculas (AS2-105): en la consola basta con
+     * escribir parte del socio, del usuario o del Message-ID. Los comodines de LIKE se escapan.
+     */
+    private static void addContainsIgnoringCase(List<Predicate> where, CriteriaBuilder cb,
+                                                Expression<String> field, String value) {
         if (present(value)) {
-            where.add(cb.equal(cb.lower(field), lower(value)));
+            where.add(cb.like(cb.lower(field), containsPattern(value), LIKE_ESCAPE));
         }
+    }
+
+    static String containsPattern(String value) {
+        String escaped = lower(value).replace("\\", "\\\\").replace("%", "\\%").replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private static boolean present(String s) {

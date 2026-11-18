@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.TreeMap;
 import java.util.UUID;
@@ -39,6 +40,7 @@ public class DocumentQueryService {
 
     public static final int MAX_PAGE_SIZE = 100;
     private static final String CREATED_AT = "createdAt";
+    private static final char LIKE_ESCAPE = '\\';
     static final int STATS_DAYS = 7;
 
     /** Filtros de busqueda; todos opcionales. Las fechas son dias completos en la zona del negocio. */
@@ -84,7 +86,7 @@ public class DocumentQueryService {
 
     public PageView<DocumentView> search(Filter f, int page, int size) {
         int s = Math.clamp(size, 1, MAX_PAGE_SIZE);
-        Page<Document> result = documents.findAll(spec(f),
+        Page<Document> result = documents.findAll(spec(f, true),
                 PageRequest.of(Math.max(page, 0), s, Sort.by(Sort.Direction.DESC, CREATED_AT)));
         return new PageView<>(result.map(DocumentView::of).getContent(), result.getNumber(), result.getSize(),
                 result.getTotalElements(), result.getTotalPages());
@@ -151,7 +153,7 @@ public class DocumentQueryService {
             throw new IllegalArgumentException("El rango no puede superar " + DASHBOARD_MAX_DAYS + " dias");
         }
         Filter f = new Filter(partner, direction, null, null, first, last, null, null);
-        List<DashboardRow> rows = documents.findBy(spec(f), q -> q.as(DashboardRow.class).all());
+        List<DashboardRow> rows = documents.findBy(spec(f, false), q -> q.as(DashboardRow.class).all());
         return Dashboard.of(first, last, rows, zone);
     }
 
@@ -163,17 +165,28 @@ public class DocumentQueryService {
         return m;
     }
 
-    private Specification<Document> spec(Filter f) {
+    /**
+     * Filtros de la consulta. En el repositorio ({@code partialText}) socio, Message-ID e ISA encuentran
+     * por parte del texto, sin distinguir mayusculas (AS2-105); en el tablero el socio se elige de una
+     * lista y se compara completo.
+     */
+    private Specification<Document> spec(Filter f, boolean partialText) {
         return (root, query, cb) -> {
             List<Predicate> p = new ArrayList<>();
-            if (hasText(f.partner())) {
-                p.add(cb.equal(cb.upper(root.get("partnerAs2Name")), f.partner().strip().toUpperCase()));
+            if (partialText) {
+                addContains(p, cb, root, "partnerAs2Name", f.partner());
+                addContains(p, cb, root, "messageId", f.messageId());
+                addContains(p, cb, root, "isaControl", f.isaControl());
+            } else {
+                if (hasText(f.partner())) {
+                    p.add(cb.equal(cb.upper(root.get("partnerAs2Name")), f.partner().strip().toUpperCase()));
+                }
+                addEqual(p, cb, root, "messageId", text(f.messageId()));
+                addEqual(p, cb, root, "isaControl", text(f.isaControl()));
             }
             addEqual(p, cb, root, "direction", f.direction());
             addEqual(p, cb, root, "status", f.status());
             addEqual(p, cb, root, "typeCode", text(f.typeCode()));
-            addEqual(p, cb, root, "messageId", text(f.messageId()));
-            addEqual(p, cb, root, "isaControl", text(f.isaControl()));
             if (f.from() != null) {
                 p.add(cb.greaterThanOrEqualTo(root.get(CREATED_AT), f.from().atStartOfDay(zone).toInstant()));
             }
@@ -190,6 +203,21 @@ public class DocumentQueryService {
         if (value != null) {
             p.add(cb.equal(root.get(field), value));
         }
+    }
+
+    /** Agrega {@code campo contiene valor} sin distinguir mayusculas, si hay valor. */
+    private static void addContains(List<Predicate> p, CriteriaBuilder cb, Root<Document> root, String field,
+            String value) {
+        if (hasText(value)) {
+            p.add(cb.like(cb.lower(root.<String>get(field)), containsPattern(value), LIKE_ESCAPE));
+        }
+    }
+
+    /** {@code %valor%} en minusculas, con los comodines de LIKE escapados para buscarlos como texto. */
+    static String containsPattern(String value) {
+        String escaped = value.strip().toLowerCase(Locale.ROOT).replace("\\", "\\\\").replace("%", "\\%")
+                .replace("_", "\\_");
+        return "%" + escaped + "%";
     }
 
     private static String text(String s) {

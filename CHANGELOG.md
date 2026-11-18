@@ -4,6 +4,15 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Correcciones
+- La búsqueda de la Bitácora y del Repositorio encuentra por parte del texto (AS2-105). Antes los
+  filtros de texto exigían el valor completo: "beta" no encontraba `BETA-DEMO` y la tabla quedaba vacía.
+  Ahora Socio, Usuario, Message-ID y número ISA encuentran lo que contiene lo escrito, sin distinguir
+  mayúsculas, y la tabla se actualiza mientras se escribe, sin pulsar Buscar. El filtro de socio de
+  Inicio se elige de una lista y sigue comparando el nombre completo.
+
 ## 0.6.0 — 2026-11-12
 
 ### Novedades
