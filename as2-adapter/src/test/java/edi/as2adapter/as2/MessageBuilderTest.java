@@ -62,6 +62,7 @@ class MessageBuilderTest {
 
         assertThat(msg.httpHeaders())
                 .containsEntry("AS2-Version", "1.2")
+                .containsEntry("Date", "Sun, 8 Nov 2026 12:00:00 GMT")
                 .containsEntry("AS2-From", "PLATAFORMA")
                 .containsEntry("AS2-To", "SOCIO")
                 .containsEntry("Disposition-Notification-To", "edi.plataforma@example.com")

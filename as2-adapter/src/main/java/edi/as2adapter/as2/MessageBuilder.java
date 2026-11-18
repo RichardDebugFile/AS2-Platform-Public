@@ -4,6 +4,7 @@ import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 import java.time.Clock;
+import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.LinkedHashMap;
 import java.util.Map;
@@ -85,6 +86,8 @@ public final class MessageBuilder {
         http.put("AS2-To", quote(r.to()));
         http.put("Message-ID", messageId);
         http.put("Subject", "Documento " + r.fileName());
+        // RFC 4130 (5.2): fecha del envio; OpenAS2 la cita en el texto del MDN ("received on ...").
+        http.put("Date", DateTimeFormatter.RFC_1123_DATE_TIME.format(clock.instant().atZone(ZoneOffset.UTC)));
         http.put("Mime-Version", "1.0");
         http.put(CONTENT_TYPE, "application/pkcs7-mime; smime-type=enveloped-data; name=\"smime.p7m\"");
         http.put(CONTENT_DISPOSITION, "attachment; filename=\"smime.p7m\"");

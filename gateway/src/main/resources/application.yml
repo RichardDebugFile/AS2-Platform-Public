@@ -68,6 +68,10 @@ gateway:
   system-status:
     exclude: ${GATEWAY_STATUS_EXCLUDE:}
     timeout-ms: 2000
+  upstream:
+    # Tiempo maximo de cada consulta DNS hacia un servicio (AS2-102): con uno detenido, el 503 llega en
+    # pocos segundos en lugar de ~14 s.
+    dns-timeout-ms: ${GATEWAY_DNS_TIMEOUT_MS:2000}
   security:
     # JWKS de auth-service para validar el JWT en el borde. Se consulta directo, no por el gateway.
     jwks-uri: ${AUTH_JWKS_URI:http://localhost:8083/.well-known/jwks.json}

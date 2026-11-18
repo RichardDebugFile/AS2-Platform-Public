@@ -18,6 +18,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   de alerta y los avisos de certificados por caducar llegan con HU-21.
 
 ### Correcciones
+- Con un servicio detenido, el aviso "El servicio … no responde" (503) llega en pocos segundos y no en
+  unos 14 (AS2-102). El gateway acota la resolución DNS hacia los servicios: 2 s por consulta y dos
+  consultas como máximo (`GATEWAY_DNS_TIMEOUT_MS`).
+- `stop.sh` detiene también OpenAS2 y Mailpit del perfil `demo`, aunque `COMPOSE_PROFILES` no esté
+  puesto (AS2-103).
+- Envío AS2: si el socio no responde, el motivo dice la causa ("conexión rechazada", "tiempo de
+  conexión agotado") en lugar de terminar en ": null", y el mensaje lleva la cabecera `Date` que pide
+  RFC 4130, que OpenAS2 cita en el texto de su MDN (AS2-104).
 - La búsqueda de la Bitácora y del Repositorio encuentra por parte del texto (AS2-105). Antes los
   filtros de texto exigían el valor completo: "beta" no encontraba `BETA-DEMO` y la tabla quedaba vacía.
   Ahora Socio, Usuario, Message-ID y número ISA encuentran lo que contiene lo escrito, sin distinguir
