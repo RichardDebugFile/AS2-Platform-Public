@@ -20,3 +20,9 @@ db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/doc
 db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:276
 db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:278
 db61ab0e9f43aae9d2475f959242197dda3d5ec8:documents-service/src/test/java/edi/documents/web/DocumentRepositoryApiIntegrationTest.java:correo-real:280
+# c2dd465 (AS2-106): claves AES-256 de prueba escritas en las pruebas de alerts-service (no se usan
+# fuera de ellas); el commit siguiente las genera al correr la prueba. El historial publicado no se
+# reescribe.
+c2dd4659c7ffb08c36d9bd738d9a4b4cdfc02fff:alerts-service/src/test/java/edi/alerts/smtp/SecretCipherTest.java:generic-api-key:10
+c2dd4659c7ffb08c36d9bd738d9a4b4cdfc02fff:alerts-service/src/test/java/edi/alerts/smtp/SecretCipherTest.java:generic-api-key:11
+c2dd4659c7ffb08c36d9bd738d9a4b4cdfc02fff:alerts-service/src/test/java/edi/alerts/smtp/SmtpConfigApiIntegrationTest.java:generic-api-key:39

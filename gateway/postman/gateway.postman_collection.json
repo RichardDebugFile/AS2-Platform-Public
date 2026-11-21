@@ -282,7 +282,7 @@
                   "const s = Object.fromEntries(r.services.map(x => [x.service, x]));",
                   "pm.test('revisado ahora', () => pm.expect(Date.parse(r.checkedAt)).to.be.above(Date.now() - 60000));",
                   "pm.test('gateway en línea', () => pm.expect(s.gateway.status).to.eql('UP'));",
-                  "['partners-service', 'auth-service', 'documents-service'].forEach(n => {",
+                  "['partners-service', 'auth-service', 'documents-service', 'alerts-service'].forEach(n => {",
                   "  pm.test(n + ' en línea con su base de datos', () => {",
                   "    pm.expect(s[n].status).to.eql('UP');",
                   "    pm.expect(s[n].latencyMs).to.be.a('number');",

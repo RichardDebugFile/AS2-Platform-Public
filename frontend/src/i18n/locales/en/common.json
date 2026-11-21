@@ -13,7 +13,7 @@
     "documentsGroup": "Documents",
     "documents": "EDI documents",
     "alertsGroup": "Alerts",
-    "alerts": "Alerts and notifications",
+    "smtp": "Email settings",
     "auditGroup": "Audit",
     "audit": "Audit log",
     "administration": "Administration",

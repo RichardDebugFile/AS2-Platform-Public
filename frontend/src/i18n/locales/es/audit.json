@@ -65,6 +65,12 @@
     "DOCUMENT_DUPLICATE": "Documento repetido (reintento)",
     "DOCUMENT_DELETED": "Documento eliminado",
     "DOCUMENT_COPY_PENDING": "Copia al socio pendiente",
-    "DOCUMENT_COPY_RESTORED": "Copia al socio restaurada"
+    "DOCUMENT_COPY_RESTORED": "Copia al socio restaurada",
+    "SMTP_CONFIG_UPDATED": "Configuración de correo guardada",
+    "SMTP_TEST_SENT": "Correo de prueba",
+    "DOCUMENT_TYPE_CREATED": "Tipo de documento registrado",
+    "DOCUMENT_TYPE_UPDATED": "Tipo de documento modificado",
+    "DOCUMENT_TYPE_DELETED": "Tipo de documento borrado",
+    "PARTNER_DOCUMENT_TYPES_UPDATED": "Documentos del socio"
   }
 }

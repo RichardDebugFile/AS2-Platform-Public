@@ -3,6 +3,7 @@ import type { TabsProps } from "antd";
 import { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import CertificatesPanel from "./CertificatesPanel";
+import PartnerDocumentTypesPanel from "./PartnerDocumentTypesPanel";
 import FoldersPanel from "./FoldersPanel";
 import { FIELD_TAB, NEW_PARTNER, editableFields, endpointPreview } from "./partnerForm";
 import {
@@ -419,6 +420,11 @@ export default function PartnerDrawer({ partner, readOnly, isAdmin = false, onCl
                   key: "certificates",
                   label: t("drawer.tabs.certificates"),
                   children: <CertificatesPanel partner={partner} canEdit={!readOnly} isAdmin={isAdmin && !readOnly} />,
+              },
+              {
+                  key: "documentTypes",
+                  label: t("drawer.tabs.documentTypes"),
+                  children: <PartnerDocumentTypesPanel partner={partner} canEdit={!readOnly} />,
               },
           ]
         : [];

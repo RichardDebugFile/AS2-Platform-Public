@@ -3,7 +3,8 @@ name: Docker
 # Entorno contenerizado (HU-07): construye las imagenes, levanta el stack completo con el socio de
 # prueba OpenAS2 (perfil demo) y verifica los criterios de aceptacion con deploy/docker/smoke-test.sh
 # (HTTPS, puertos, reinicio automatico, cookies Secure, respaldo restaurable y carpetas de los socios).
-# Despues corre con Newman las colecciones de Postman de todos los servicios contra el stack (AS2-101).
+# Despues corre con Newman las colecciones de Postman de todos los servicios contra el stack (AS2-101);
+# la de alerts-service envia un correo de prueba a Mailpit, el servidor de correo del perfil demo.
 # Corre cuando cambia el despliegue o una coleccion.
 
 permissions:
@@ -16,6 +17,7 @@ on:
       - '*/postman/**'
       - '.dockerignore'
       - '.github/workflows/docker.yml'
+      - 'alerts-service/**'
   pull_request:
     branches: [main, develop]
     paths:
@@ -23,6 +25,7 @@ on:
       - '*/postman/**'
       - '.dockerignore'
       - '.github/workflows/docker.yml'
+      - 'alerts-service/**'
   workflow_dispatch:
 
 concurrency:
@@ -83,8 +86,9 @@ jobs:
           coleccion auth-service/postman/auth-service.postman_collection.json
           coleccion documents-service/postman/documents-service.postman_collection.json
           coleccion as2-adapter/postman/as2-adapter.postman_collection.json
+          coleccion alerts-service/postman/alerts-service.postman_collection.json
           coleccion partners-service/postman/partners-service.postman_collection.json \
-            --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados
+            --folder "Sesión (vía gateway)" --folder Socios --folder Bitácora --folder Certificados --folder "Catálogo EDI"
           exit $rc
 
       # Los logs de Actions solo se ven con sesion iniciada: ante un fallo, el paso que fallo y las

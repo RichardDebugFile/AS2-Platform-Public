@@ -5,6 +5,7 @@ import { useEffect } from "react";
 import { useTranslation } from "react-i18next";
 import { useAuditStore, type AuditEvent } from "../../store/auditStore";
 import { formatDateTime } from "../../utils/dateTime";
+import { useSearchAsYouType } from "../../hooks/useSearchAsYouType";
 import { toFilters, type FilterForm } from "./auditFilters";
 
 /** Texto de un valor anterior o nuevo en la tabla de cambios. */
@@ -31,6 +32,7 @@ export default function AuditPage() {
     const { message } = App.useApp();
     const { events, loading, error, pagination, eventTypes, fetchEvents, fetchEventTypes, exportCsv } = useAuditStore();
     const [form] = Form.useForm<FilterForm>();
+    const searchAsYouType = useSearchAsYouType(form);
 
     useEffect(() => {
         void fetchEvents({}, 0, 20);
@@ -101,7 +103,11 @@ export default function AuditPage() {
                 form={form}
                 layout="inline"
                 style={{ marginBottom: 16, rowGap: 8 }}
-                onFinish={(v) => void fetchEvents(toFilters(v), 0, pagination.pageSize)}
+                onValuesChange={searchAsYouType.schedule}
+                onFinish={(v) => {
+                    searchAsYouType.cancel();
+                    void fetchEvents(toFilters(v), 0, pagination.pageSize);
+                }}
             >
                 <Form.Item name="partnerAs2Name">
                     <Input allowClear placeholder={t("filters.partner")} style={{ width: 180 }} />
@@ -138,6 +144,7 @@ export default function AuditPage() {
                     </Button>
                     <Button
                         onClick={() => {
+                            searchAsYouType.cancel();
                             form.resetFields();
                             void fetchEvents({}, 0, pagination.pageSize);
                         }}

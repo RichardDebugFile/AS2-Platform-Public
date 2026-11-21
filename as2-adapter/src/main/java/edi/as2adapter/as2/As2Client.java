@@ -30,7 +30,7 @@ public final class As2Client {
         try {
             res = http.send(req.build(), HttpResponse.BodyHandlers.ofByteArray());
         } catch (IOException e) {
-            throw new As2Exception("No se pudo conectar con " + url + ": " + e.getMessage(), e);
+            throw new As2Exception("No se pudo conectar con " + url + ": " + reason(e), e);
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             throw new As2Exception("Envio interrumpido", e);
@@ -42,5 +42,23 @@ public final class As2Client {
         String contentType = res.headers().firstValue("Content-Type").orElse("");
         Mdn mdn = MdnReader.read(contentType, res.body(), partner);
         return new SendResult(message.messageId(), res.statusCode(), message.mic(), mdn, elapsed);
+    }
+
+    /**
+     * Motivo legible de un fallo de conexion (AS2-104). El HttpClient del JDK suele lanzar un
+     * ConnectException sin mensaje: se usa el de su causa o, si no hay ninguno, el tipo de error.
+     */
+    static String reason(Throwable e) {
+        for (Throwable t = e; t != null; t = t.getCause() == t ? null : t.getCause()) {
+            if (t.getMessage() != null && !t.getMessage().isBlank()) {
+                return t.getMessage().strip();
+            }
+        }
+        return switch (e) {
+            case java.net.http.HttpConnectTimeoutException _ -> "tiempo de conexion agotado";
+            case java.net.ConnectException _ -> "conexion rechazada";
+            case java.net.UnknownHostException _ -> "servidor desconocido";
+            default -> e.getClass().getSimpleName();
+        };
     }
 }

@@ -55,7 +55,8 @@
       "incoming": "Entrada",
       "mdn": "MDN",
       "folders": "Carpetas",
-      "certificates": "Certificados"
+      "certificates": "Certificados",
+      "documentTypes": "Documentos EDI"
     }
   },
   "form": {
@@ -226,5 +227,27 @@
       "SSL": "Es el único certificado TLS activo: la conexión HTTPS con el socio solo confiará en las autoridades del sistema."
     },
     "empty": "Sin certificados de este uso"
+  },
+  "documentTypes": {
+    "intro": "Tipos de documento que se intercambian con este socio, en qué dirección y con qué datos adicionales del acuerdo. Guardar reemplaza la lista.",
+    "add": "Agregar documento",
+    "save": "Guardar documentos",
+    "saved": "Documentos del socio guardados",
+    "remove": "Quitar",
+    "pickType": "Elija un tipo del catálogo",
+    "missingType": "Elija el tipo de documento de cada fila",
+    "fieldsPlaceholder": "Nombre: valor (uno por línea)",
+    "empty": "El socio todavía no tiene documentos asignados.",
+    "columns": {
+      "type": "Tipo",
+      "direction": "Dirección",
+      "responses": "Respuesta esperada",
+      "fields": "Datos adicionales",
+      "notes": "Notas"
+    },
+    "direction": {
+      "INBOUND": "Entrada",
+      "OUTBOUND": "Salida"
+    }
   }
 }
