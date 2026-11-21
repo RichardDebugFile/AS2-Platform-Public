@@ -34,6 +34,7 @@ public final class SimulatedPartner {
             String id = ex.getRequestHeaders().getFirst("Message-ID");
             String[] mdn = switch (reply.get()) {
                 case "error" -> partner.mdn(id, "automatic-action/MDN-sent-automatically; processed/error: unexpected-processing-error", null);
+                case "decryption-failed" -> partner.mdn(id, "automatic-action/MDN-sent-automatically; processed/Error: decryption-failed", null);
                 case "bad-mic" -> partner.mdn(id, "automatic-action/MDN-sent-automatically; processed", "T1RSTw==");
                 default -> partner.mdn(id, "automatic-action/MDN-sent-automatically; processed", r.mic());
             };

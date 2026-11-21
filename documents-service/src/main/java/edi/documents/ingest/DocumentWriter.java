@@ -8,6 +8,7 @@ import edi.documents.storage.PartnerFolders;
 import edi.documents.storage.SafeNames;
 import edi.documents.store.Direction;
 import edi.documents.store.Document;
+import edi.documents.store.DocumentMdn;
 import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentPayload;
 import edi.documents.store.DocumentPayloadRepository;
@@ -138,6 +139,7 @@ public class DocumentWriter {
             @Override
             public void afterCommit() {
                 storage.deleteQuietly(path);
+                storage.deleteQuietly(receiptPath(id).toString());
             }
         });
         return d;
@@ -149,6 +151,52 @@ public class DocumentWriter {
             throw new DocumentNotFoundException("El documento " + id + " no tiene MDN");
         }
         mdns.deleteById(id);
+        TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+            @Override
+            public void afterCommit() {
+                storage.deleteQuietly(receiptPath(id).toString());
+            }
+        });
+    }
+
+    public record Receipt(String disposition, String receivedMic, Boolean micMatches, Boolean signatureValid,
+                          String rawMdn) {}
+
+    @Transactional
+    public void completeOutbound(UUID id, DocumentStatus status, String detail, Receipt receipt) {
+        if (status != DocumentStatus.MDN_RECEIVED && status != DocumentStatus.SEND_FAILED
+                && status != DocumentStatus.DELIVERED) {
+            throw new IllegalArgumentException("Estado de envío inválido");
+        }
+        if (status == DocumentStatus.MDN_RECEIVED && receipt == null) {
+            throw new IllegalArgumentException("Falta el MDN del envío");
+        }
+        Document document = documents.lockById(id)
+                .orElseThrow(() -> new DocumentNotFoundException("No existe el documento " + id));
+        if (document.getDirection() != Direction.OUTBOUND) {
+            throw new IllegalArgumentException("El documento no es saliente");
+        }
+        if (document.getStatus() != DocumentStatus.CREATED) {
+            if (document.getStatus() == status) return;
+            throw new IllegalArgumentException("El envío ya tiene un resultado registrado");
+        }
+        document.status(status, limit(detail, 2000));
+        if (receipt != null) {
+            if (receipt.disposition() == null || receipt.disposition().isBlank()) {
+                throw new IllegalArgumentException("Falta la disposición del MDN");
+            }
+            mdns.save(new DocumentMdn(id, limit(receipt.disposition(), 255), limit(receipt.receivedMic(), 255),
+                    receipt.micMatches(), receipt.signatureValid(), limit(receipt.rawMdn(), 20000), clock.instant()));
+            if (receipt.rawMdn() != null) {
+                Path file = receiptPath(id);
+                storage.write(file, receipt.rawMdn().getBytes(StandardCharsets.ISO_8859_1));
+                deleteFileOnRollback(file);
+            }
+        }
+    }
+
+    private Path receiptPath(UUID id) {
+        return storage.root().resolve("mdn").resolve(id + ".mdn");
     }
 
     /** Contenido desde la base; si faltara, desde el archivo del repositorio. */

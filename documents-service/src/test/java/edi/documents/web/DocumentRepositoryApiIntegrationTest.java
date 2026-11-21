@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -88,6 +89,35 @@ class DocumentRepositoryApiIntegrationTest {
         }
         // SOCIO-B: registrado, pero su Incoming (enlace a la carpeta compartida) no esta disponible.
         Files.createDirectories(disk.resolve("as2_data/partners/SOCIO-B"));
+    }
+
+    @Test
+    void registraAcuseDelEnvioEnBaseYDiscoConActualizacionIdempotente() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<ENVIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        String update = """
+                {
+                    "status":"MDN_RECEIVED",
+                    "receipt":{
+                        "disposition":"automatic-action/MDN-sent-automatically; processed",
+                        "receivedMic":"QUJD",
+                        "micMatches":true,
+                        "signatureValid":true,
+                        "rawMdn":"Content-Type: multipart/signed"
+                    }
+                }
+                """;
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                    .contentType(MediaType.APPLICATION_JSON).content(update)).andExpect(status().isNoContent());
+        }
+        mvc.perform(get("/api/documents/{id}", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("MDN_RECEIVED"));
+        mvc.perform(get("/api/documents/{id}/mdn", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.micMatches").value(true))
+                .andExpect(jsonPath("$.signatureValid").value(true));
+        assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists()
+                .hasContent("Content-Type: multipart/signed");
     }
 
     private ResultActions ingest(String partner, Direction direction, String messageId, String body) throws Exception {
