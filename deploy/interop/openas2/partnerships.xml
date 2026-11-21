@@ -29,7 +29,7 @@
         <attribute name="as2_mdn_to" value="edi.openas2@example.com"/>
         <attribute name="as2_mdn_options"
                    value="signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha-256"/>
-        <attribute name="encrypt" value="AES256_CBC"/>
+        <attribute name="encrypt" value="aes256"/>
         <attribute name="sign" value="SHA-256"/>
     </partnership>
 </partnerships>
