@@ -23,6 +23,8 @@
         <pollerConfig enabled="true" outboxdir="$properties.storageBaseDir$/enviar" interval="2"
                       sendfilename="true" mimetype="application/edi-x12"/>
         <attribute name="protocol" value="as2"/>
+        <attribute name="subject" value="Documento EDI de prueba"/>
+        <attribute name="content_transfer_encoding" value="binary"/>
         <attribute name="as2_url" value="http://as2-adapter:8085/as2/receive"/>
         <attribute name="as2_mdn_to" value="edi.openas2@example.com"/>
         <attribute name="as2_mdn_options"
