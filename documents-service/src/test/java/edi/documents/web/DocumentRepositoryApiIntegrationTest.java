@@ -16,6 +16,7 @@ import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentRepository;
 import edi.documents.store.DocumentStatus;
 import edi.documents.x12.Samples;
+import edi.documents.x12.X12Parser;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -158,6 +159,20 @@ class DocumentRepositoryApiIntegrationTest {
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/api/documents/{id}", id)).andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DELIVERED"));
+    }
+
+    @Test
+    void genera997ConEmisorYReceptorInvertidosYLosControlesOriginales() throws Exception {
+        String original = Samples.po850();
+        String ack = mvc.perform(post("/internal/as2/ack997").contentType(MediaType.TEXT_PLAIN).content(original))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        var request = X12Parser.parse(original);
+        var response = X12Parser.parse(ack);
+        assertThat(response.typeCode()).isEqualTo("997");
+        assertThat(response.sender()).isEqualTo(request.receiver());
+        assertThat(response.receiver()).isEqualTo(request.sender());
+        assertThat(ack).contains("AK1*" + request.functionalCode() + "*" + request.groupControl(),
+                "AK2*" + request.typeCode() + "*" + request.transactionControl());
     }
 
     private ResultActions ingest(String partner, Direction direction, String messageId, String body) throws Exception {

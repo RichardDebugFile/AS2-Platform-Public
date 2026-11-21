@@ -18,6 +18,7 @@ import edi.as2adapter.documents.As2Documents;
 import edi.as2adapter.partner.PartnerCertificates;
 import edi.as2adapter.partner.PartnerDirectory;
 import edi.as2adapter.partner.PartnerTls;
+import edi.as2adapter.spike.SpikeProperties;
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.file.Path;
@@ -31,6 +32,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
+import org.springframework.beans.factory.support.StaticListableBeanFactory;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import tools.jackson.databind.ObjectMapper;
 
@@ -65,7 +67,8 @@ class OutboundApiTest {
                     exchange -> respond(exchange, 200, List.of(certificate)));
             services.createContext("/api/documents/ingest/as2", exchange -> {
                 exchange.getRequestBody().readAllBytes();
-                respond(exchange, 201, new As2Documents.Ingested("CREATED", new As2Documents.Document(docId, "CREATED", "850")));
+                respond(exchange, 201, new As2Documents.Ingested("CREATED",
+                        new As2Documents.Document(docId, "CREATED", "850", "SOCIO", "OUTBOUND")));
             });
             services.createContext("/internal/as2/documents/" + docId + "/result", exchange -> {
                 stored.set(JSON.readValue(exchange.getRequestBody().readAllBytes(), As2Documents.Result.class));
@@ -76,7 +79,7 @@ class OutboundApiTest {
             String base = "http://127.0.0.1:" + services.getAddress().getPort();
             String password = UUID.randomUUID().toString();
             Path key = TestPki.pkcs12(LOCAL, keys, "origen", password.toCharArray());
-            var identity = new LocalIdentity("ORIGEN", "edi.origen@example.com", key.toString(), "origen", password);
+            var identity = identity(key.toString(), "origen", password);
             var service = new OutboundService(new PartnerDirectory(base), new PartnerCertificates(3, true),
                     new PartnerTls(300, false), identity, new As2Documents(base), new AuditClient(base));
             var mvc = MockMvcBuilders.standaloneSetup(new OutboundController(service)).build();
@@ -143,7 +146,7 @@ class OutboundApiTest {
         assertThat(new PartnerCertificates(2, false).recipients(List.of(backup, preferred), now))
                 .containsExactly(PEER.certificate());
         assertThatThrownBy(() -> new PartnerCertificates(0, true)).isInstanceOf(IllegalArgumentException.class);
-        assertThatThrownBy(() -> new LocalIdentity("ORIGEN", "edi.origen@example.com", "", "", "").get())
+        assertThatThrownBy(() -> identity("", "", "").get())
                 .isInstanceOf(As2Exception.class).hasMessageContaining("almacén de claves");
     }
 
@@ -160,6 +163,11 @@ class OutboundApiTest {
         return new PartnerDirectory.Certificate(true, x509.getNotBefore().toInstant(), x509.getNotAfter().toInstant(),
                 "-----BEGIN CERTIFICATE-----\n" + Base64.getMimeEncoder().encodeToString(x509.getEncoded())
                         + "\n-----END CERTIFICATE-----");
+    }
+
+    private static LocalIdentity identity(String key, String alias, String password) {
+        var demo = new StaticListableBeanFactory().getBeanProvider(SpikeProperties.class);
+        return new LocalIdentity("ORIGEN", "edi.origen@example.com", key, alias, password, false, demo);
     }
 
     private static void respond(HttpExchange exchange, int code, Object body) throws IOException {

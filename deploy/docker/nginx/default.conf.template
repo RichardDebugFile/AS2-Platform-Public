@@ -45,6 +45,8 @@ server {
     }
 
     # ---- Socios AS2 (se autentican con S/MIME) ----
+    location = /as2/receive/test { return 404; }
+
     location = /as2/receive {
         include /etc/nginx/snippets/proxy.conf;
         proxy_request_buffering off;
