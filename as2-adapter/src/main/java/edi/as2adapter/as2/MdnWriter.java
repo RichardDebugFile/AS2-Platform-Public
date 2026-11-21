@@ -1,8 +1,10 @@
 package edi.as2adapter.as2;
 
+import java.util.Arrays;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 
 public final class MdnWriter {
 
@@ -11,7 +13,24 @@ public final class MdnWriter {
 
     public record Report(String as2Id, String originalId, String disposition, String mic, String algorithm) {}
 
-    public record Body(String contentType, byte[] content) {}
+    public record Body(String contentType, byte[] content) {
+
+        @Override
+        public boolean equals(Object other) {
+            return other instanceof Body body && Objects.equals(contentType, body.contentType)
+                    && Arrays.equals(content, body.content);
+        }
+
+        @Override
+        public int hashCode() {
+            return 31 * Objects.hashCode(contentType) + Arrays.hashCode(content);
+        }
+
+        @Override
+        public String toString() {
+            return "Body[contentType=" + contentType + ", bytes=" + content.length + "]";
+        }
+    }
 
     public static Body write(Report report, As2Identity signer) {
         String boundary = Mime.boundary();

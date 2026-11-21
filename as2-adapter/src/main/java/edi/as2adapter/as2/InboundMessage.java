@@ -1,10 +1,31 @@
 package edi.as2adapter.as2;
 
+import java.util.Arrays;
 import java.util.Base64;
 import java.util.List;
 
 /** Extrae la entidad que se firmó y la carga X12 sin alterar los bytes verificados. */
 public record InboundMessage(byte[] payload, byte[] micSource, byte[] signature) {
+
+    @Override
+    public boolean equals(Object other) {
+        return other instanceof InboundMessage message
+                && Arrays.equals(payload, message.payload)
+                && Arrays.equals(micSource, message.micSource)
+                && Arrays.equals(signature, message.signature);
+    }
+
+    @Override
+    public int hashCode() {
+        int hash = Arrays.hashCode(payload);
+        hash = 31 * hash + Arrays.hashCode(micSource);
+        return 31 * hash + Arrays.hashCode(signature);
+    }
+
+    @Override
+    public String toString() {
+        return "InboundMessage[payloadBytes=" + payload.length + ", signed=" + (signature != null) + "]";
+    }
 
     public static InboundMessage decode(String type, String encoding, byte[] body, As2Identity identity) {
         byte[] decoded = "base64".equalsIgnoreCase(encoding) ? Base64.getMimeDecoder().decode(body) : body;

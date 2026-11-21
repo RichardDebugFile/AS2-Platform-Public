@@ -219,6 +219,16 @@ class InboundApiTest {
     }
 
     @Test
+    void rechazaUnaUrlDeAcuseDistintaDeLaConfiguradaParaElSocio() throws Exception {
+        register(null, "http://127.0.0.1:19282/receipt");
+        var response = post("/as2/receive", build("ORIGEN", LOCAL), "http://127.0.0.1:19283/receipt");
+        assertThat(response.statusCode()).isEqualTo(400);
+        assertThat(new String(response.body(), java.nio.charset.StandardCharsets.UTF_8))
+                .contains("no coincide con el acuerdo del socio");
+        org.mockito.Mockito.verifyNoInteractions(documents);
+    }
+
+    @Test
     void un850EnviaEl997PorElMotorDeSalida() throws Exception {
         byte[] ack = "ISA~GS~ST*997~AK1*PO*456~AK2*850*0789~".getBytes(US_ASCII);
         var received = new AtomicReference<String>();

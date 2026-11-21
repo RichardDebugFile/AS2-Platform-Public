@@ -1,12 +1,49 @@
 package edi.as2adapter.as2;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.util.List;
 import java.util.Map;
 import org.junit.jupiter.api.Test;
 
 class InboundMessageTest {
+
+    @Test
+    void comparaLosBytesSinMostrarElContenidoDeLosDocumentos() {
+        var a = new InboundMessage(Mime.ascii("ISA~"), Mime.ascii("MIC"), null);
+        var b = new InboundMessage(Mime.ascii("ISA~"), Mime.ascii("MIC"), null);
+        assertThat(a).isEqualTo(b).hasSameHashCodeAs(b).isNotEqualTo("ISA~");
+        assertThat(a).isNotEqualTo(new InboundMessage(Mime.ascii("GS~"), b.micSource(), null))
+                .isNotEqualTo(new InboundMessage(b.payload(), Mime.ascii("otro"), null))
+                .isNotEqualTo(new InboundMessage(b.payload(), b.micSource(), Mime.ascii("firma")));
+        assertThat(a.toString()).contains("payloadBytes=4", "signed=false").doesNotContain("ISA~", "MIC");
+    }
+
+    @Test
+    void emiteUnMdnSinFirmaSiElAcuerdoLoPermite() {
+        var report = new MdnWriter.Report("DESTINO", "<orden@example.com>", "processed", "QUJD", "sha-256");
+        var body = MdnWriter.write(report, null);
+        var parsed = MdnReader.read(body.contentType(), body.content(), List.of());
+        assertThat(parsed.processed()).isTrue();
+        assertThat(parsed.signed()).isFalse();
+        assertThat(parsed.micMatches("QUJD", "sha-256")).isTrue();
+
+        var copy = new MdnWriter.Body(body.contentType(), body.content().clone());
+        assertThat(body).isEqualTo(copy).hasSameHashCodeAs(copy).isNotEqualTo(report)
+                .isNotEqualTo(new MdnWriter.Body("text/plain", body.content()))
+                .isNotEqualTo(new MdnWriter.Body(body.contentType(), new byte[0]));
+        assertThat(body.toString()).contains("multipart/report", "bytes=").doesNotContain("<orden@example.com>");
+    }
+
+    @Test
+    void rechazaTiposMimeNoAdmitidosYMixedSinDelimitador() {
+        var key = MessageBuilderTest.PLATAFORMA;
+        assertThatThrownBy(() -> InboundMessage.decode("text/html", null, new byte[0], key))
+                .isInstanceOf(As2Exception.class).hasMessageContaining("Tipo MIME");
+        assertThatThrownBy(() -> InboundMessage.decode("multipart/mixed", null, new byte[0], key))
+                .isInstanceOf(As2Exception.class).hasMessageContaining("delimitador MIME");
+    }
 
     @Test
     void extraeUnEdiAdjuntoSinModificarLaParteFirmada() {
