@@ -121,6 +121,18 @@ Para enviar a socios configurados, coloca el PKCS#12 en `AS2_IDENTITY_DIR` (por 
 desde la ficha del socio. Si el servidor HTTPS no usa una CA conocida, carga también su certificado
 SSL. Los documentos enviados y sus MDN se consultan en el repositorio de la consola.
 
+Para recibir, el socio utiliza `https://<servidor>/as2/receive`, registra el certificado público de
+la plataforma y carga su certificado de firma en la consola de socios. El modo de MDN del acuerdo
+determina si se entrega en la respuesta o por POST a la URL registrada. Los documentos recibidos
+aparecen en el repositorio y se copian a `Incoming`. Los 850, 856 y 810 válidos generan un 997.
+
+Para la recepción de prueba, arranca con `COMPOSE_PROFILES=demo AS2_DEMO_IDENTITY=true ./start.sh`.
+Registra en la consola el socio activo `OPENAS2`, con destino `http://openas2:10080` y MDN síncrono
+firmado. Carga su certificado público de demo en los usos Cifrado y Firma. Este certificado está en
+`/certs/plataforma/openas2.cer` del contenedor `as2-adapter`. Coloca un X12 válido en
+`salida/openas2/enviar/`. OpenAS2 lo envía a la plataforma. La bitácora y la copia en `Incoming`
+permiten verificar la recepción. El 997 de vuelta se guarda en `salida/openas2/recibidos/PLATAFORMA/`.
+
 ## En un servidor
 
 Mismo procedimiento con `SERVER_NAME` = dominio público. Se reemplazan `certs/tls.crt` y

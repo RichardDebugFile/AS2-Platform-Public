@@ -1,6 +1,5 @@
 package edi.as2adapter.as2;
 
-import java.io.ByteArrayOutputStream;
 import java.util.Arrays;
 import java.util.Objects;
 import java.time.Clock;
@@ -129,21 +128,14 @@ public final class MessageBuilder {
         sigHeaders.put(CONTENT_TRANSFER_ENCODING, "base64");
         sigHeaders.put(CONTENT_DISPOSITION, "attachment; filename=\"smime.p7s\"");
 
-        ByteArrayOutputStream body = new ByteArrayOutputStream(content.length + 4096);
-        body.writeBytes(Mime.ascii("--" + b + "\r\n"));
-        body.writeBytes(content);
-        body.writeBytes(Mime.ascii("\r\n--" + b + "\r\n"));
-        body.writeBytes(Mime.part(sigHeaders, Mime.base64Lines(signature)));
-        body.writeBytes(Mime.ascii("\r\n--" + b + "--\r\n"));
-
         Map<String, String> headers = new LinkedHashMap<>();
         headers.put(CONTENT_TYPE, "multipart/signed; protocol=\"application/pkcs7-signature\"; micalg="
                 + Cms.mimeDigest(digest) + "; boundary=\"" + b + "\"");
-        return Mime.part(headers, body.toByteArray());
+        return Mime.part(headers, Mime.multipart(b, List.of(content, Mime.part(sigHeaders, Mime.base64Lines(signature)))));
     }
 
     /** Los identificadores AS2 con espacios u otros simbolos van entre comillas (RFC 4130 6.2). */
-    static String quote(String as2Id) {
+    public static String quote(String as2Id) {
         return as2Id.matches("[A-Za-z0-9!#$%&'*+.^_`|~-]+") ? as2Id : "\"" + as2Id.replace("\"", "\\\"") + "\"";
     }
 

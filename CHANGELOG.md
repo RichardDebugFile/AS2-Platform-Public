@@ -11,6 +11,9 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
   generador X12. El motor firma el mensaje, lo cifra para los certificados activos del socio y valida
   el MDN síncrono. El repositorio guarda el resultado y el acuse, y la consola muestra el motivo si
   el socio rechaza el envío.
+- Recepción AS2 de socios registrados (HU-16). El motor verifica la firma, registra el documento en
+  el repositorio y deja una copia en la carpeta de entrada del socio. Devuelve un MDN firmado en la
+  conexión o en la URL de acuse del acuerdo. Si llega un 850 válido, envía el acuse funcional 997.
 
 ## 0.7.0 — 2026-11-17
 
