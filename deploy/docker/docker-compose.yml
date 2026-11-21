@@ -57,7 +57,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/auth-service.jar"]
     <<: [*restart, *logging]
     environment:
@@ -81,7 +81,7 @@ services:
 
   # Socios comerciales y su configuracion AS2 (HU-08).
   partners-service:
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/partners-service.jar"]
     <<: [*restart, *logging]
     environment:
@@ -108,7 +108,7 @@ services:
   # Documentos EDI (HU-12) y su repositorio (HU-14): comparte el volumen de datos AS2 con
   # partners-service para escribir en las carpetas de cada socio, y le envia la bitacora.
   documents-service:
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/documents-service.jar"]
     <<: [*restart, *logging]
     environment:
@@ -131,7 +131,7 @@ services:
 
   # Alertas y correo (HU-21). Por ahora, la configuracion SMTP y el correo de prueba (AS2-106).
   alerts-service:
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/alerts-service.jar"]
     <<: [*restart, *logging]
     environment:
@@ -180,11 +180,17 @@ services:
 
   # Motor AS2 (HU-15): envio y recepcion de documentos EDI.
   as2-adapter:
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/as2-adapter.jar"]
     <<: [*restart, *logging]
     environment:
       PARTNERS_SERVICE_URL: http://partners-service:8081
+      DOCUMENTS_SERVICE_URL: http://documents-service:8084
+      AS2_OUR_AS2_ID: ${AS2_OUR_AS2_ID:-PLATAFORMA}
+      AS2_MDN_ADDRESS: ${AS2_MDN_ADDRESS:-edi.plataforma@example.com}
+      AS2_KEYSTORE_PATH: ${AS2_KEYSTORE_PATH:-}
+      AS2_KEY_ALIAS: ${AS2_KEY_ALIAS:-}
+      AS2_KEYSTORE_PASSWORD: ${AS2_KEYSTORE_PASSWORD:-}
       AS2_SPIKE_ENABLED: "true"
       AS2_SPIKE_URL: http://openas2:10080
       AS2_SPIKE_FROM: PLATAFORMA
@@ -196,6 +202,7 @@ services:
       SPRING_CONFIG_IMPORT: "configtree:/certs/secrets/plataforma/"
     volumes:
       - as2certs:/certs:ro
+      - ${AS2_IDENTITY_DIR:-./as2-identity}:/run/as2-identity:ro
     depends_on:
       as2-certs:
         condition: service_completed_successfully
@@ -247,7 +254,7 @@ services:
     networks: [backend]
 
   gateway:
-    image: as2-platform-services:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-services:local
     command: ["java", "-jar", "/app/gateway.jar"]
     <<: [*restart, *logging]
     environment:
@@ -274,7 +281,7 @@ services:
     build:
       context: ../..
       dockerfile: deploy/docker/Dockerfile.frontend
-    image: as2-platform-console:local
+    image: ${COMPOSE_PROJECT_NAME:-as2-platform}-console:local
     <<: [*restart, *logging]
     environment:
       SERVER_NAME: ${SERVER_NAME:-localhost}

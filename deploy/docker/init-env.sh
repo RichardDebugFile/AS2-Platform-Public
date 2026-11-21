@@ -14,10 +14,11 @@ pem_body() { grep -v -- '-----' | tr -d '\r\n'; }
 if [ ! -f .env ]; then
     # PostgreSQL solo aplica las contrasenas al crear la base: con un volumen de una instalacion
     # anterior, las del .env nuevo no coincidirian y los servicios no podrian conectarse.
-    if docker volume inspect as2-platform_dbdata >/dev/null 2>&1; then
-        echo "Falta .env pero el volumen as2-platform_dbdata ya existe (instalacion anterior)." >&2
+    db_volume="${COMPOSE_PROJECT_NAME:-as2-platform}_dbdata"
+    if docker volume inspect "$db_volume" >/dev/null 2>&1; then
+        echo "Falta .env pero el volumen $db_volume ya existe (instalacion anterior)." >&2
         echo "Restaure el .env de esa instalacion, o respalde la base y borre el volumen:" >&2
-        echo "    docker compose down && docker volume rm as2-platform_dbdata" >&2
+        echo "    docker compose down && docker volume rm $db_volume" >&2
         exit 1
     fi
     tmp="$(mktemp -d)"
