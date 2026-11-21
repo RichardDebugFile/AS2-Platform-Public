@@ -7,6 +7,10 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
+import java.util.List;
+import org.bouncycastle.cms.CMSAlgorithm;
+import org.bouncycastle.cms.CMSEnvelopedData;
+import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.junit.jupiter.api.Test;
 
 class MessageBuilderTest {
@@ -39,6 +43,29 @@ class MessageBuilderTest {
         // El socio calcula el mismo MIC sobre la parte firmada, cabeceras incluidas.
         assertThat(r.mic()).isEqualTo(msg.mic());
         assertThat(msg.micAlgorithm()).isEqualTo("sha-256");
+    }
+
+    @Test
+    void conservaElOrdenDeLosDestinatariosYCanonicalizaAntesDeFirmar() throws Exception {
+        As2Identity backup = TestPki.identity("respaldo.example");
+        var request = new MessageBuilder.Request("PLATAFORMA", "SOCIO", "edi.plataforma@example.com",
+                "ISA~\nGS~\rST~\r\nSE~".getBytes(StandardCharsets.US_ASCII), "application/edi-x12",
+                "orden.edi", PLATAFORMA, SOCIO.certificate());
+        var options = new MessageBuilder.Options("SHA-512", "SHA-384", "AES128",
+                List.of(SOCIO.certificate(), backup.certificate()), true, true);
+        OutboundMessage message = builder.build(request, options);
+
+        var envelope = new CMSEnvelopedData(message.body());
+        assertThat(envelope.getContentEncryptionAlgorithm().getAlgorithm()).isEqualTo(CMSAlgorithm.AES128_CBC);
+        assertThat(envelope.getRecipientInfos().getRecipients()).extracting(r -> r.getRID()).containsExactly(
+                new JceKeyTransRecipientId(SOCIO.certificate()), new JceKeyTransRecipientId(backup.certificate()));
+        for (As2Identity recipient : List.of(SOCIO, backup)) {
+            FakePartner.Received received = new FakePartner(recipient).receive(message.body(), PLATAFORMA.certificate());
+            assertThat(received.signatureValid()).isTrue();
+            assertThat(new String(received.payload(), StandardCharsets.US_ASCII)).isEqualTo("ISA~\r\nGS~\r\nST~\r\nSE~");
+            assertThat(message.mic()).isEqualTo(Cms.mic(received.signedPart(), "sha-384"));
+        }
+        assertThat(message.micAlgorithm()).isEqualTo("sha-384");
     }
 
     @Test

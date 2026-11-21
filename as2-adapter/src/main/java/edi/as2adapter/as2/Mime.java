@@ -46,6 +46,18 @@ public final class Mime {
         return Base64.getMimeEncoder(76, CRLF).encode(data);
     }
 
+    /** Canoniza CR y LF sueltos sin reinterpretar los bytes del documento. */
+    static byte[] canonicalize(byte[] source) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(source.length);
+        for (int i = 0; i < source.length; i++) {
+            byte current = source[i];
+            if (current == '\n' && (i == 0 || source[i - 1] != '\r')) out.write('\r');
+            out.write(current);
+            if (current == '\r' && (i + 1 == source.length || source[i + 1] != '\n')) out.write('\n');
+        }
+        return out.toByteArray();
+    }
+
     /**
      * Partes de un multipart, cada una con sus cabeceras y sin el salto de linea que precede al
      * siguiente delimitador (ese salto pertenece al delimitador, RFC 2046 5.1.1).
