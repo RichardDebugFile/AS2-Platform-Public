@@ -4,7 +4,7 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
-## Sin publicar
+## 0.7.0 — 2026-11-17
 
 ### Novedades
 - Catálogo de tipos de documento EDI por socio (HU-13). En Documentos EDI → Catálogo de tipos se
