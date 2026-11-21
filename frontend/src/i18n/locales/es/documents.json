@@ -206,6 +206,10 @@
       "pendingHelp": "La carpeta del socio no estaba disponible: el sistema reintenta la copia cada hora."
     }
   },
+  "as2Send": {
+    "open": "Enviar a un socio",
+    "confirm": "Enviar documento"
+  },
   "as2Test": {
     "send": "Enviar por AS2 (prueba)",
     "title": "Envío AS2 de prueba",
