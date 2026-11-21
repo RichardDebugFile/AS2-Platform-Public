@@ -69,6 +69,22 @@ class MessageBuilderTest {
     }
 
     @Test
+    void componeElEnvioSinCifrarYRespetaLaSolicitudIndependienteDeMdn() {
+        var plain = builder.build(request("PLATAFORMA"),
+                new MessageBuilder.Options(null, "sha-256", null, List.of(), false, false));
+        assertThat(plain.httpHeaders()).doesNotContainKeys("Disposition-Notification-To", "Disposition-Notification-Options")
+                .containsEntry("content-type", "application/edi-x12");
+        assertThat(new String(plain.body(), StandardCharsets.US_ASCII)).isEqualTo(X12);
+        assertThat(plain.mic()).isEqualTo(Cms.mic(plain.body(), "sha-256"));
+
+        var signed = builder.build(request("PLATAFORMA"),
+                new MessageBuilder.Options("sha-256", "sha-256", null, List.of(), true, false));
+        assertThat(signed.httpHeaders().get("content-type")).startsWith("multipart/signed");
+        assertThat(signed.httpHeaders()).containsKey("Disposition-Notification-To")
+                .doesNotContainKey("Disposition-Notification-Options");
+    }
+
+    @Test
     void otraClaveNoPuedeDescifrarNiFirmarPorLaPlataforma() {
         OutboundMessage msg = builder.build(request("PLATAFORMA"));
         As2Identity otro = TestPki.identity("otro.example");

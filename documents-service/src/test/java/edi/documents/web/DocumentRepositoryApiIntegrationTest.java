@@ -141,6 +141,25 @@ class DocumentRepositoryApiIntegrationTest {
         assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists().hasBinaryContent(bytes);
     }
 
+    @Test
+    void rechazaCompletarUnEnvioConDatosInvalidosOSobrescribirSuResultado() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<ESTADO-ENVIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        for (String invalid : List.of("MDN_RECEIVED", "CREATED")) {
+            String update = json.writeValueAsString(Map.of("status", invalid));
+            mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                    .contentType(MediaType.APPLICATION_JSON).content(update)).andExpect(status().isBadRequest());
+        }
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DELIVERED\"}"))
+                .andExpect(status().isNoContent());
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"SEND_FAILED\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/documents/{id}", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DELIVERED"));
+    }
+
     private ResultActions ingest(String partner, Direction direction, String messageId, String body) throws Exception {
         var req = post("/api/documents/ingest/as2").param("partner", partner).param("direction", direction.name())
                 .contentType("application/edi-x12").content(body.getBytes(StandardCharsets.ISO_8859_1))
