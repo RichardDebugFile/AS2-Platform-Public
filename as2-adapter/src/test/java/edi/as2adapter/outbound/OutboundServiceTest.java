@@ -1,6 +1,7 @@
 package edi.as2adapter.outbound;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.mock;
@@ -72,11 +73,11 @@ class OutboundServiceTest {
             assertThat(result.documentId()).isEqualTo(documentId);
             assertThat(result.mdnReceived()).isTrue();
             assertThat(received.get()).isEqualTo("ISA~\r\nGS~\r\nST~");
-            var record = ArgumentCaptor.forClass(As2Documents.Result.class);
-            verify(documents).complete(eq(documentId), record.capture());
-            assertThat(record.getValue().receipt().micMatches()).isTrue();
-            assertThat(record.getValue().receipt().signatureValid()).isTrue();
-            assertThat(record.getValue().receipt().rawMdn()).contains("multipart/signed", result.messageId());
+            var completion = ArgumentCaptor.forClass(As2Documents.Result.class);
+            verify(documents).complete(eq(documentId), completion.capture());
+            assertThat(completion.getValue().receipt().micMatches()).isTrue();
+            assertThat(completion.getValue().receipt().signatureValid()).isTrue();
+            assertThat(completion.getValue().receipt().rawMdn()).contains("multipart/signed", result.messageId());
             verify(audit).publish(new AuditEvent("DOCUMENT_SENT", "SUCCESS", "SOCIO", result.messageId(),
                     "Envío AS2 confirmado"));
         } finally {
@@ -95,10 +96,10 @@ class OutboundServiceTest {
 
             assertThat(result.status()).isEqualTo("SEND_FAILED");
             assertThat(result.reason()).contains("decryption-failed");
-            var record = ArgumentCaptor.forClass(As2Documents.Result.class);
-            verify(documents).complete(eq(documentId), record.capture());
-            assertThat(record.getValue().status()).isEqualTo("SEND_FAILED");
-            assertThat(record.getValue().receipt().disposition()).contains("decryption-failed");
+            var completion = ArgumentCaptor.forClass(As2Documents.Result.class);
+            verify(documents).complete(eq(documentId), completion.capture());
+            assertThat(completion.getValue().status()).isEqualTo("SEND_FAILED");
+            assertThat(completion.getValue().receipt().disposition()).contains("decryption-failed");
             verify(audit).publish(new AuditEvent("DOCUMENT_SEND_FAILED", "FAILURE", "SOCIO", result.messageId(), result.reason()));
         } finally {
             partner.stop(0);
@@ -133,6 +134,17 @@ class OutboundServiceTest {
         var partner = new PartnerDirectory.Partner(partnerId, "SOCIO", null, url, "RSA_SHA256", "AES256", "SHA256",
                 2, 5, mdn, mdn, "SYNC", null, true, true);
         when(partners.find("SOCIO")).thenReturn(new PartnerDirectory.Agreement(partner, null, null));
+    }
+
+    @Test
+    void rechazaUnAcuseAsincronoAntesDeRegistrarElEnvio() {
+        var partner = new PartnerDirectory.Partner(partnerId, "SOCIO", null, "https://socio.example/as2",
+                "RSA_SHA256", "AES256", "SHA256", 2, 5, true, true, "ASYNC", null, true, true);
+        when(partners.find("SOCIO")).thenReturn(new PartnerDirectory.Agreement(partner, null, null));
+
+        assertThatThrownBy(() -> service.send("SOCIO", X12, "orden.edi", "operador"))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("MDN síncrono");
+        org.mockito.Mockito.verifyNoInteractions(documents);
     }
 
     private static PartnerDirectory.Certificate certificate(X509Certificate x509, boolean preferred) throws Exception {
