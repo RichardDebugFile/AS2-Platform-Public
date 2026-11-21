@@ -1,6 +1,7 @@
 package edi.as2adapter.documents;
 
 import edi.as2adapter.as2.As2Exception;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Map;
 import java.util.UUID;
@@ -51,13 +52,23 @@ public class As2Documents {
         }
     }
 
+    public byte[] acknowledgment(byte[] original) {
+        try {
+            return http.post().uri("/internal/as2/ack997")
+                    .contentType(new MediaType("text", "plain", StandardCharsets.ISO_8859_1))
+                    .body(new String(original, StandardCharsets.ISO_8859_1)).retrieve().body(byte[].class);
+        } catch (RestClientException e) {
+            throw new As2Exception("No se pudo generar el acuse funcional 997", e);
+        }
+    }
+
     public record Ingested(String outcome, Document document) {
         public boolean duplicate() {
             return "DUPLICATE".equals(outcome);
         }
     }
 
-    public record Document(UUID id, String status, String typeCode) {}
+    public record Document(UUID id, String status, String typeCode, String partnerAs2Name, String direction) {}
 
     public record Receipt(String disposition, String receivedMic, Boolean micMatches, Boolean signatureValid,
                           String rawMdn) {}

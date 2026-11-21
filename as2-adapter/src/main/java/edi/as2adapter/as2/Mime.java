@@ -34,6 +34,17 @@ public final class Mime {
         return out.toByteArray();
     }
 
+    static byte[] multipart(String boundary, List<byte[]> parts) {
+        ByteArrayOutputStream body = new ByteArrayOutputStream();
+        for (byte[] part : parts) {
+            body.writeBytes(ascii("--" + boundary + "\r\n"));
+            body.writeBytes(part);
+            body.writeBytes(CRLF);
+        }
+        body.writeBytes(ascii("--" + boundary + "--\r\n"));
+        return body.toByteArray();
+    }
+
     /** Delimitador unico para un multipart (RFC 2046 5.1.1). */
     public static String boundary() {
         byte[] r = new byte[12];
@@ -151,7 +162,7 @@ public final class Mime {
         return out.subList(1, out.size());
     }
 
-    private static String unquote(String v) {
+    public static String unquote(String v) {
         return v.length() >= 2 && v.startsWith("\"") && v.endsWith("\"")
                 ? v.substring(1, v.length() - 1).replace("\\\"", "\"")
                 : v;

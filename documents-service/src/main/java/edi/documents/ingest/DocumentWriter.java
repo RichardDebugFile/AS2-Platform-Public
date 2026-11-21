@@ -115,6 +115,11 @@ public class DocumentWriter {
         return new Stored(d, IngestOutcome.CREATED);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Document> existing(String messageId) {
+        return documents.findByMessageId(messageId);
+    }
+
     /** Copia el documento a la carpeta del socio y anota el resultado (COPIED o PENDING). */
     @Transactional
     public Document copyToPartner(UUID id) {

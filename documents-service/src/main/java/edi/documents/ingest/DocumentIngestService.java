@@ -8,6 +8,7 @@ import edi.documents.store.Document;
 import edi.documents.store.DocumentStatus;
 import edi.documents.store.PartnerCopyStatus;
 import java.util.UUID;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
 /**
@@ -32,7 +33,7 @@ public class DocumentIngestService {
 
     public IngestResult ingest(IngestCommand command) {
         String user = RequestIdentity.currentUser();
-        DocumentWriter.Stored stored = writer.create(command, user);
+        DocumentWriter.Stored stored = store(command, user);
         Document d = stored.document();
         if (stored.outcome() == IngestOutcome.DUPLICATE) {
             audit.publish(new AuditEvent("DOCUMENT_DUPLICATE", true, user, d.getPartnerAs2Name(), d.getMessageId(),
@@ -50,6 +51,18 @@ public class DocumentIngestService {
                     d.getMessageId(), "La carpeta del socio no esta disponible: la copia se reintentara cada hora"));
         }
         return new IngestResult(d, IngestOutcome.CREATED);
+    }
+
+    private DocumentWriter.Stored store(IngestCommand command, String user) {
+        try {
+            return writer.create(command, user);
+        } catch (DataIntegrityViolationException e) {
+            String originalId = command.messageId();
+            if (originalId == null || originalId.isBlank()) throw e;
+            return writer.existing(originalId.strip())
+                    .map(document -> new DocumentWriter.Stored(document, IngestOutcome.DUPLICATE))
+                    .orElseThrow(() -> e);
+        }
     }
 
     public Document delete(UUID id) {

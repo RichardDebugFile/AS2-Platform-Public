@@ -55,7 +55,8 @@ class OutboundServiceTest {
         when(partners.certificates(partnerId, "ENCRYPTION")).thenReturn(List.of(certificate(PEER.certificate(), true)));
         when(partners.certificates(partnerId, "SIGNATURE")).thenReturn(List.of(certificate(PEER.certificate(), true)));
         when(documents.ingest(eq("SOCIO"), eq("OUTBOUND"), eq(X12), any(), eq("operador")))
-                .thenReturn(new As2Documents.Ingested("CREATED", new As2Documents.Document(documentId, "CREATED", "850")));
+                .thenReturn(new As2Documents.Ingested("CREATED",
+                        new As2Documents.Document(documentId, "CREATED", "850", "SOCIO", "OUTBOUND")));
     }
 
     @Test

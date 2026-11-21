@@ -14,6 +14,7 @@ as2:
   keystore-path: ${AS2_KEYSTORE_PATH:}
   key-alias: ${AS2_KEY_ALIAS:}
   keystore-password: ${AS2_KEYSTORE_PASSWORD:}
+  demo-identity: ${AS2_DEMO_IDENTITY:false}
   audit:
     # Bitacora de partners-service (HU-10). En Docker: http://partners-service:8081
     url: ${PARTNERS_SERVICE_URL:http://localhost:8081}
