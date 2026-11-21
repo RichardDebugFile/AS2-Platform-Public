@@ -8,6 +8,8 @@ import java.util.Objects;
 
 public final class MdnWriter {
 
+    private static final String CONTENT_TYPE = "Content-Type";
+
     private MdnWriter() {
     }
 
@@ -17,8 +19,8 @@ public final class MdnWriter {
 
         @Override
         public boolean equals(Object other) {
-            return other instanceof Body body && Objects.equals(contentType, body.contentType)
-                    && Arrays.equals(content, body.content);
+            return other instanceof Body(var otherType, var otherContent)
+                    && Objects.equals(contentType, otherType) && Arrays.equals(content, otherContent);
         }
 
         @Override
@@ -42,15 +44,15 @@ public final class MdnWriter {
         fields.put("Disposition", "automatic-action/MDN-sent-automatically; " + report.disposition());
         if (report.mic() != null) fields.put("Received-Content-MIC", report.mic() + ", " + report.algorithm());
 
-        byte[] description = Mime.part(Map.of("Content-Type", "text/plain; charset=us-ascii"),
+        byte[] description = Mime.part(Map.of(CONTENT_TYPE, "text/plain; charset=us-ascii"),
                 Mime.ascii("AS2 receipt: " + report.disposition()));
-        byte[] notification = Mime.part(Map.of("Content-Type", "message/disposition-notification"),
+        byte[] notification = Mime.part(Map.of(CONTENT_TYPE, "message/disposition-notification"),
                 Mime.part(fields, new byte[0]));
         String reportType = "multipart/report; report-type=disposition-notification; boundary=\"" + boundary + "\"";
         byte[] content = Mime.multipart(boundary, List.of(description, notification));
         if (signer == null) return new Body(reportType, content);
 
-        byte[] entity = MessageBuilder.signedEntity(Mime.part(Map.of("Content-Type", reportType), content),
+        byte[] entity = MessageBuilder.signedEntity(Mime.part(Map.of(CONTENT_TYPE, reportType), content),
                 signer, MessageBuilder.MIC_ALGORITHM);
         Mime.Headers headers = Mime.headers(entity);
         return new Body(headers.get("content-type"), headers.body(entity));

@@ -12,6 +12,7 @@ import edi.as2adapter.documents.As2Documents;
 import edi.as2adapter.partner.PartnerCertificates;
 import edi.as2adapter.partner.PartnerDirectory;
 import edi.as2adapter.partner.PartnerDirectory.Agreement;
+import edi.as2adapter.partner.PartnerDirectory.Partner;
 import edi.as2adapter.partner.PartnerTls;
 import java.net.URI;
 import java.security.cert.X509Certificate;
@@ -59,12 +60,8 @@ public class OutboundService {
         if (outgoing != null && outgoing.compression()) {
             throw new IllegalArgumentException("La compresión AS2 del socio requiere una configuración sin compresión");
         }
-        var mdn = agreement.mdn();
         boolean requestMdn = partner.requestMdn();
-        if (requestMdn && "ASYNC".equals(mdn == null ? partner.mdnMode() : mdn.deliveryMode())) {
-            throw new IllegalArgumentException("El envío requiere un MDN síncrono en la configuración del socio");
-        }
-        boolean signedMdn = requestMdn && (mdn == null ? partner.requestSignedMdn() : "SIGNED".equals(mdn.receiptType()));
+        boolean signedMdn = requestMdn && requiresSignedSynchronousMdn(agreement);
         String signing = outgoing == null ? partner.signingAlgorithm()
                 : first(outgoing.signingAlgorithm(), partner.signingAlgorithm());
         String encryption = outgoing == null ? partner.encryptionAlgorithm()
@@ -95,23 +92,43 @@ public class OutboundService {
         }
         SendResult result;
         try {
-            List<X509Certificate> tlsCertificates = "https".equalsIgnoreCase(target.getScheme())
-                    ? PartnerCertificates.current(partners.certificates(partner.id(), "SSL"), instant) : List.of();
-            try (var http = tls.client(partner.id(), target, timeout(partner.connectionTimeoutSeconds(), 10), tlsCertificates)) {
-                result = new As2Client(http, timeout(partner.readTimeoutSeconds(), 60))
-                        .send(target, message, signers, requestMdn, signedMdn, partner.validateMic());
-            }
+            result = transmit(partner, target, message, options, signers, instant);
         } catch (As2Exception e) {
             return complete(partner.as2Name(), stored.document().id(), message, null, e.getMessage());
         }
         return complete(partner.as2Name(), stored.document().id(), message, result, result.rejection());
     }
 
+    private static boolean requiresSignedSynchronousMdn(Agreement agreement) {
+        var mdn = agreement.mdn();
+        var partner = agreement.partner();
+        String deliveryMode = mdn == null ? partner.mdnMode() : mdn.deliveryMode();
+        if ("ASYNC".equals(deliveryMode)) {
+            throw new IllegalArgumentException("El envío requiere un MDN síncrono en la configuración del socio");
+        }
+        return mdn == null ? partner.requestSignedMdn() : "SIGNED".equals(mdn.receiptType());
+    }
+
+    private SendResult transmit(Partner partner, URI target, OutboundMessage message, MessageBuilder.Options options,
+                                List<X509Certificate> signers, Instant instant) {
+        List<X509Certificate> tlsCertificates = "https".equalsIgnoreCase(target.getScheme())
+                ? PartnerCertificates.current(partners.certificates(partner.id(), "SSL"), instant) : List.of();
+        try (var http = tls.client(partner.id(), target, timeout(partner.connectionTimeoutSeconds(), 10), tlsCertificates)) {
+            return new As2Client(http, timeout(partner.readTimeoutSeconds(), 60))
+                    .send(target, message, signers, options.requestMdn(), options.signedMdn(), partner.validateMic());
+        }
+    }
+
     private Outcome complete(String partner, UUID documentId, OutboundMessage message, SendResult result, String error) {
         var mdn = result == null ? null : result.mdn();
-        var status = error != null ? FAILED : mdn == null ? "DELIVERED" : "MDN_RECEIVED";
-        var receipt = mdn == null || mdn.disposition() == null ? null : new As2Documents.Receipt(mdn.disposition(),
-                mdn.receivedContentMic(), result.micMatches(), mdn.signed() ? mdn.signatureValid() : null, result.rawMdn());
+        String status = mdn == null ? "DELIVERED" : "MDN_RECEIVED";
+        if (error != null) status = FAILED;
+        As2Documents.Receipt receipt = null;
+        if (mdn != null && mdn.disposition() != null) {
+            Boolean signatureValid = mdn.signed() ? mdn.signatureValid() : null;
+            receipt = new As2Documents.Receipt(mdn.disposition(), mdn.receivedContentMic(), result.micMatches(),
+                    signatureValid, result.rawMdn());
+        }
         documents.complete(documentId, new As2Documents.Result(status, error, receipt));
         audit.publish(new AuditEvent(error == null ? "DOCUMENT_SENT" : "DOCUMENT_SEND_FAILED",
                 error == null ? "SUCCESS" : "FAILURE", partner, message.messageId(),

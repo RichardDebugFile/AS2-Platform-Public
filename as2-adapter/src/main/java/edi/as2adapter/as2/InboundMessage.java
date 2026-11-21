@@ -7,12 +7,14 @@ import java.util.List;
 /** Extrae la entidad que se firmó y la carga X12 sin alterar los bytes verificados. */
 public record InboundMessage(byte[] payload, byte[] micSource, byte[] signature) {
 
+    private static final String CONTENT_TYPE = "content-type";
+
     @Override
     public boolean equals(Object other) {
-        return other instanceof InboundMessage message
-                && Arrays.equals(payload, message.payload)
-                && Arrays.equals(micSource, message.micSource)
-                && Arrays.equals(signature, message.signature);
+        return other instanceof InboundMessage(var otherPayload, var otherMicSource, var otherSignature)
+                && Arrays.equals(payload, otherPayload)
+                && Arrays.equals(micSource, otherMicSource)
+                && Arrays.equals(signature, otherSignature);
     }
 
     @Override
@@ -44,7 +46,7 @@ public record InboundMessage(byte[] payload, byte[] micSource, byte[] signature)
 
     private static InboundMessage fromEnvelope(byte[] entity) {
         Mime.Headers headers = Mime.headers(entity);
-        return fromParts(headers.get("content-type"), headers.decodedBody(entity), entity);
+        return fromParts(headers.get(CONTENT_TYPE), headers.decodedBody(entity), entity);
     }
 
     private static InboundMessage fromParts(String type, byte[] body, byte[] micSource) {
@@ -56,7 +58,7 @@ public record InboundMessage(byte[] payload, byte[] micSource, byte[] signature)
         byte[] signed = parts.getFirst();
         byte[] signature = parts.getLast();
         Mime.Headers headers = Mime.headers(signed);
-        return new InboundMessage(extract(headers.get("content-type"), headers.decodedBody(signed)),
+        return new InboundMessage(extract(headers.get(CONTENT_TYPE), headers.decodedBody(signed)),
                 signed, Mime.headers(signature).decodedBody(signature));
     }
 
@@ -71,7 +73,7 @@ public record InboundMessage(byte[] payload, byte[] micSource, byte[] signature)
     private static byte[] attachment(String type, byte[] body) {
         for (byte[] part : parts(type, body)) {
             Mime.Headers headers = Mime.headers(part);
-            String media = Mime.mediaType(headers.get("content-type"));
+            String media = Mime.mediaType(headers.get(CONTENT_TYPE));
             String file = Mime.param(headers.get("content-disposition"), "filename");
             if (media.equals("application/edi-x12") || (file != null && file.toLowerCase(java.util.Locale.ROOT).endsWith(".edi"))) {
                 return headers.decodedBody(part);

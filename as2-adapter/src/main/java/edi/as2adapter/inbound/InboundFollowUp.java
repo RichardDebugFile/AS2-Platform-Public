@@ -30,6 +30,7 @@ import org.springframework.stereotype.Component;
 public class InboundFollowUp {
 
     private static final Set<String> ACK_TYPES = Set.of("850", "856", "810");
+    private static final String FAILURE = "FAILURE";
     private final ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
     private final OutboundService outbound;
     private final As2Documents documents;
@@ -60,10 +61,10 @@ public class InboundFollowUp {
             try {
                 byte[] ack = documents.acknowledgment(payload);
                 var result = outbound.send(agreement, ack, "acuse-997.edi", null);
-                if (result.reason() != null) audit.publish(new AuditEvent("ACK_997_SEND_FAILED", "FAILURE",
+                if (result.reason() != null) audit.publish(new AuditEvent("ACK_997_SEND_FAILED", FAILURE,
                         partnerName, originalId, result.reason()));
             } catch (As2Exception | IllegalArgumentException e) {
-                audit.publish(new AuditEvent("ACK_997_SEND_FAILED", "FAILURE", partnerName, originalId, e.getMessage()));
+                audit.publish(new AuditEvent("ACK_997_SEND_FAILED", FAILURE, partnerName, originalId, e.getMessage()));
             }
         };
     }
@@ -87,7 +88,7 @@ public class InboundFollowUp {
         } catch (InterruptedException _) {
             Thread.currentThread().interrupt();
             mdnFailed(partner.as2Name(), originalId, "Envío interrumpido");
-        } catch (IOException e) {
+        } catch (IOException _) {
             mdnFailed(partner.as2Name(), originalId, "No se pudo entregar el MDN al socio");
         } catch (As2Exception e) {
             mdnFailed(partner.as2Name(), originalId, e.getMessage());
@@ -95,7 +96,7 @@ public class InboundFollowUp {
     }
 
     private void mdnFailed(String partner, String originalId, String reason) {
-        audit.publish(new AuditEvent("AS2_MDN_SEND_FAILED", "FAILURE", partner, originalId, reason));
+        audit.publish(new AuditEvent("AS2_MDN_SEND_FAILED", FAILURE, partner, originalId, reason));
     }
 
     @PreDestroy

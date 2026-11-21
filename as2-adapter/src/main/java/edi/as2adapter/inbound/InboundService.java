@@ -25,6 +25,8 @@ public class InboundService {
 
     private static final String PROCESSED = "processed";
     private static final String ERROR = "processed/Error: ";
+    private static final String PROCESSING_ERROR = "unexpected-processing-error";
+    private static final String RECEIVE_FAILED = "DOCUMENT_RECEIVE_FAILED";
     private final PartnerDirectory partners;
     private final LocalIdentity identity;
     private final As2Documents documents;
@@ -62,7 +64,7 @@ public class InboundService {
         } catch (InboundMessage.DecryptionFailure _) {
             return failure(agreement, request, plan, "decryption-failed", "DECRYPTION_FAILED");
         } catch (As2Exception | IllegalArgumentException _) {
-            return failure(agreement, request, plan, "unexpected-processing-error", "DOCUMENT_RECEIVE_FAILED");
+            return failure(agreement, request, plan, PROCESSING_ERROR, RECEIVE_FAILED);
         }
 
         try {
@@ -71,7 +73,7 @@ public class InboundService {
             }
             return ingest(request, testMode, agreement, plan, message);
         } catch (As2Exception | IllegalArgumentException _) {
-            return failure(agreement, request, plan, "unexpected-processing-error", "DOCUMENT_RECEIVE_FAILED");
+            return failure(agreement, request, plan, PROCESSING_ERROR, RECEIVE_FAILED);
         }
     }
 
@@ -82,19 +84,19 @@ public class InboundService {
                 "Message-ID", request.messageId(), "AS2-From", Mime.unquote(request.from().strip()),
                 "AS2-To", identity.as2Id(), "X-MIC", mic, "X-MIC-Algorithm", plan.algorithm(),
                 "X-Document-Attributes", testMode ? "{\"testMode\":true}" : "{}"), null);
-        var record = stored.document();
-        if (!partner.equals(record.partnerAs2Name()) || !"INBOUND".equals(record.direction())) {
-            return failure(agreement, request, plan, "unexpected-processing-error", "DOCUMENT_RECEIVE_FAILED");
+        var document = stored.document();
+        if (!partner.equals(document.partnerAs2Name()) || !"INBOUND".equals(document.direction())) {
+            return failure(agreement, request, plan, PROCESSING_ERROR, RECEIVE_FAILED);
         }
         if (stored.duplicate()) {
             audit.publish(new AuditEvent("DUPLICATE_DETECTED", "SUCCESS", partner, request.messageId(),
                     "El documento ya estaba registrado"));
         }
-        if ("VALIDATION_FAILED".equals(record.status())) {
-            return failure(agreement, request, plan, "unexpected-processing-error", "DOCUMENT_RECEIVE_FAILED");
+        if ("VALIDATION_FAILED".equals(document.status())) {
+            return failure(agreement, request, plan, PROCESSING_ERROR, RECEIVE_FAILED);
         }
         Runnable ack = stored.duplicate() || testMode ? null
-                : followUp.acknowledgment(agreement, request.messageId(), record.typeCode(), message.payload());
+                : followUp.acknowledgment(agreement, request.messageId(), document.typeCode(), message.payload());
         return reply(agreement, request, plan, PROCESSED, mic, ack);
     }
 

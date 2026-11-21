@@ -179,6 +179,28 @@ class InboundApiTest {
     }
 
     @Test
+    void firmaElMdnDeErrorCuandoElRepositorioNoAceptaElDocumento() throws Exception {
+        var wrongDirection = new As2Documents.Document(documentId, "RECEIVED", "855", "ORIGEN", "OUTBOUND");
+        var invalidDocument = new As2Documents.Document(documentId, "VALIDATION_FAILED", "855", "ORIGEN", "INBOUND");
+        when(documents.ingest(eq("ORIGEN"), eq("INBOUND"), eq(X12), any(), isNull()))
+                .thenReturn(new As2Documents.Ingested("DUPLICATE", wrongDirection),
+                        new As2Documents.Ingested("CREATED", invalidDocument))
+                .thenThrow(new IllegalArgumentException("El repositorio rechazó el documento X12"));
+
+        for (int i = 0; i < 3; i++) {
+            var message = build("ORIGEN", LOCAL);
+            var response = post("/as2/receive", message, null);
+            assertThat(response.statusCode()).isEqualTo(200);
+            var mdn = MdnReader.read(response.headers().firstValue("Content-Type").orElseThrow(), response.body(),
+                    LOCAL.certificate());
+            assertThat(mdn.signatureValid()).isTrue();
+            assertThat(mdn.disposition()).endsWith("processed/Error: unexpected-processing-error");
+            verify(audit).publish(new AuditEvent("DOCUMENT_RECEIVE_FAILED", "FAILURE", "ORIGEN", message.messageId(),
+                    "unexpected-processing-error"));
+        }
+    }
+
+    @Test
     void unSocioNoRegistradoRecibe400YLaRutaDePruebaEstaCerradaEnProd() throws Exception {
         var message = build("OTRO", LOCAL);
         var unknown = post("/as2/receive", message, null);
