@@ -25,6 +25,7 @@ import java.security.NoSuchAlgorithmException;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.HexFormat;
 import java.util.List;
 import java.util.Optional;
@@ -186,7 +187,7 @@ public class DocumentWriter {
                 throw new IllegalArgumentException("Falta la disposición del MDN");
             }
             mdns.save(new DocumentMdn(id, limit(receipt.disposition(), 255), limit(receipt.receivedMic(), 255),
-                    receipt.micMatches(), receipt.signatureValid(), limit(receipt.rawMdn(), 20000), clock.instant()));
+                    receipt.micMatches(), receipt.signatureValid(), receiptPreview(receipt.rawMdn()), clock.instant()));
             if (receipt.rawMdn() != null) {
                 Path file = receiptPath(id);
                 storage.write(file, receipt.rawMdn().getBytes(StandardCharsets.ISO_8859_1));
@@ -197,6 +198,15 @@ public class DocumentWriter {
 
     private Path receiptPath(UUID id) {
         return storage.root().resolve("mdn").resolve(id + ".mdn");
+    }
+
+    private static String receiptPreview(String rawMdn) {
+        if (rawMdn == null) return null;
+        boolean binary = rawMdn.chars().anyMatch(c -> Character.isISOControl(c) && c != '\r' && c != '\n' && c != '\t');
+        String preview = binary
+                ? "Base64:\n" + Base64.getEncoder().encodeToString(rawMdn.getBytes(StandardCharsets.ISO_8859_1))
+                : rawMdn;
+        return limit(preview, 20000);
     }
 
     /** Contenido desde la base; si faltara, desde el archivo del repositorio. */

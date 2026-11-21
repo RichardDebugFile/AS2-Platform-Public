@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import edi.documents.ingest.PartnerCopyRecovery;
 import edi.documents.store.Direction;
 import edi.documents.store.Document;
+import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentRepository;
 import edi.documents.store.DocumentStatus;
 import edi.documents.x12.Samples;
@@ -24,7 +25,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -70,6 +73,9 @@ class DocumentRepositoryApiIntegrationTest {
 
     @Autowired
     DocumentRepository documents;
+
+    @Autowired
+    DocumentMdnRepository mdns;
 
     @Autowired
     PartnerCopyRecovery recovery;
@@ -118,6 +124,21 @@ class DocumentRepositoryApiIntegrationTest {
                 .andExpect(jsonPath("$.signatureValid").value(true));
         assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists()
                 .hasContent("Content-Type: multipart/signed");
+    }
+
+    @Test
+    void conservaElMdnBinarioEnDiscoYCodificaLaVistaParaLaBase() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<MDN-BINARIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        String raw = "Content-Type: multipart/signed\r\n\r\n" + (char) 0 + (char) 128;
+        byte[] bytes = raw.getBytes(StandardCharsets.ISO_8859_1);
+        String result = json.writeValueAsString(Map.of("status", "MDN_RECEIVED", "receipt",
+                Map.of("disposition", "processed", "rawMdn", raw)));
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content(result)).andExpect(status().isNoContent());
+        assertThat(mdns.findById(UUID.fromString(id)).orElseThrow().getRawMdn())
+                .isEqualTo("Base64:\n" + Base64.getEncoder().encodeToString(bytes));
+        assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists().hasBinaryContent(bytes);
     }
 
     private ResultActions ingest(String partner, Direction direction, String messageId, String body) throws Exception {
