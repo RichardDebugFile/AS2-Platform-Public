@@ -4,6 +4,14 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+### Novedades
+- Envío AS2 a socios configurados (HU-15). El operador puede elegir el socio desde un documento o el
+  generador X12. El motor firma el mensaje, lo cifra para los certificados activos del socio y valida
+  el MDN síncrono. El repositorio guarda el resultado y el acuse, y la consola muestra el motivo si
+  el socio rechaza el envío.
+
 ## 0.7.0 — 2026-11-17
 
 ### Novedades

@@ -206,6 +206,10 @@
       "pendingHelp": "The partner folder was unavailable: the system retries the copy every hour."
     }
   },
+  "as2Send": {
+    "open": "Send to a partner",
+    "confirm": "Send document"
+  },
   "as2Test": {
     "send": "Send via AS2 (test)",
     "title": "AS2 test send",

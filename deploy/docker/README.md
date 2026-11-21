@@ -47,8 +47,8 @@ la consola, Alertas → Configuración de correo, se configura con servidor `mai
 seguridad "Sin cifrado" y cualquier usuario y contraseña; los correos de prueba se ven en
 `http://localhost:8025`. `MAILPIT_WEB_PORT` en `.env` cambia ese puerto.
 
-Sin el perfil `demo`, la plataforma arranca normalmente; el servicio `as2-adapter` está activo pero
-un intento de envío responderá 502 Bad Gateway ("No se pudo conectar…").
+El envío de prueba usa OpenAS2 y requiere el perfil `demo`. El envío a un socio configurado utiliza
+la identidad AS2 y los certificados del acuerdo, con independencia de este perfil.
 
 O paso a paso:
 
@@ -111,6 +111,15 @@ En Git Bash, los comandos manuales que pasan rutas del contenedor a `docker` (po
 | `ADMIN_USER`, `ADMIN_PASSWORD`, `ADMIN_EMAIL` | Administrador inicial |
 | `BACKUP_INTERVAL_SECONDS`, `BACKUP_RETENTION_DAYS` | Frecuencia y retención del respaldo (opcionales) |
 | `ERP_SHARED_PATH` | Ruta del host donde está montado el recurso compartido del ERP (opcional; por defecto `./shared`) |
+| `AS2_OUR_AS2_ID`, `AS2_MDN_ADDRESS` | Identificador AS2 de la plataforma y dirección para solicitar acuses |
+| `AS2_IDENTITY_DIR`, `AS2_KEYSTORE_PATH` | Directorio local de identidad y ruta del PKCS#12 dentro de `/run/as2-identity` |
+| `AS2_KEY_ALIAS`, `AS2_KEYSTORE_PASSWORD` | Alias y contraseña del PKCS#12 de la plataforma |
+
+Para enviar a socios configurados, coloca el PKCS#12 en `AS2_IDENTITY_DIR` (por defecto
+`./as2-identity`) y configura su ruta dentro del contenedor, por ejemplo
+`AS2_KEYSTORE_PATH=/run/as2-identity/plataforma.p12`. Carga los certificados de cifrado y firma
+desde la ficha del socio. Si el servidor HTTPS no usa una CA conocida, carga también su certificado
+SSL. Los documentos enviados y sus MDN se consultan en el repositorio de la consola.
 
 ## En un servidor
 

@@ -17,7 +17,19 @@ export interface TestSendResult {
     text: string | null;
 }
 
+export interface SendResult {
+    documentId: string;
+    messageId: string;
+    status: string;
+    mic: string;
+    mdnReceived: boolean;
+    mdnDisposition: string | null;
+    reason: string | null;
+}
+
 export const as2Api = {
+    send: (partner: string, content: string, fileName: string) =>
+        dataService.postText<SendResult>(`/as2/send?${new URLSearchParams({ partner, fileName }).toString()}`, content),
     /**
      * Envia el documento al socio de prueba: firmado, cifrado y con MDN firmado sincrono. Un 502
      * significa que el motor AS2 o el socio no respondieron, o que el envio fallo.

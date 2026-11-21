@@ -6,6 +6,7 @@ import { documentsApi, type EdiDocument, type StorageStatus } from "../../servic
 import { describeElements, splitX12, type EdiSegment } from "../../utils/ediParser";
 import { formatDateTime } from "../../utils/dateTime";
 import As2TestSend from "./As2TestSend";
+import As2PartnerSend from "./As2PartnerSend";
 import { StatusTag } from "./documentTags";
 
 interface Props {
@@ -189,6 +190,7 @@ export default function DocumentDrawer({ doc, canSend, canDelete, onClose, onDel
                     <Button disabled={content === null} onClick={() => content !== null && onOpenInViewer(content)}>
                         {t("repository.detail.openInViewer")}
                     </Button>
+                    {canSend && <As2PartnerSend content={content} fileName={doc.fileName ?? "documento.edi"} />}
                     {canSend && <As2TestSend content={content} fileName={doc.fileName ?? "documento.edi"} />}
                     {canDelete && (
                         <Popconfirm title={t("repository.detail.deleteConfirm")} onConfirm={() => void remove()}>

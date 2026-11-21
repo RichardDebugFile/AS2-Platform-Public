@@ -88,9 +88,7 @@ public class SpikeController {
      * solo letras, digitos, punto, guion y guion bajo, para que no pueda inyectar lineas ni cabeceras.
      */
     static String safeFileName(String fileName) {
-        String s = fileName == null ? "" : fileName.replaceAll("[^A-Za-z0-9._-]", "_");
-        if (s.length() > 100) s = s.substring(0, 100);
-        return s.isBlank() || s.chars().allMatch(c -> c == '.') ? "documento.edi" : s;
+        return MessageBuilder.safeFileName(fileName);
     }
 
     @ExceptionHandler(As2Exception.class)

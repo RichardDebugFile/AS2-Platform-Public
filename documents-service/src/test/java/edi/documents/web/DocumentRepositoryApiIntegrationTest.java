@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -11,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import edi.documents.ingest.PartnerCopyRecovery;
 import edi.documents.store.Direction;
 import edi.documents.store.Document;
+import edi.documents.store.DocumentMdnRepository;
 import edi.documents.store.DocumentRepository;
 import edi.documents.store.DocumentStatus;
 import edi.documents.x12.Samples;
@@ -23,7 +25,9 @@ import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.Base64;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Stream;
 import org.junit.jupiter.api.BeforeAll;
@@ -71,6 +75,9 @@ class DocumentRepositoryApiIntegrationTest {
     DocumentRepository documents;
 
     @Autowired
+    DocumentMdnRepository mdns;
+
+    @Autowired
     PartnerCopyRecovery recovery;
 
     @DynamicPropertySource
@@ -88,6 +95,69 @@ class DocumentRepositoryApiIntegrationTest {
         }
         // SOCIO-B: registrado, pero su Incoming (enlace a la carpeta compartida) no esta disponible.
         Files.createDirectories(disk.resolve("as2_data/partners/SOCIO-B"));
+    }
+
+    @Test
+    void registraAcuseDelEnvioEnBaseYDiscoConActualizacionIdempotente() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<ENVIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        String update = """
+                {
+                    "status":"MDN_RECEIVED",
+                    "receipt":{
+                        "disposition":"automatic-action/MDN-sent-automatically; processed",
+                        "receivedMic":"QUJD",
+                        "micMatches":true,
+                        "signatureValid":true,
+                        "rawMdn":"Content-Type: multipart/signed"
+                    }
+                }
+                """;
+        for (int i = 0; i < 2; i++) {
+            mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                    .contentType(MediaType.APPLICATION_JSON).content(update)).andExpect(status().isNoContent());
+        }
+        mvc.perform(get("/api/documents/{id}", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("MDN_RECEIVED"));
+        mvc.perform(get("/api/documents/{id}/mdn", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.micMatches").value(true))
+                .andExpect(jsonPath("$.signatureValid").value(true));
+        assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists()
+                .hasContent("Content-Type: multipart/signed");
+    }
+
+    @Test
+    void conservaElMdnBinarioEnDiscoYCodificaLaVistaParaLaBase() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<MDN-BINARIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        String raw = "Content-Type: multipart/signed\r\n\r\n" + (char) 0 + (char) 128;
+        byte[] bytes = raw.getBytes(StandardCharsets.ISO_8859_1);
+        String result = json.writeValueAsString(Map.of("status", "MDN_RECEIVED", "receipt",
+                Map.of("disposition", "processed", "rawMdn", raw)));
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content(result)).andExpect(status().isNoContent());
+        assertThat(mdns.findById(UUID.fromString(id)).orElseThrow().getRawMdn())
+                .isEqualTo("Base64:\n" + Base64.getEncoder().encodeToString(bytes));
+        assertThat(disk.resolve("as2_data/mdn").resolve(id + ".mdn")).exists().hasBinaryContent(bytes);
+    }
+
+    @Test
+    void rechazaCompletarUnEnvioConDatosInvalidosOSobrescribirSuResultado() throws Exception {
+        String id = body(ingest("SOCIO-C", Direction.OUTBOUND, "<ESTADO-ENVIO@example.com>", Samples.po850())
+                .andExpect(status().isCreated())).path("document").path("id").asString();
+        for (String invalid : List.of("MDN_RECEIVED", "CREATED")) {
+            String update = json.writeValueAsString(Map.of("status", invalid));
+            mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                    .contentType(MediaType.APPLICATION_JSON).content(update)).andExpect(status().isBadRequest());
+        }
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"DELIVERED\"}"))
+                .andExpect(status().isNoContent());
+        mvc.perform(put("/internal/as2/documents/{id}/result", id)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"SEND_FAILED\"}"))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/documents/{id}", id)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("DELIVERED"));
     }
 
     private ResultActions ingest(String partner, Direction direction, String messageId, String body) throws Exception {

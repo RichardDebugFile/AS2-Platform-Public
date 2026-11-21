@@ -60,6 +60,7 @@ __pycache__/
 
 # --- Docker (deploy/docker): secretos, certificados y respaldos generados ---
 deploy/docker/certs/
+deploy/docker/as2-identity/
 deploy/docker/backups/
 deploy/docker/shared/
 deploy/docker/salida/
