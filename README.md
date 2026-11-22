@@ -9,6 +9,10 @@ acuses 997, avisos de despacho 856, facturas 810…) con socios comerciales medi
 
 Arquitectura de microservicios Spring Boot con una consola web React.
 
+**Versión 0.8.0 (MVP AS2).** La consola envía documentos a socios configurados con firma, cifrado
+y confirmación por MDN síncrono. En recepción, la plataforma registra el documento, devuelve el MDN
+firmado y envía automáticamente el acuse funcional 997 para los X12 850 válidos.
+
 ## Módulos
 
 | Carpeta | Responsabilidad | Puerto |
@@ -41,7 +45,7 @@ cd frontend && npm ci && npm run lint && npm test && npm run build
 
 Entorno completo en Docker (servicios, consola y proxy TLS): `deploy/docker/start.sh` (también en Git Bash)
 y `deploy/docker/smoke-test.sh` para verificarlo; `deploy/docker/stop.sh` lo detiene. Con
-`COMPOSE_PROFILES=demo` arranca además OpenAS2 como socio de prueba para el envío AS2 y Mailpit como
+`COMPOSE_PROFILES=demo` arranca además OpenAS2 como socio de prueba para el envío y la recepción AS2 y Mailpit como
 servidor de correo de prueba (bandeja en `http://localhost:8025`); las colecciones
 de Postman de cada servicio se corren con Newman (ver `deploy/docker/README.md`).
 
