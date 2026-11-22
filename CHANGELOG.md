@@ -4,6 +4,24 @@ Qué cambia en cada versión y para qué sirve. Escrito para quien administra o 
 
 ---
 
+## Sin publicar
+
+## 0.8.0 — 2026-11-21
+
+### Novedades
+- Envío AS2 a socios configurados (HU-15). El operador puede elegir el socio desde un documento o el
+  generador X12. El motor firma el mensaje, lo cifra para los certificados activos del socio y valida
+  el MDN síncrono. El repositorio guarda el resultado y el acuse, y la consola muestra el motivo si
+  el socio rechaza el envío.
+- Recepción AS2 de socios registrados (HU-16). El motor verifica la firma, registra el documento en
+  el repositorio y deja una copia en la carpeta de entrada del socio. Devuelve un MDN firmado en la
+  conexión o en la URL de acuse del acuerdo. Si llega un 850 válido, envía el acuse funcional 997.
+
+### Mantenimiento
+
+- Se atendieron los avisos de mantenibilidad de SonarQube en los flujos de envío y recepción AS2
+  (AS2-121), conservando el comportamiento de los intercambios y sus acuses.
+
 ## 0.7.0 — 2026-11-17
 
 ### Novedades

@@ -1,20 +1,22 @@
 package edi.as2adapter.as2;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
-import java.security.PrivateKey;
 import java.security.Provider;
 import java.security.cert.X509Certificate;
 import java.util.Base64;
 import java.util.Collection;
 import java.util.List;
 import java.util.Locale;
+import org.bouncycastle.asn1.ASN1Encoding;
+import org.bouncycastle.asn1.ASN1ObjectIdentifier;
 import org.bouncycastle.asn1.cms.ContentInfo;
 import org.bouncycastle.cert.jcajce.JcaCertStore;
 import org.bouncycastle.cms.CMSAlgorithm;
 import org.bouncycastle.cms.CMSEnvelopedData;
-import org.bouncycastle.cms.CMSEnvelopedDataGenerator;
+import org.bouncycastle.cms.CMSEnvelopedDataStreamGenerator;
 import org.bouncycastle.cms.CMSException;
 import org.bouncycastle.cms.CMSProcessableByteArray;
 import org.bouncycastle.cms.CMSSignedData;
@@ -25,6 +27,7 @@ import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoGeneratorBuilder;
 import org.bouncycastle.cms.jcajce.JcaSimpleSignerInfoVerifierBuilder;
 import org.bouncycastle.cms.jcajce.JceCMSContentEncryptorBuilder;
 import org.bouncycastle.cms.jcajce.JceKeyTransEnvelopedRecipient;
+import org.bouncycastle.cms.jcajce.JceKeyTransRecipientId;
 import org.bouncycastle.cms.jcajce.JceKeyTransRecipientInfoGenerator;
 import org.bouncycastle.crypto.RuntimeCryptoException;
 import org.bouncycastle.jce.provider.BouncyCastleProvider;
@@ -43,10 +46,14 @@ public final class Cms {
 
     /** Firma separada (detached) SHA-256 con RSA, con el certificado del firmante incluido. */
     public static byte[] sign(byte[] content, As2Identity signer) {
+        return sign(content, signer, MessageBuilder.MIC_ALGORITHM);
+    }
+
+    public static byte[] sign(byte[] content, As2Identity signer, String digest) {
         try {
             CMSSignedDataGenerator gen = new CMSSignedDataGenerator();
             gen.addSignerInfoGenerator(new JcaSimpleSignerInfoGeneratorBuilder().setProvider(BC)
-                    .build("SHA256withRSA", signer.key(), signer.certificate()));
+                    .build(jcaDigest(digest).replace("-", "") + "withRSA", signer.key(), signer.certificate()));
             gen.addCertificates(new JcaCertStore(List.of(signer.certificate())));
             return gen.generate(new CMSProcessableByteArray(content), false).getEncoded();
         } catch (CMSException | OperatorCreationException | IOException | java.security.cert.CertificateEncodingException e) {
@@ -71,11 +78,25 @@ public final class Cms {
 
     /** Cifra con AES-256-CBC para el certificado del destinatario (enveloped-data). */
     public static byte[] encrypt(byte[] content, X509Certificate recipient) {
+        return encrypt(content, List.of(recipient), "AES256");
+    }
+
+    /** Un solo contenido cifrado y una copia de su clave por destinatario, en el orden indicado. */
+    public static byte[] encrypt(byte[] content, List<X509Certificate> recipients, String algorithm) {
+        if (recipients.isEmpty()) throw new As2Exception("El cifrado AS2 requiere al menos un certificado");
         try {
-            CMSEnvelopedDataGenerator gen = new CMSEnvelopedDataGenerator();
-            gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(recipient).setProvider(BC));
-            return gen.generate(new CMSProcessableByteArray(content),
-                    new JceCMSContentEncryptorBuilder(CMSAlgorithm.AES256_CBC).setProvider(BC).build()).getEncoded();
+            CMSEnvelopedDataStreamGenerator gen = new CMSEnvelopedDataStreamGenerator();
+            // DL conserva el orden de RecipientInfos del acuerdo. DER ordena el SET OF por sus bytes.
+            gen.setEncoding(ASN1Encoding.DL);
+            for (X509Certificate certificate : recipients) {
+                gen.addRecipientInfoGenerator(new JceKeyTransRecipientInfoGenerator(certificate).setProvider(BC));
+            }
+            ByteArrayOutputStream encoded = new ByteArrayOutputStream();
+            try (var encrypted = gen.open(encoded, content.length,
+                    new JceCMSContentEncryptorBuilder(cipher(algorithm)).setProvider(BC).build())) {
+                encrypted.write(content);
+            }
+            return encoded.toByteArray();
         } catch (CMSException | java.security.cert.CertificateEncodingException | IOException e) {
             throw new As2Exception("No se pudo cifrar el mensaje: " + e.getMessage(), e);
         }
@@ -83,20 +104,30 @@ public final class Cms {
 
     /** Descifra un enveloped-data dirigido a {@code identity}. */
     public static byte[] decrypt(byte[] enveloped, As2Identity identity) {
-        return decrypt(enveloped, identity.key());
-    }
-
-    static byte[] decrypt(byte[] enveloped, PrivateKey key) {
         try {
             CMSEnvelopedData env = new CMSEnvelopedData(ContentInfo.getInstance(enveloped));
-            Collection<RecipientInformation> recipients = env.getRecipientInfos().getRecipients();
-            if (recipients.isEmpty()) throw new As2Exception("El mensaje cifrado no tiene destinatarios");
-            return recipients.iterator().next().getContent(new JceKeyTransEnvelopedRecipient(key).setProvider(BC));
+            RecipientInformation recipient = env.getRecipientInfos().get(new JceKeyTransRecipientId(identity.certificate()));
+            if (recipient == null) throw new As2Exception("El mensaje no está cifrado para el certificado local");
+            return recipient.getContent(new JceKeyTransEnvelopedRecipient(identity.key()).setProvider(BC));
         } catch (CMSException | IllegalArgumentException | RuntimeCryptoException e) {
             // Con una clave equivocada, segun el valor cifrado, falla como CMSException o como
             // DataLengthException ("input too large for RSA cipher"): las dos son "no se pudo descifrar".
             throw new As2Exception("No se pudo descifrar el mensaje: " + e.getMessage(), e);
         }
+    }
+
+    private static ASN1ObjectIdentifier cipher(String algorithm) {
+        return switch (algorithm) {
+            case "AES128" -> CMSAlgorithm.AES128_CBC;
+            case "AES192" -> CMSAlgorithm.AES192_CBC;
+            case "AES256" -> CMSAlgorithm.AES256_CBC;
+            case "TRIPLE_DES" -> CMSAlgorithm.DES_EDE3_CBC;
+            default -> throw new As2Exception("Algoritmo de cifrado no soportado: " + algorithm);
+        };
+    }
+
+    public static String mimeDigest(String digest) {
+        return jcaDigest(digest).toLowerCase(Locale.ROOT);
     }
 
     /**

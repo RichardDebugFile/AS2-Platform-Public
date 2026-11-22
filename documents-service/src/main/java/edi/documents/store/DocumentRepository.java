@@ -1,11 +1,13 @@
 package edi.documents.store;
 
+import jakarta.persistence.LockModeType;
 import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import org.springframework.data.jpa.repository.Lock;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 
@@ -16,6 +18,10 @@ public interface DocumentRepository extends JpaRepository<Document, UUID>, JpaSp
     }
 
     Optional<Document> findByMessageId(String messageId);
+
+    @Lock(LockModeType.PESSIMISTIC_WRITE)
+    @Query("select d from Document d where d.id = :id")
+    Optional<Document> lockById(@Param("id") UUID id);
 
     List<Document> findByPartnerCopyStatusAndCreatedAtAfterOrderByCreatedAtAsc(PartnerCopyStatus status,
             Instant since);

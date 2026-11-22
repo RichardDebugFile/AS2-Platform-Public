@@ -42,7 +42,9 @@ docker compose run --rm --no-deps --user root --entrypoint sh partners-service -
 # Perfil demo: OpenAS2 corre con el uid 1000 y guarda lo que recibe en ./salida/openas2. En Linux,
 # Docker crea esa carpeta como root y OpenAS2 no podria escribir: respondia el MDN con
 # "processed/Error" y el envio quedaba como no entregado. Docker Desktop (Windows, macOS) no lo nota.
-if docker compose config --services | grep -qx openas2; then
+# Captura la lista completa: grep -q puede cerrar la tubería antes de que Compose termine de escribir.
+services="$(docker compose config --services)"
+if grep -qx openas2 <<< "$services"; then
     docker compose run --rm --no-deps --user root --entrypoint sh openas2 -c '
         set -e
         chown 1000:0 /opt/openas2/data

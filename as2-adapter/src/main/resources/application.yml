@@ -4,8 +4,17 @@ server:
 spring:
   application:
     name: as2-adapter
+  servlet:
+    multipart:
+      enabled: false
 
 as2:
+  our-as2-id: ${AS2_OUR_AS2_ID:PLATAFORMA}
+  mdn-address: ${AS2_MDN_ADDRESS:edi.plataforma@example.com}
+  keystore-path: ${AS2_KEYSTORE_PATH:}
+  key-alias: ${AS2_KEY_ALIAS:}
+  keystore-password: ${AS2_KEYSTORE_PASSWORD:}
+  demo-identity: ${AS2_DEMO_IDENTITY:false}
   audit:
     # Bitacora de partners-service (HU-10). En Docker: http://partners-service:8081
     url: ${PARTNERS_SERVICE_URL:http://localhost:8081}

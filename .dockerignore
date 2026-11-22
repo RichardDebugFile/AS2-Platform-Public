@@ -11,6 +11,7 @@ _local/
 **/logs/
 deploy/docker/.env
 deploy/docker/certs/
+deploy/docker/as2-identity/
 deploy/docker/backups/
 deploy/docker/shared/
 deploy/docker/salida/

@@ -20,14 +20,14 @@ public record Mdn(String originalMessageId, String disposition, String receivedC
     public boolean processed() {
         if (disposition == null) return false;
         int semi = disposition.indexOf(';');
-        String result = (semi < 0 ? disposition : disposition.substring(semi + 1)).toLowerCase(Locale.ROOT);
-        return result.contains("processed") && !result.contains("error") && !result.contains("failure");
+        String result = (semi < 0 ? disposition : disposition.substring(semi + 1)).strip().toLowerCase(Locale.ROOT);
+        return result.equals("processed") || result.startsWith("processed/warning:");
     }
 
     /** True si el socio calculo el mismo MIC y con el mismo algoritmo que se envio. */
     public boolean micMatches(String expectedMic, String expectedAlgorithm) {
         return receivedContentMic != null && micAlgorithm != null
                 && receivedContentMic.strip().equals(expectedMic)
-                && Cms.jcaDigest(micAlgorithm).equals(Cms.jcaDigest(expectedAlgorithm));
+                && Cms.mimeDigest(micAlgorithm).equals(Cms.mimeDigest(expectedAlgorithm));
     }
 }

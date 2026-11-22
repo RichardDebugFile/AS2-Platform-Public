@@ -16,17 +16,20 @@
         <attribute name="reject_unsigned_messages" value="true"/>
     </partnership>
 
-    <!-- Sentido inverso, para cuando la plataforma reciba (HU-16). Sin sondeo de carpetas. -->
+    <!-- Sentido inverso (HU-16): intercambia únicamente los EDI de la carpeta del socio de prueba. -->
     <partnership name="OpenAS2-to-Plataforma">
         <sender name="OpenAS2"/>
         <receiver name="Plataforma"/>
-        <pollerConfig enabled="false"/>
+        <pollerConfig enabled="true" outboxdir="$properties.storageBaseDir$/enviar" interval="2"
+                      sendfilename="true" mimetype="application/edi-x12"/>
         <attribute name="protocol" value="as2"/>
-        <attribute name="as2_url" value="http://as2-adapter:8085/as2"/>
+        <attribute name="subject" value="Documento EDI de prueba"/>
+        <attribute name="content_transfer_encoding" value="binary"/>
+        <attribute name="as2_url" value="http://as2-adapter:8085/as2/receive"/>
         <attribute name="as2_mdn_to" value="edi.openas2@example.com"/>
         <attribute name="as2_mdn_options"
                    value="signed-receipt-protocol=optional, pkcs7-signature; signed-receipt-micalg=optional, sha-256"/>
-        <attribute name="encrypt" value="AES256_CBC"/>
+        <attribute name="encrypt" value="aes256"/>
         <attribute name="sign" value="SHA-256"/>
     </partnership>
 </partnerships>

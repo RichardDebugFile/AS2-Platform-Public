@@ -19,6 +19,10 @@ public final class MdnReader {
      * @param partner     certificado de firma del socio
      */
     public static Mdn read(String contentType, byte[] body, X509Certificate partner) {
+        return read(contentType, body, List.of(partner));
+    }
+
+    public static Mdn read(String contentType, byte[] body, List<X509Certificate> certificates) {
         String type = Mime.mediaType(contentType);
         if (type.equals("multipart/signed")) {
             List<byte[]> parts = Mime.split(body, boundaryOf(contentType));
@@ -26,7 +30,7 @@ public final class MdnReader {
             byte[] report = parts.get(0);
             byte[] sigPart = parts.get(1);
             byte[] signature = Mime.headers(sigPart).decodedBody(sigPart);
-            boolean valid = Cms.verify(report, signature, partner);
+            boolean valid = certificates.stream().anyMatch(certificate -> Cms.verify(report, signature, certificate));
             Mime.Headers h = Mime.headers(report);
             return parseReport(h.get("content-type"), h.body(report), true, valid);
         }

@@ -274,6 +274,65 @@
           ]
         },
         {
+          "name": "Envío a socio desconocido (400)",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/edi-x12"}
+            ],
+            "url": "{{host}}/api/as2/send?partner=NO-EXISTE-{{$guid}}&fileName=850.edi",
+            "body": {"mode": "raw", "raw": "ISA*00~"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "pm.test('Rechaza un socio sin registrar', () => pm.response.to.have.status(400));",
+                "pm.test('Explica el rechazo', () => pm.expect(pm.response.json().error).to.include('Socio AS2 activo'));"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Recepción AS2 de un remitente desconocido",
+          "request": {
+            "method": "POST",
+            "header": [
+              {"key": "Content-Type", "value": "application/edi-x12"},
+              {"key": "AS2-From", "value": "NO-REGISTRADO-{{$guid}}"},
+              {"key": "AS2-To", "value": "PLATAFORMA"},
+              {"key": "Message-ID", "value": "<{{$guid}}@example.com>"}
+            ],
+            "url": "{{host}}/as2/receive",
+            "body": {"mode": "raw", "raw": "ISA*00~"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "pm.test('Rechaza un AS2-From desconocido', () => pm.response.to.have.status(400));",
+                "pm.test('Explica el rechazo', () => pm.expect(pm.response.json().error).to.eql('Unknown AS2-From'));"
+              ]}
+            }
+          ]
+        },
+        {
+          "name": "Recepción de prueba no publicada",
+          "request": {
+            "method": "POST",
+            "url": "{{host}}/as2/receive/test",
+            "body": {"mode": "raw", "raw": "ISA*00~"}
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {"type": "text/javascript", "exec": [
+                "pm.test('La ruta de prueba responde 404', () => pm.response.to.have.status(404));"
+              ]}
+            }
+          ]
+        },
+        {
           "name": "Login (auditor)",
           "request": {
             "method": "POST",

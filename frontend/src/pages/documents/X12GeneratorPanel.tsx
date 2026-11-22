@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { X12_TYPES, x12Api, type GenerateRequest, type X12Type } from "../../service/x12Api";
 import As2TestSend from "./As2TestSend";
+import As2PartnerSend from "./As2PartnerSend";
 
 interface Props {
     /** Lleva el documento generado al visor. */
@@ -317,6 +318,7 @@ export default function X12GeneratorPanel({ onOpenInViewer, onSaveToRepository }
                                 {t("generator.saveToRepository")}
                             </Button>
                         )}
+                        <As2PartnerSend content={output} fileName={`x12-${type}.edi`} />
                         <As2TestSend content={output} fileName={`x12-${type}.edi`} />
                     </Space>
                 </>

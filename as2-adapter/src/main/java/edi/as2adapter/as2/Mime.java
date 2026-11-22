@@ -34,6 +34,17 @@ public final class Mime {
         return out.toByteArray();
     }
 
+    static byte[] multipart(String boundary, List<byte[]> parts) {
+        ByteArrayOutputStream body = new ByteArrayOutputStream();
+        for (byte[] part : parts) {
+            body.writeBytes(ascii("--" + boundary + "\r\n"));
+            body.writeBytes(part);
+            body.writeBytes(CRLF);
+        }
+        body.writeBytes(ascii("--" + boundary + "--\r\n"));
+        return body.toByteArray();
+    }
+
     /** Delimitador unico para un multipart (RFC 2046 5.1.1). */
     public static String boundary() {
         byte[] r = new byte[12];
@@ -44,6 +55,18 @@ public final class Mime {
     /** Contenido en base64 con lineas de 76 caracteres, como exige MIME. */
     public static byte[] base64Lines(byte[] data) {
         return Base64.getMimeEncoder(76, CRLF).encode(data);
+    }
+
+    /** Canoniza CR y LF sueltos sin reinterpretar los bytes del documento. */
+    static byte[] canonicalize(byte[] source) {
+        ByteArrayOutputStream out = new ByteArrayOutputStream(source.length);
+        for (int i = 0; i < source.length; i++) {
+            byte current = source[i];
+            if (current == '\n' && (i == 0 || source[i - 1] != '\r')) out.write('\r');
+            out.write(current);
+            if (current == '\r' && (i + 1 == source.length || source[i + 1] != '\n')) out.write('\n');
+        }
+        return out.toByteArray();
     }
 
     /**
@@ -139,7 +162,7 @@ public final class Mime {
         return out.subList(1, out.size());
     }
 
-    private static String unquote(String v) {
+    public static String unquote(String v) {
         return v.length() >= 2 && v.startsWith("\"") && v.endsWith("\"")
                 ? v.substring(1, v.length() - 1).replace("\\\"", "\"")
                 : v;
